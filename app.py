@@ -49,7 +49,7 @@ special_groups = {
 }
 
 # ==========================================
-# STUCT ALREADY HIT TRACKER (စနစ်မှန် တိုက်စစ်ပယ်ဖျက်ခြင်း Logic)
+# STUCT ALREADY HIT TRACKER
 # ==========================================
 def is_already_hit(mu_name, mu_val, start_idx, end_idx, full_draws_list):
     if start_idx >= len(full_draws_list): return True
@@ -57,7 +57,6 @@ def is_already_hit(mu_name, mu_val, start_idx, end_idx, full_draws_list):
     if not check_draws: return False
     
     for d in check_draws:
-        d_head = d[0]
         d_break = str((int(d[0]) + int(d[1])) % 10)
         
         if mu_name == "လုံးဘိုင်":
@@ -162,78 +161,85 @@ def execute_analysis(target_hits, full_draws, active_tfs, is_custom_tab=False, s
     recovered_store = []
     current_latest_idx = len(full_draws) - 1
 
+    # Filter target hits strictly if Tab 2 Custom specific session chosen
+    filtered_hits = target_hits
+    if is_custom_tab and sel_session != "AM+PM ပေါင်းချုပ်":
+        req_time = "AM" if "AM" in sel_session else "PM"
+        filtered_hits = [h for h in target_hits if h['time'] == req_time]
+
+    # Total Count စစ်စစ်သည် target_hits (ထွက်ဖူးသော Unique Global Index) အရေအတွက်ထက် လုံးဝ ပို၍မရပါ Bro!
+    total_count = len(filtered_hits)
+    if total_count == 0: return hp_store, sniper_store, recovered_store
+
     for tf_name, s_off, e_off in active_tfs:
-        sequence_tracker = {f"mu_{m}": [] for m in range(1, 9)}
-        mu_latest_values = {}
-        mu_pure_values = {}
-        mu_keys_list = []
-
-        filtered_hits = target_hits
-        if is_custom_tab and sel_session != "AM+PM ပေါင်းချုပ်":
-            req_time = "AM" if "AM" in sel_session else "PM"
-            filtered_hits = [h for h in target_hits if h['time'] == req_time]
-
-        for hit in filtered_hits:
-            res = run_mu_evaluation(hit['index'], full_draws, s_off, e_off)
-            if res:
-                if not mu_keys_list: mu_keys_list = list(res.keys())
-                for m_idx, mu_k in enumerate(mu_keys_list, 1):
-                    sequence_tracker[f"mu_{m_idx}"].append(res[mu_k]['hit'])
-                    mu_latest_values[mu_k] = res[mu_k]['val']
-                    mu_pure_values[mu_k] = res[mu_k]['pure']
-
-        if not mu_keys_list: continue
-
-        for m_idx, mu_k in enumerate(mu_keys_list, 1):
-            seq = sequence_tracker[f"mu_{m_idx}"]
-            if len(seq) < 5: continue
+        mu_keys_list = ["လုံးဘိုင်", "One Change", "key", "အပူးပါခွေ", "ဘရိတ်", "စုံ/မ ကပ်", "အုပ်စုတွဲ", "ကွက်ကျဉ်းစနစ်"]
+        
+        for mu_k in mu_keys_list:
+            # တွက်ချက်မှုအမှန်အတွက် Unique Target Match တိုင်းကို စနစ်တကျ ပြန်လည်ရေတွက်ခြင်း
+            win_count = 0
+            latest_val = ""
+            latest_pure = ""
             
-            win_count = sum(1 for x in seq if x)
-            total_count = len(seq)
+            for hit in filtered_hits:
+                res = run_mu_evaluation(hit['index'], full_draws, s_off, e_off)
+                if res and mu_k in res:
+                    if res[mu_k]['hit']:
+                        win_count += 1
+                    latest_val = res[mu_k]['val']
+                    latest_pure = res[mu_k]['pure']
+
+            if not latest_val: continue
             rate = (win_count / total_count) * 100
+
+            # 🚨 Bro ညွှန်ကြားထားသော Matrix Filters အသစ် (HP: 95%+, Sniper: >=10 ကြိမ်နှင့် 100%)
+            if rate == 100.0 and total_count >= 10:
+                pass
+            elif rate >= 95.0:
+                pass
+            else:
+                continue # Threshold စည်းမျဉ်းနှင့်မကိုက်ညီက လုံးဝ ရှင်းထုတ်ပယ်ဖျက်မည်
 
             is_deadline_flag = False
             if filtered_hits:
                 last_hit_global_idx = filtered_hits[-1]['index']
                 elapsed_draws = current_latest_idx - last_hit_global_idx
                 if (elapsed_draws + 1) == e_off:
-                    already_out = is_already_hit(mu_k, mu_latest_values[mu_k], last_hit_global_idx + 1, current_latest_idx, full_draws)
+                    already_out = is_already_hit(mu_k, latest_val, last_hit_global_idx + 1, current_latest_idx, full_draws)
                     if not already_out:
                         is_deadline_flag = True
 
-            display_val = mu_latest_values[mu_k]
-            rate_str = "100%" if rate == 100.0 else f"{rate:.1f}%"
-            badge_color_class = "badge-inline-sniper" if rate == 100.0 else "badge-inline-hp"
-            
             if is_custom_tab:
                 lbl_prefix = custom_trigger
             else:
                 lbl_prefix = f"{filtered_hits[-1]['draw']} {filtered_hits[-1]['time']}" if filtered_hits else ""
 
+            rate_str = "100%" if rate == 100.0 else f"{rate:.1f}%"
+            badge_color_class = "badge-inline-sniper" if rate == 100.0 else "badge-inline-hp"
+            
             top_line = f"🔮 [{lbl_prefix}] ထွက်ပြီးလျှင် <span class='badge-inline {badge_color_class}'>{tf_name}အတွင်း</span>"
-            formula_line = f"{display_val} {rate_str}"
+            formula_line = f"{latest_val} {rate_str}"
             bottom_line = f"မှန်ကန်မှု: ({total_count} ကြိမ်မှာ {win_count} ကြိမ်မှန်)"
 
-            card_payload = {"top": top_line, "formula": formula_line, "bottom": bottom_line, "e_off": e_off, "is_deadline": is_deadline_flag, "pure": mu_pure_values[mu_k]}
+            card_payload = {"top": top_line, "formula": formula_line, "bottom": bottom_line, "e_off": e_off, "is_deadline": is_deadline_flag, "pure": latest_pure}
 
             if is_deadline_flag:
                 if rate == 100.0 and total_count >= 10:
                     sniper_store[mu_k] = card_payload
-                elif rate >= 95.0:
+                else:
                     hp_store[mu_k] = card_payload
                 continue
 
             if total_count >= 10 and rate == 100.0:
                 if mu_k not in sniper_store or e_off > sniper_store[mu_k]['e_off']:
                     sniper_store[mu_k] = card_payload
-            elif rate >= 95.0:
+            else:
                 if mu_k not in hp_store or e_off > hp_store[mu_k]['e_off']:
                     hp_store[mu_k] = card_payload
 
     return hp_store, sniper_store, recovered_store
 
 # ==========================================
-# FILE UPLOAD & PRE-PROCESSING
+# FILE UPLOAD & RENDERING ENGINE
 # ==========================================
 uploaded_file = st.file_uploader("Bro ရဲ့ 2D CSV သို့မဟုတ် Excel ဖိုင်ကို ရွေးချယ်တင်ပေးပါ...", type=['csv', 'xlsx', 'xls'])
 
@@ -278,14 +284,18 @@ if uploaded_file:
         # TAB 1: AUTOMATED ENGINE TRACKER
         # ------------------------------------------
         with tab_live:
-            live_max_tf = st.number_input("ရှာလိုသော ပွဲစဉ်အရေအတွက်", min_value=1, max_value=20, value=6)
-            
+            st.markdown("### ယခုအချိန်အတွက် အလိုအလျောက် 4-Pool Scan & Convergence Engine")
+            col1, col2 = st.columns(2)
+            with col1:
+                live_max_tf = st.number_input("🎯 ရှာလိုသော ပွဲစဉ်အရေအတွက်", min_value=1, max_value=20, value=6, key="live_max")
+            with col2:
+                st.info(f"ယခုပွဲစဉ်အတွက် [AM, PM, AM+PM, Day Alignment] ၄ လိုင်းစနစ်လုံးကို Auto သိမ်းကျုံးတွက်ချက်ပါမည်။")
+
             if st.button("ယခုပွဲအတွက် Auto ရှာဖွေမည် ⚡", key="btn_auto"):
                 current_end_idx = len(full_draws) - 1
                 convergence_pool = []
                 detailed_live_store = []
                 
-                # စနစ်မှန် နောက်ကြောင်းပြန် Row-by-Row Active Dynamic Mapping
                 for step in range(1, live_max_tf + 1):
                     target_past_idx = current_end_idx - step + 1
                     if target_past_idx < 0: continue
@@ -294,7 +304,6 @@ if uploaded_file:
                     past_val = past_obj['draw']
                     past_time = past_obj['time']
                     
-                    # ၎င်းပွဲစဉ်အလိုက် သက်ဆိုင်ရာ အခြေအနေ ၂ မျိုးတည်းသာ စစ်ဆေးခြင်း
                     condition_pools = [
                         {"hits": [d for d in full_draws[:target_past_idx+1] if d['draw'] == past_val and d['time'] == past_time], "lbl": f"{past_val} {past_time}"},
                         {"hits": [d for d in full_draws[:target_past_idx+1] if d['draw'] == past_val], "lbl": f"{past_val}"}
@@ -302,19 +311,14 @@ if uploaded_file:
                     
                     for pool in condition_pools:
                         if not pool['hits']: continue
-                        res_live = run_mu_evaluation(pool['hits'][-1]['index'], full_draws, 1, step)
-                        if res_live:
-                            for m_k, m_v in res_live.items():
-                                # ကွက်တိ ပယ်ထုတ်စစ်ဆေးခြင်း Logic (True Anti-Overlap-Hit Filter)
-                                already_out = is_already_hit(m_k, m_v['pure'], pool['hits'][-1]['index'] + 1, current_end_idx, full_draws)
-                                if not already_out:
-                                    convergence_pool.append(m_v['pure'])
-                                    
-                                    badge_cls = "badge-inline-sniper"
-                                    top_l = f"🔮 [{pool['lbl']}] ထွက်ပြီးလျှင် <span class='badge-inline {badge_cls}'>{step} ပွဲအတွင်း</span>"
-                                    form_l = f"{m_v['val']} 100%"
-                                    bot_l = f"မှန်ကန်မှု: ရက်ချိန်းပြည့် မူလက်ကျန်"
-                                    detailed_live_store.append({"top": top_l, "form": form_l, "bot": bot_l})
+                        # တွက်ချက်မှုအပိုင်းအစစ်ကို ပြုလုပ်ခြင်း
+                        hp_s, sniper_s, _ = execute_analysis(pool['hits'], full_draws, [(f"{step} ပွဲ", 1, step)], is_custom_tab=False)
+                        
+                        combined_res = {**hp_s, **sniper_s}
+                        for mk, mv in combined_res.items():
+                            convergence_pool.append(mv['pure'])
+                            prefix = "🚨 [ရက်ချိန်းပြည့်] " if mv['is_deadline'] else ""
+                            detailed_live_store.append({"top": f"{prefix}{mv['top']}", "form": mv['formula'], "bot": f"မှန်ကန်မှု: ရက်ချိန်းပြည့် မူလက်ကျန် ({past_val} ထွက်ပြီး)"})
 
                 st.write("---")
                 st.markdown("#### 🏆 TOP RESULTS")
@@ -366,7 +370,7 @@ if uploaded_file:
             if st.button("ရှာဖွေမည် 🚀", key="btn_custom"):
                 target_hits = []
                 
-                # Tab 2 Display Label Logic အမှန်အတိုင်း တည့်မတ်ခြင်း
+                # Scan Logic Strict Control to match Display Key Exactly
                 if trigger_day == "All":
                     target_hits = [d for d in full_draws if d['draw'] == trigger_num or d['draw'] == trigger_num[::-1]]
                 else:
