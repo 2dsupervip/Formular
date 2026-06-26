@@ -5,28 +5,26 @@ import itertools
 from collections import Counter
 
 # ==========================================
-# PAGE CONFIG & UI STYLE
+# PAGE CONFIG & PREMIUM UI STYLE
 # ==========================================
-st.set_page_config(page_title="2D AI Master V26", layout="wide", page_icon="🤖")
+st.set_page_config(page_title="2D AI Master V26 Pro", layout="wide", page_icon="🤖")
 
-# Custom CSS for Premium Card Layouts
 st.markdown("""
 <style>
-    .reportview-container { background: #f5f7fb; }
-    .main-title { color: #4B0082; font-size: 38px; font-weight: bold; text-align: center; margin-bottom: 20px; }
-    .sub-title { color: #6A5ACD; font-size: 18px; text-align: center; margin-bottom: 30px; }
-    .card { background-color: #ffffff; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; border-left: 5px solid #6A5ACD; }
-    .card-hp { border-left: 5px solid #2ecc71; background-color: #f9fbf9; }
-    .card-sniper { border-left: 5px solid #9b59b6; background-color: #faf8fc; }
-    .card-header { font-size: 18px; font-weight: bold; color: #333; margin-bottom: 10px; }
-    .metric-val { font-size: 24px; font-weight: bold; color: #4B0082; }
+    .main-title { color: #4B0082; font-size: 38px; font-weight: bold; text-align: center; margin-bottom: 5px; }
+    .sub-title { color: #6A5ACD; font-size: 16px; text-align: center; margin-bottom: 30px; }
+    .card { background-color: #ffffff; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.08); margin-bottom: 20px; }
+    .card-hp { border-left: 6px solid #2ecc71; background-color: #f9fbf9; }
+    .card-sniper { border-left: 6px solid #9b59b6; background-color: #faf8fc; }
+    .card-recovered { border-left: 6px solid #e74c3c; background-color: #fdf7f7; animation: pulse 2s infinite; }
+    .card-header { font-size: 18px; font-weight: bold; color: #333; margin-bottom: 8px; }
+    .metric-val { font-size: 26px; font-weight: bold; color: #4B0082; background: #eee8f5; padding: 2px 10px; border-radius: 8px; }
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V26)</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Mode 1: Hybrid Core Engine (95%+ & 100% Super Sniper)</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V26 PRO)</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Ultimate Hybrid Engine | Mode 1: Calendar & Failure-Recovery Analysis</div>', unsafe_allow_html=True)
 
-# Special Groups Dictionary
 special_groups = {
     "ညီကို": {"01","10","12","21","23","32","34","43","45","54","56","65","67","76","78","87","89","98","90","09"},
     "ပါဝါ": {"05","50","16","61","27","72","38","83","49","94"},
@@ -40,250 +38,244 @@ GLOBAL_TFS = [("၁ ပွဲ", 1, 1), ("၂ ပွဲ", 1, 2), ("၃ ပွဲ"
               ("၆ ပွဲ", 1, 6), ("၈ ပွဲ", 1, 8), ("၁၀ ပွဲ", 1, 10), ("၁၂ ပွဲ", 1, 12), ("၁၆ ပွဲ", 1, 16), ("၂၀ ပွဲ", 1, 20)]
 
 # ==========================================
-# CORE CORE ENGINE LOGIC (REVERSE CALCULATION)
+# CORE MATH & MU CALCULATION FUNCTION
 # ==========================================
-def analyze_target_detailed_web(target_hits, full_draws_list, s_off, e_off):
-    total_hits = len(target_hits)
-    if total_hits == 0: return None
-
-    events_subsequent_draws = []
-    for hit in target_hits:
-        start_idx = hit['index']
-        s_idx = start_idx + s_off
-        e_idx = min(start_idx + e_off + 1, len(full_draws_list))
-        if s_idx < len(full_draws_list):
-            events_subsequent_draws.append([d['draw'] for d in full_draws_list[s_idx : e_idx]])
-        else:
-            events_subsequent_draws.append([])
-
-    if all(len(ev) == 0 for ev in events_subsequent_draws): return None
-
-    all_next_draws = list(itertools.chain(*events_subsequent_draws))
-    if not all_next_draws: return None
+def run_mu_evaluation(hit_idx, full_draws_list, s_off, e_off):
+    """တစ်ခုချင်းစီသော သမိုင်းဖြစ်စဉ်အတွက် မူ ၁၀ မျိုး ဝင်/မဝင် Boolean စစ်ဆေးပေးခြင်း"""
+    s_idx = hit_idx + s_off
+    e_idx = min(hit_idx + e_off + 1, len(full_draws_list))
+    if s_idx >= len(full_draws_list): return None
     
-    all_singles = list(itertools.chain(*[list(d) for d in all_next_draws]))
-    all_heads = [d[0] for d in all_next_draws]
-    all_breaks = [str((int(d[0]) + int(d[1])) % 10) for d in all_next_draws]
+    sub_draws = [d['draw'] for d in full_draws_list[s_idx : e_idx]]
+    if not sub_draws: return None
 
-    top_singles = [x[0] for x in Counter(all_singles).most_common(6)]
-    top_heads = [x[0] for x in Counter(all_heads).most_common(3)]
-    top_breaks = [x[0] for x in Counter(all_breaks).most_common(2)]
+    # သမိုင်းကြောင်း Window ၏ အခြေခံ Element များ ရှာဖွေခြင်း
+    all_singles = "".join(sub_draws)
+    all_heads = [d[0] for d in sub_draws]
+    all_breaks = [str((int(d[0]) + int(d[1])) % 10) for d in sub_draws]
 
-    def count_success(cond_func): 
-        return sum(1 for ev in events_subsequent_draws if ev and cond_func(ev))
+    top_single = Counter(all_singles).most_common(1)[0][0] if all_singles else ""
+    top_oc = "".join([x[0] for x in Counter(all_singles).most_common(2)])
+    top_key3 = "".join([x[0] for x in Counter(all_singles).most_common(3)])
+    top_k4 = "".join([x[0] for x in Counter(all_singles).most_common(4)])
+    top_h3 = "".join([x[0] for x in Counter(all_heads).most_common(3)])
+    top_brk2 = [x[0] for x in Counter(all_breaks).most_common(2)]
 
-    # 1. လုံးဘိုင်
-    b1 = top_singles[0] if top_singles else ""
-    b1_rate = (count_success(lambda ev: any(b1 in d for d in ev)) / total_hits) * 100 if b1 else 0
+    # စုံ/မကပ် ခွဲထုတ်ခြင်း
+    e_sc = sum(1 for d in sub_draws if top_single in d and int(d.replace(top_single,'',1) if d.replace(top_single,'',1) else top_single) % 2 == 0)
+    o_sc = sum(1 for d in sub_draws if top_single in d and int(d.replace(top_single,'',1) if d.replace(top_single,'',1) else top_single) % 2 != 0)
+    mway_label = f"[{top_single}] အစုံကပ်" if e_sc >= o_sc else f"[{top_single}] အမကပ်"
+    mway_digits = [f"{top_single}{i}" for i in ([0,2,4,6,8] if e_sc >= o_sc else [1,3,5,7,9])]
 
-    # 2. One Change
-    oc = "".join(top_singles[:2]) if len(top_singles) >= 2 else ""
-    oc_rate = (count_success(lambda ev: any(any(digit in d for digit in oc) for d in ev)) / total_hits) * 100 if oc else 0
-
-    # 3. အမာခံ ၃ လုံး
-    key3 = "".join(top_singles[:3]) if len(top_singles) >= 3 else ""
-    key3_rate = (count_success(lambda ev: any(any(digit in d for digit in key3) for d in ev)) / total_hits) * 100 if key3 else 0
-
-    # 4. ၄ လုံးခွေ
-    k4 = "".join(top_singles[:4]) if len(top_singles) >= 4 else ""
-    k4_rate = (count_success(lambda ev: any(d[0] in k4 and d[1] in k4 for d in ev)) / total_hits) * 100 if k4 else 0
-
-    # 5. ထိပ်စီး ၃ လုံး
-    h3 = "".join(top_heads)
-    h3_rate = (count_success(lambda ev: any(d[0] in h3 for d in ev)) / total_hits) * 100 if h3 else 0
-
-    # 6. ဘရိတ် ၂ လုံး
-    brk2_list = top_breaks
-    brk2_rate = (count_success(lambda ev: any(str((int(d[0])+int(d[1]))%10) in brk2_list for d in ev)) / total_hits) * 100 if brk2_list else 0
-
-    # 7. စုံ/မ ကပ် (၅ ကွက်) - လုံးဘိုင်ကို အခြေခံသည်
-    even_score = 0; odd_score = 0
-    if b1:
-        for ev in events_subsequent_draws:
-            if not ev: continue
-            for d in ev:
-                if b1 in d:
-                    other = d.replace(b1, '', 1)
-                    if not other: other = b1
-                    if int(other) % 2 == 0: even_score += 1
-                    else: odd_score += 1
-    if even_score >= odd_score:
-        mway_label = f"[{b1}] အစုံကပ်"
-        mway_digits = [f"{b1}{i}" for i in [0,2,4,6,8]]
-    else:
-        mway_label = f"[{b1}] အမကပ်"
-        mway_digits = [f"{b1}{i}" for i in [1,3,5,7,9]]
-    mway5_rate = (count_success(lambda ev: any(d in mway_digits for d in ev)) / total_hits) * 100 if b1 else 0
-
-    # 8. အုပ်စု (၁) ခုတည်း
-    best_single_group = max(special_groups.keys(), key=lambda g: count_success(lambda ev: any(d in special_groups[g] for d in ev)), default="")
-    sg_rate = (count_success(lambda ev: any(d in special_groups[best_single_group] for d in ev)) / total_hits) * 100 if best_single_group else 0
-
-    # 9. အုပ်စုတွဲ (၂) ခု
-    best_group_pair = ""; best_group_pair_correct = 0
+    # အုပ်စုခွဲထုတ်ခြင်း
+    best_sg = max(special_groups.keys(), key=lambda g: sum(1 for d in sub_draws if d in special_groups[g]), default="")
+    best_gp = ""; max_gp_c = 0
     for combo in itertools.combinations(special_groups.keys(), 2):
-        g1_set, g2_set = special_groups[combo[0]], special_groups[combo[1]]
-        correct = count_success(lambda ev: any(d in g1_set or d in g2_set for d in ev))
-        if correct > best_group_pair_correct:
-            best_group_pair_correct = correct
-            best_group_pair = f"{combo[0]}+{combo[1]}"
-    gp_rate = (best_group_pair_correct / total_hits) * 100 if best_group_pair else 0
+        c = sum(1 for d in sub_draws if d in special_groups[combo[0]] or d in special_groups[combo[1]])
+        if c > max_gp_c: max_gp_c = c; best_gp = f"{combo[0]}+{combo[1]}"
 
-    # 10. အမာခံအပါ ဘရိတ် (၂လုံး)
-    valid_pairs = []
-    if key3 and top_breaks:
-        for i in range(100):
-            d_str = f"{i:02d}"
-            if any(k in d_str for k in key3)  and str((int(d_str[0]) + int(d_str[1])) % 10) in top_breaks:
-                valid_pairs.append(d_str)
-    cb_rate = (count_success(lambda ev: any(d in valid_pairs for d in ev)) / total_hits) * 100 if valid_pairs else 0
+    # အမာခံအပါ ဘရိတ်
+    valid_pairs = [f"{i:02d}" for i in range(100) if any(k in f"{i:02d}" for k in top_key3) and str((i//10 + i%10)%10) in top_brk2]
 
-    mu_names = ["1. လုံးဘိုင်", "2. One Change", "3. အမာခံ ၃ လုံး", "4. ၄ လုံးခွေ", "5. ထိပ်စီး ၃ လုံး", "6. ဘရိတ် ၂ လုံး", "7. စုံ/မ ကပ် (၅ ကွက်)", "8. အုပ်စု (၁) ခုတည်း", "9. အုပ်စုတွဲ (၂) ခု", "10. အမာခံအပါ ဘရိတ် (၂လုံး)"]
-    mu_values = [b1, oc, key3, k4, h3, ", ".join(brk2_list), f"{mway_label} ({', '.join(mway_digits)})", best_single_group, best_group_pair, ", ".join(valid_pairs) if valid_pairs else "-"]
-    mu_rates = [b1_rate, oc_rate, key3_rate, k4_rate, h3_rate, brk2_rate, mway5_rate, sg_rate, gp_rate, cb_rate]
+    # လက်ရှိပွဲစဉ် (Actual Target) တွင် ၎င်းမူများ ကိုက်ညီမှု ရှိမရှိ စစ်ဆေးချက်ထုတ်ပြန်ခြင်း
+    act_draws = [d['draw'] for d in full_draws_list[hit_idx+1 : min(hit_idx+e_off+1, len(full_draws_list))]]
+    if not act_draws: return None
 
-    return {"names": mu_names, "values": mu_values, "rates": mu_rates, "total_hits": total_hits}
+    return {
+        "1. လုံးဘိုင်": {"val": top_single, "hit": any(top_single in d for d in act_draws)},
+        "2. One Change": {"val": top_oc, "hit": any(any(x in d for x in top_oc) for d in act_draws)},
+        "3. အမာခံ ၃ လုံး": {"val": top_key3, "hit": any(any(x in d for x in top_key3) for d in act_draws)},
+        "4. ၄ လုံးခွေ": {"val": top_k4, "hit": any(d[0] in top_k4 and d[1] in top_k4 for d in act_draws)},
+        "5. ထိပ်စီး ၃ လုံး": {"val": top_h3, "hit": any(d[0] in top_h3 for d in act_draws)},
+        "6. ဘရိတ် ၂ လုံး": {"val": ", ".join(top_brk2), "hit": any(str((int(d[0])+int(d[1]))%10) in top_brk2 for d in act_draws)},
+        "7. စုံ/မ ကပ် (၅ ကွက်)": {"val": f"{mway_label}", "hit": any(d in mway_digits for d in act_draws)},
+        "8. အုပ်စု (၁) ခုတည်း": {"val": best_sg, "hit": any(d in special_groups[best_sg] for d in act_draws)},
+        "9. အုပ်စုတွဲ (၂) ခု": {"val": best_gp, "hit": any(d in special_groups[best_gp.split('+')[0]] or d in special_groups[best_gp.split('+')[1]] for d in act_draws)},
+        "10. အမာခံအပါ ဘရိတ် (၂လုံး)": {"val": "ကွက်ကျဉ်းတွဲစနစ်", "hit": any(d in valid_pairs for d in act_draws)}
+    }
 
 # ==========================================
 # FILE UPLOAD & PRE-PROCESSING
 # ==========================================
-uploaded_file = st.file_uploader("Bro ရဲ့ 2D CSV သို့မဟုတ် Excel ဖိုင်ကို တင်ပေးပါ...", type=['csv', 'xlsx', 'xls'])
+uploaded_file = st.file_uploader("Bro ရဲ့ 2D CSV သို့မဟုတ် Excel ဖိုင်ကို ရွေးချယ်တင်ပေးပါ...", type=['csv', 'xlsx', 'xls'])
 
 if uploaded_file:
-    if uploaded_file.name.endswith('.csv'):
-        df = pd.read_csv(uploaded_file)
-    else:
-        df = pd.read_excel(uploaded_file)
-
+    df = pd.read_csv(uploaded_file) if uploaded_file.name.endswith('.csv') else pd.read_excel(uploaded_file)
     df.columns = df.columns.str.strip().str.lower()
-    required_columns = ['year', 'day', 'am1', 'am2', 'pm1', 'pm2']
-    missing_cols = [col for col in required_columns if col not in df.columns]
-
-    if missing_cols:
-        st.error(f"⚠️ ဖိုင်ထဲတွင် လိုအပ်သော ကော်လံများ မရှိပါ: {missing_cols}")
+    
+    if not all(col in df.columns for col in ['year', 'day', 'am1', 'am2', 'pm1', 'pm2']):
+        st.error("⚠️ ဖိုင်ထဲတွင် လိုအပ်သော ကော်လံများ (year, day, am1, am2, pm1, pm2) မပြည့်စုံပါ!")
     else:
-        # Data Cleansing
         for col in ['year', 'am1', 'am2', 'pm1', 'pm2']:
             df[col] = pd.to_numeric(df[col], errors='coerce')
         df = df.dropna(subset=['year', 'day']).reset_index(drop=True)
         df['day'] = df['day'].astype(str).str.strip().str.capitalize()
 
-        # Missing Data Health Check
-        null_am = df['am1'].isnull().sum()
-        null_pm = df['pm1'].isnull().sum()
-        if null_am > 0 or null_pm > 0:
-            st.warning(f"⚠️ သတိပြုရန်: ဖိုင်ထဲတွင် AM ကွက်လပ် ({null_am}) ခု နှင့် PM ကွက်လပ် ({null_pm}) ခု ရှိနေပါသည်။ AI မှ ချန်လှပ်တွက်ချက်ပါမည်။")
-
-        # Building Chronological Lists (Reverse Order Flow)
+        # Chronological Build (အောက်ဆုံးကနေ အပေါ်ကို Reverse လုပ်ရန်အတွက် အစဉ်အတိုင်းသိမ်းဆည်းမှု)
         full_draws = []
-        for index, row in df.iterrows():
+        for idx, row in df.iterrows():
             if pd.notna(row['am1']) and pd.notna(row['am2']):
-                am_draw = str(int(row['am1'])) + str(int(row['am2']))
-                full_draws.append({'draw': am_draw, 'time': 'AM', 'day': row['day'], 'year': int(row['year']), 'index': len(full_draws)})
+                full_draws.append({'draw': f"{int(row['am1'])}{int(row['am2'])}", 'time': 'AM', 'day': row['day'], 'year': int(row['year']), 'row_idx': idx})
             if pd.notna(row['pm1']) and pd.notna(row['pm2']):
-                pm_draw = str(int(row['pm1'])) + str(int(row['pm2']))
-                full_draws.append({'draw': pm_draw, 'time': 'PM', 'day': row['day'], 'year': int(row['year']), 'index': len(full_draws)})
+                full_draws.append({'draw': f"{int(row['pm1'])}{int(row['pm2'])}", 'time': 'PM', 'day': row['day'], 'year': int(row['year']), 'row_idx': idx})
 
-        # UI CONTROLS FOR MODE 1
+        for i, d in enumerate(full_draws): d['index'] = i
+
+        st.success(f"✅ ဒေတာပွဲစဉ်ပေါင်း {len(full_draws)} ခုကို အောင်မြင်စွာ ဖတ်ရှုပြီးပါပြီ။")
         st.write("---")
-        col1, col2 = st.columns(2)
-        with col1:
-            search_type = st.selectbox("ရှာဖွေမည့် Trigger အမျိုးအစား:", ["ဂဏန်းတစ်လုံးတည်း (Single Trigger)", "အတွဲလိုက်ပုံစံ (Daily Combo Twin Trigger)"])
-        
-        target_2d = ""
-        combo_am = ""
-        combo_pm = ""
 
-        with col2:
-            if search_type == "ဂဏန်းတစ်လုံးတည်း (Single Trigger)":
-                target_2d = st.text_input("🔍 ရှာဖွေလိုသော ဂဏန်း (ဥပမာ - 60):", value="60", max_chars=2)
-                pool_choice = st.selectbox("သမိုင်းကြောင်း ရှာဖွေမည့် Pool:", ["AM+PM (အောက်မှအပေါ် အစဉ်လိုက်)", "AM သီးသန့်", "PM သီးသန့်"])
+        # UI INTERFACE CONTROLS
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            engine_mode = st.radio("အသုံးပြုမည့် ရှာဖွေရေးမုဒ်:", ["Standard Single Trigger", "Calendar Day Alignment Pattern"])
+        with c2:
+            if engine_mode == "Standard Single Trigger":
+                target_num = st.text_input("🔍 စစ်ဆေးမည့် ဂဏန်း (ဥပမာ - 60):", value="60", max_chars=2)
+                pool_mode = st.selectbox("သမိုင်းကြောင်း Pool ခွဲထုတ်မှု:", ["AM+PM (အောက်မှအပေါ် မခွဲခြားဘဲ)", "AM သီးသန့်", "PM သီးသန့်"])
             else:
-                combo_am = st.text_input("🌅 မနက်ထွက်ဂဏန်း (AM):", value="66", max_chars=2)
-                combo_pm = st.text_input("🌆 ညနေထွက်ဂဏန်း (PM):", value="52", max_chars=2)
+                trigger_day = st.selectbox("📆 Trigger အစပျိုးရက်:", ["Mon", "Tue", "Wed", "Thur", "Fri"], index=0)
+                trigger_num = st.text_input("🔍 ထွက်ဂဏန်း (ဥပမာ - 70):", value="70", max_chars=2)
+        with c3:
+            if engine_mode == "Calendar Day Alignment Pattern":
+                target_day = st.selectbox("🎯 အဖြေထုတ်မည့် ပစ်မှတ်ရက် (Target Day):", ["Mon", "Tue", "Wed", "Thur", "Fri"], index=4)
+                target_session = st.selectbox("⏱️ ပစ်မှတ် Session:", ["AM+PM ပေါင်းချုပ်", "AM သီးသန့်", "PM သီးသန့်"])
 
-        if st.button("AI Logic ဖြင့် သမိုင်းကြောင်း မွှေနှောက်မည် 🚀"):
+        # RUN ENGINE BLOCK
+        if st.button("V26 Premium Hybrid Engine မောင်းနှင်မည် 🚀"):
             target_hits = []
-            
-            # 1. Single Trigger Scanning Logic (Reverse Approach)
-            if search_type == "ဂဏန်းတစ်လုံးတည်း (Single Trigger)" and target_2d:
-                if pool_choice == "AM+PM (အောက်မှအပေါ် အစဉ်လိုက်)":
-                    target_hits = [d for d in full_draws if d['draw'] == target_2d]
-                elif pool_choice == "AM သီးသန့်":
-                    target_hits = [d for d in full_draws if d['draw'] == target_2d and d['time'] == 'AM']
+
+            # (A) Standard Trigger Reverse Scanning
+            if engine_mode == "Standard Single Trigger" and target_num:
+                if pool_mode == "AM+PM (အောက်မှအပေါ် မခွဲခြားဘဲ)":
+                    target_hits = [d for d in full_draws if d['draw'] == target_num]
                 else:
-                    target_hits = [d for d in full_draws if d['draw'] == target_2d and d['time'] == 'PM']
+                    t_time = 'AM' if "AM" in pool_mode else 'PM'
+                    target_hits = [d for d in full_draws if d['draw'] == target_num and d['time'] == t_time]
+            
+            # (B) Calendar Alignment Trigger Scanning (SS မူရင်းခွင်စနစ်)
+            elif engine_mode == "Calendar Day Alignment Pattern" and trigger_num:
+                rev_num = trigger_num[::-1]
+                matched_weeks = set()
+                # 70 သို့မဟုတ် 07 ဖြစ်ခဲ့သော ရက်သတ္တပတ် Row များကို ရှာဖွေခြင်း
+                for d in full_draws:
+                    if d['day'] == trigger_day and (d['draw'] == trigger_num or d['draw'] == rev_num):
+                        matched_weeks.add(d['row_idx'])
                 
-                st.success(f"📊 [ဂဏန်း {target_2d}] အခြေပြု သမိုင်းကြောင်းစုစုပေါင်း {len(target_hits)} ကြိမ် ရှာဖွေတွေ့ရှိပြီး တွက်ချက်နေပါသည်။")
+                # ပစ်မှတ်ထားသော ရက်၏ ဒေတာများကို ပစ်မှတ် Pool ထဲ စုစည်းခြင်း
+                for d in full_draws:
+                    if d['row_idx'] in matched_weeks and d['day'] == target_day:
+                        if target_session == "AM+PM ပေါင်းချုပ်":
+                            target_hits.append(d)
+                        else:
+                            t_sess = 'AM' if "AM" in target_session else 'PM'
+                            if d['time'] == t_sess:
+                                target_hits.append(d)
 
-            # 2. Daily Combo Twin Trigger Scanning Logic (Reverse Day Matching)
-            elif search_type == "အတွဲလိုက်ပုံစံ (Daily Combo Twin Trigger)" and combo_am and combo_pm:
-                for idx, row in df.iterrows():
-                    if pd.notna(row['am1']) and pd.notna(row['pm1']):
-                        cur_am = str(int(row['am1'])) + str(int(row['am2']))
-                        cur_pm = str(int(row['pm1'])) + str(int(row['pm2']))
-                        if cur_am == combo_am and cur_pm == combo_pm:
-                            # တွဲလုံးတွေ့ပါက ထိုနေ့ညနေပိုင်းထွက်ခဲ့သည့် index ကို သမိုင်းအချက်အလက်အဖြစ် မှတ်သား
-                            match_idx = (idx * 2) + 1
-                            if match_idx < len(full_draws):
-                                target_hits.append(full_draws[match_idx])
-                st.success(f"🔥 [အတွဲလိုက် {combo_am} + {combo_pm}] စံစနစ်အရ သမိုင်းကြောင်း {len(target_hits)} ကြိမ် ကို အောက်မှအပေါ် Reverse Scan ဖတ်ပြီးပါပြီ။")
-
+            # CALCULATION & MATRIX EXTRACTION
             if not target_hits:
-                st.error("⚠️ သတ်မှတ်ထားသော ဂဏန်း/အတွဲလိုက် အတွက် သမိုင်းကြောင်း ဒေတာ မလုံလောက်ပါ သို့မဟုတ် မရှိပါ။")
+                st.error("⚠️ သတ်မှတ်ချက်များနှင့် ကိုက်ညီသော သမိုင်းကြောင်းမှတ်တမ်း မရှိပါ Bro!")
             else:
-                # Execution Arrays for Layout Outputs
-                high_prob_results = []
-                sniper_results = []
+                # ယာယီ ဒေတာ သိုလှောင်ကန်များ
+                hp_store = {}     # High-Probability (95%+)
+                sniper_store = {} # Sniper (100% + >=10 ကြိမ်)
+                recovered_store = [] # Failure-to-Recovery (3 မှား၊ 2 မှန်)
 
-                # Timeframe Engine Loop
+                # Timeframe တစ်ခုချင်းစီအလိုက် နောက်ကွယ်မှ မူ ၁၀ မျိုး ခြေရာခံခြင်း
                 for tf_name, s_off, e_off in GLOBAL_TFS:
-                    res = analyze_target_detailed_web(target_hits, full_draws, s_off, e_off)
-                    if res:
-                        for idx in range(10):
-                            mu_name = res["names"][idx]
-                            mu_val = res["values"][idx]
-                            mu_rate = res["rates"][idx]
-                            total_h = res["total_hits"]
+                    # သမိုင်းမှတ်တမ်း အပွဲတိုင်းအတွက် True/False သရုပ်ခွဲမှတ်တမ်း စုစည်းမှု
+                    sequence_tracker = {f"mu_{m}": [] for m in range(1, 11)}
+                    mu_latest_values = {}
+                    mu_keys_list = []
 
-                            # Strategy 1: 100% Sniper Rule (>= 10 ကြိမ် နှင့် 100% မှန်)
-                            if total_h >= 10 and mu_rate == 100.0:
-                                sniper_results.append({"tf": tf_name, "mu": mu_name, "val": mu_val, "rate": mu_rate, "hits": total_h})
-                            # Strategy 2: 95%+ High Probability Rule (95% မှ 100% အတွင်း)
-                            elif mu_rate >= 95.0:
-                                high_prob_results.append({"tf": tf_name, "mu": mu_name, "val": mu_val, "rate": mu_rate, "hits": total_h})
+                    # အောက်ဆုံးကနေ အပေါ်ကို ပြန်တက်ပြီး တစ်ကြိမ်ချင်းစီတွက်ချက်မှု ရလဒ်များ စုစည်းခြင်း
+                    for hit in target_hits:
+                        res = run_mu_evaluation(hit['index'], full_draws, s_off, e_off)
+                        if res:
+                            if not mu_keys_list: mu_keys_list = list(res.keys())
+                            for m_idx, mu_k in enumerate(mu_keys_list, 1):
+                                sequence_tracker[f"mu_{m_idx}"].append(res[mu_k]['hit'])
+                                mu_latest_values[mu_k] = res[mu_k]['val']
+
+                    if not mu_keys_list: continue
+                    total_h = len(target_hits)
+
+                    # မူတစ်ခုချင်းစီအတွက် Win Rate နှင့် ကစားကွက်ဗျူဟာများ သတ်မှတ်ခြင်း
+                    for m_idx, mu_k in enumerate(mu_keys_list, 1):
+                        seq = sequence_tracker[f"mu_{m_idx}"]
+                        if len(seq) < 5: continue # ဒေတာ စမ်းသပ်မှု ပမာဏ အနည်းဆုံး ၅ ခု ရှိရမည်
+                        
+                        win_count = sum(1 for x in seq if x)
+                        rate = (win_count / len(seq)) * 100
+
+                        # Rule 1: 100% Super VIP Sniper (နယ်ကုန် စစ်ထုတ်ရန်အတွက် စုစည်းမှု)
+                        if len(seq) >= 10 and rate == 100.0:
+                            if mu_k not in sniper_store or e_off > sniper_store[mu_k]['e_off']:
+                                sniper_store[mu_k] = {"tf": tf_name, "val": mu_latest_values[mu_k], "rate": rate, "hits": len(seq), "e_off": e_off}
+                        
+                        # Rule 2: 95%+ High Probability (နယ်ကုန် စစ်ထုတ်ရန်အတွက် စုစည်းမှု)
+                        elif rate >= 95.0:
+                            if mu_k not in hp_store or e_off > hp_store[mu_k]['e_off']:
+                                hp_store[mu_k] = {"tf": tf_name, "val": mu_latest_values[mu_k], "rate": rate, "hits": len(seq), "e_off": e_off}
+
+                        # Rule 3: 💥 RECOVERED SNIPER RULE (၃ ကြိမ်ဆက်မှား ➡️ ၂ ကြိမ်ဆက်ပြန်မှန် ➡️ လက်ရှိနောက်ဆုံးအဆင့်နှင့် ကိုက်ညီမှု)
+                        # Sequence ၏ နောက်ဆုံးအပိုင်းကို ခြေရာခံခြင်း [..., False, False, False, True, True]
+                        if len(seq) >= 19: # ၁ မှ ၁၄ ကြိမ်အထိ အနည်းဆုံး 95% အပြင် အမှား/အမှန် Streak ပြည့်ရန် လိုအပ်ချက်
+                            baseline_seq = seq[:-5]
+                            baseline_rate = (sum(1 for x in baseline_seq if x) / len(baseline_seq)) * 100 if baseline_seq else 0
+                            
+                            if baseline_rate >= 95.0:
+                                last_5_streak = seq[-5:]
+                                # အတိအကျ စည်းမျဉ်းကို စစ်ဆေးခြင်း: [မှား, မှား, မှား, မှန်, မှန်]
+                                if last_5_streak == [False, False, False, True, True]:
+                                    # ၎င်းပြန်ဝင်လာသည့်စနစ်သည် လက်ရှိဖိုင်၏ အောက်ဆုံးထွက်ချက်နှင့် အချိန်ကိုက်ဖြစ်မဖြစ် သေချာစေခြင်း
+                                    recovered_store.append({"mu": mu_k, "tf": tf_name, "val": mu_latest_values[mu_k], "hits": len(seq)})
 
                 # ==========================================
-                # RENDER PREMIUM UI CARD LAYOUT
+                # SCREEN RENDERING (PREMIUM UI DISPLAY)
                 # ==========================================
+                st.write("### 🎯 AI Premium Layout Results")
+                
+                # ၁။ RECOVERED TREND SNIPER ZONE (Bro ၏ လက်နက်ဆန်းအား ထိပ်ဆုံးမှ ပြသခြင်း)
+                st.markdown("#### 🚨 RECOVERED TREND SNIPER ZONE (ပျက်ပြီးပြန်နိုးထလာသော မူသေစနစ်)")
+                if not recovered_store:
+                    st.info("လတ်တလောပွဲစဉ်တွင် '၃ ကြိမ်ဆက်မှား၊ ၂ ကြိမ်ဆက်ပြန်မှန်' သည့် ပျက်ပြီးပြန်ဝင် မူသစ် လက္ခဏာ မတွေ့ရှိသေးပါ။")
+                else:
+                    for r in recovered_store:
+                        st.markdown(f"""
+                        <div class="card card-recovered">
+                            <div class="card-header">🔥 ⚠️ RECOVERED SNIPER ALERT ➡️ {r['mu']} ({r['tf']} နယ်ကုန် Window)</div>
+                            <div style="margin-bottom: 8px;">သမိုင်းကြောင်း ခွဲခြမ်းစိတ်ဖြာချက်: <span style="color:#e74c3c; font-weight:bold;">၁ မှ ၁၄ ကြိမ်အထိ 95%+ ရှိခဲ့ပြီး၊ ၃ ကြိမ်ဆက်တိုက် လွဲချော်ကာ၊ နောက်ဆုံး ၂ ကြိမ်ဆက်တိုက် ကွက်တိ ပြန်ဝင်လာသည်။</span></div>
+                            <div>ယခု (၂၀ ကြိမ်မြောက်) အတွက် ဒုန်းတင်ရန် Target ကွက်: <span class="metric-val">{r['val']}</span></div>
+                        </div>
+                        """, unsafe_allow_html=True)
+
+                # ၂။ STANDARD HIGH-PROBABILITY & SNIPER TABS
                 st.write("---")
-                st.subheader("🎯 AI Matrix Filtering Results")
-
-                tab1, tab2 = st.tabs(["🔮 95%+ High-Probability Zone", "🦅 100% Super VIP Sniper Zone"])
-
+                tab1, tab2 = st.tabs(["🔮 95%+ High-Probability Zone (နယ်ကုန်ပြတ်သားစနစ်)", "🦅 100% Super VIP Sniper Zone (အမှားမခံနယ်ကုန်)"])
+                
                 with tab1:
-                    if not high_prob_results:
-                        st.info("95% အထက် Probability ရှိသော အချိန်ဘောင် မတွေ့ရှိပါ။")
+                    if not hp_store:
+                        st.info("၉၅% အထက် Probability ရှိသော နယ်ကုန် အချိန်ဘောင် မတွေ့ရှိပါ။")
                     else:
-                        for r in high_prob_results:
+                        for mu_name, data in hp_store.items():
                             st.markdown(f"""
                             <div class="card card-hp">
-                                <div class="card-header">⏱️ {r['tf']} အတွင်း ➡️ {r['mu']}</div>
-                                <div>ထွက်လေ့ရှိသော ပုံစံ: <span class="metric-val">{r['val']}</span></div>
-                                <div style="color: #2ecc71; font-weight: bold; margin-top:5px;">🎯 မှန်ကန်မှု ရာခိုင်နှုန်း: {r['rate']:.1f}% ({r['hits']} ကြိမ်အနက်)</div>
+                                <div class="card-header">⏱️ နယ်ကုန်: {data['tf']} အတွင်း ➡️ {mu_name}</div>
+                                <div>ထွက်လေ့ရှိသော ရလဒ်ပုံစံ: <span class="metric-val">{data['val']}</span></div>
+                                <div style="color: #2ecc71; font-weight: bold; margin-top:8px;">🎯 သမိုင်းကြောင်းမှန်ကန်မှု: {data['rate']:.1f}% ({data['hits']} ကြိမ်အနက်)</div>
                             </div>
                             """, unsafe_allow_html=True)
 
                 with tab2:
-                    if not sniper_results:
-                        st.info("အနည်းဆုံး ၁၀ ကြိမ်ပြည့်ပြီး ၁၀၀% ကွက်တိ မှန်နေသော Super VIP Sniper မရှိသေးပါ။")
+                    if not sniper_store:
+                        st.info("အနည်းဆုံး ၁၀ ကြိမ်ပြည့်ပြီး တစ်ခါမှမမှားဖူးသေးသော ၁၀၀% ကွက်တိ နယ်ကုန်စနစ် မရှိသေးပါ။")
                     else:
-                        for r in sniper_results:
+                        for mu_name, data in sniper_store.items():
                             st.markdown(f"""
                             <div class="card card-sniper">
-                                <div class="card-header">🔥 {r['tf']} အတွင်း ဒုန်းတင်ရန် ➡️ {r['mu']}</div>
-                                <div>အမှားမခံသော Target ကွက်: <span class="metric-val">{r['val']}</span></div>
-                                <div style="color: #9b59b6; font-weight: bold; margin-top:5px;">💎 AI Confidence: {r['rate']:.1f}% (သမိုင်းကြောင်း {r['hits']}/{r['hits']} ကြိမ်စလုံး ကွက်တိ!)</div>
+                                <div class="card-header">💎 SUPER Sniper: {data['tf']} အတွင်း ➡️ {mu_name}</div>
+                                <div>အမှားမခံသော Target ကွက်: <span class="metric-val">{data['val']}</span></div>
+                                <div style="color: #9b59b6; font-weight: bold; margin-top:8px;">🦅 AI Confidence: 100% အပြည့် (သမိုင်း {data['hits']}/{data['hits']} ကြိမ်စလုံး တစ်ခါမှမလွဲဖူးပါ!)</div>
                             </div>
                             """, unsafe_allow_html=True)
 else:
