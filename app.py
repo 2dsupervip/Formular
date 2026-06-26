@@ -23,7 +23,7 @@ st.markdown("""
     .card-sniper { border-left: 6px solid #9b59b6; background-color: #201135; }
     .card-recovered { border-left: 6px solid #e74c3c; background-color: #291118; }
     
-    /* Bro 3/4-Line Stack Display Typography (Screenshot Exact Match) */
+    /* Bro 3/4-Line Stack Display Typography */
     .line-alert { color: #FF4D4D; font-size: 16px; font-weight: bold; margin-bottom: 6px; display: block; }
     .line-trigger { font-size: 18px; font-weight: bold; color: #E0D5FA; margin-bottom: 6px; display: block; }
     .line-formula { font-size: 22px; font-weight: bold; color: #FFD700; margin-bottom: 6px; display: block; }
@@ -50,7 +50,7 @@ special_groups = {
 }
 
 # ==========================================
-# STUCT ALREADY HIT TRACKER (စစ်စစ်ပေါက် ပယ်ဖျက်ခြင်း Logic)
+# STUCT ALREADY HIT TRACKER
 # ==========================================
 def is_already_hit(mu_name, mu_val, start_idx, end_idx, full_draws_list):
     if start_idx >= len(full_draws_list): return True
@@ -187,22 +187,20 @@ def execute_analysis(target_hits, full_draws, active_tfs, is_custom_tab=False, s
                     latest_pure = res[mu_k]['pure']
 
             if not latest_val: continue
-            
-            # 🚨 True Anti-Overlap Filter: ကြားထဲတွင် ထွက်ဖူးပါက လုံးဝ (လုံးဝ) ဖြုတ်ပစ်မည်၊ Dashboard ပေါ် ပေးမတက်ပါ Bro!
-            if filtered_hits:
-                if is_already_hit(mu_k, latest_val, filtered_hits[-1]['index'] + 1, current_latest_idx, full_draws):
-                    continue
-
             rate = (win_count / total_count) * 100
 
-            # Dynamic Tab 2 Smart Guidelines Insertion
+            # Dynamic Tab 2 Smart Guidelines Insertion (STRICT ORIGINAL VERSION)
             advisor_text = ""
             if is_custom_tab:
                 if rate == 100.0 and total_count >= 10:
-                    advisor_text = "💡 သමိုင်းကြောင်းအရ ကစားရန်သင့်လျော်သောမူဖြစ်သည် - ခန့်မှန်းချက်သာဖြစ်၍ အပိုင်မဟုတ်ပါ"
+                    advisor_text = "💡 သမိုင်းကြောင်းအရ ကစားရန်သင့်လျော်သောမူဖြစ်သည် - ခန့်မှန်းချက်သာဖြစ်၍ အပိုင်မဟုတ်ပါ"
                 else:
                     advisor_text = "⚠️ သမိုင်းကြောင်း အားနည်းသည် - အရန်အဖြစ်သာ စဉ်းစားပါ"
             else:
+                # Tab 1 Engine: Overlap ဖြစ်ပြီးသားမူများကို လုံးဝ (လုံးဝ) ဖြုတ်ပစ်မည့် ဇကာတင်စနစ်အစစ်
+                if filtered_hits:
+                    if is_already_hit(mu_k, latest_val, filtered_hits[-1]['index'] + 1, current_latest_idx, full_draws):
+                        continue
                 if rate == 100.0 and total_count >= 10:
                     pass
                 elif rate >= 95.0:
@@ -289,7 +287,7 @@ if uploaded_file:
         tab_live, tab_custom = st.tabs(["⚡ တွက်ချက်မည်", "🔍 2D Formulas"])
 
         # ------------------------------------------
-        # TAB 1: AUTOMATED BACKSTEP MATRIX ENGINE
+        # TAB 1: AUTOMATED REVERSE COUNTDOWN SHIFT ENGINE
         # ------------------------------------------
         with tab_live:
             live_max_tf = st.number_input("ရှာလိုသော ပွဲစဉ်အရေအတွက်", min_value=1, max_value=20, value=6, key="live_max")
@@ -299,7 +297,7 @@ if uploaded_file:
                 convergence_pool = []
                 detailed_live_store = []
                 
-                # Auto-Backstep Core Engine Framework (1 to 20 Dynamic Scan)
+                # Bro ညွှန်ကြားထားသော Auto-Backstep Framework (1 to 20 Complete Loop)
                 actual_scan_limit = max(live_max_tf, 20)
                 
                 for step in range(1, actual_scan_limit + 1):
@@ -363,7 +361,7 @@ if uploaded_file:
                         """, unsafe_allow_html=True)
 
         # ------------------------------------------
-        # TAB 2: CLEAN CUSTOM FORMULARS ENGINE
+        # TAB 2: CLEAN CUSTOM FORMULARS ENGINE (ORIGINAL LOOPS RESTORED)
         # ------------------------------------------
         with tab_custom:
             c1, c2, c3 = st.columns(3)
@@ -409,6 +407,7 @@ if uploaded_file:
                 if not target_hits:
                     st.error("⚠️ သတ်မှတ်ချက်များနှင့် ကိုက်ညီသော သမိုင်းကြောင်းမှတ်တမ်း မရှိပါ Bro!")
                 else:
+                    # Tab 2 Strictly Connected to Original Analysis Function Setup
                     hp_store, sniper_store, _ = execute_analysis(target_hits, full_draws, active_tfs_custom, is_custom_tab=True, sel_session=target_session_custom, custom_trigger=lbl_prefix_custom)
 
                     st.write("---")
