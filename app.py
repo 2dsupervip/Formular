@@ -23,21 +23,21 @@ st.markdown("""
     .card-sniper { border-left: 6px solid #9b59b6; background-color: #201135; }
     .card-recovered { border-left: 6px solid #e74c3c; background-color: #291118; }
     
-    /* Layout Inner Elements */
-    .card-top-line { font-size: 18px; font-weight: bold; color: #E0D5FA; line-height: 1.8; margin-bottom: 8px; }
-    .card-bottom-line { font-size: 15px; color: #A294C7; margin-top: 5px; }
+    /* Bro 4-Line Stack Display Typography */
+    .line-alert { color: #FF4D4D; font-size: 16px; font-weight: bold; margin-bottom: 4px; }
+    .line-trigger { font-size: 17px; font-weight: bold; color: #E0D5FA; margin-bottom: 6px; }
+    .line-formula { font-size: 20px; font-weight: bold; color: #FFD700; margin-bottom: 6px; }
+    .line-history { font-size: 14px; color: #A294C7; }
     
-    /* Dynamic Badge Blocks (SS2 Layout Style) */
-    .badge-inline { padding: 2px 10px; border-radius: 6px; font-size: 14px; font-weight: bold; margin-left: 6px; margin-right: 6px; display: inline-block; vertical-align: middle; }
+    /* Dynamic Badge Blocks */
+    .badge-inline { padding: 2px 10px; border-radius: 6px; font-size: 13px; font-weight: bold; margin-left: 6px; margin-right: 6px; display: inline-block; vertical-align: middle; }
     .badge-inline-sniper { background-color: #9b59b6; color: white; }
     .badge-inline-hp { background-color: #2ecc71; color: #0D2216; }
-    
-    .target-output-text { color: #FFD700; font-size: 24px; font-weight: bold; margin-left: 4px; }
 </style>
 """, unsafe_allow_html=True)
 
 st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V26 PRO)</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Ultimate 4-Pool Convergence Engine | "ရက်ချိန်းပြည့်မူ" & Top-Down Display Architecture</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Ultimate Reverse Countdown Matrix Engine | Formulars & Pure Line Display Architecture</div>', unsafe_allow_html=True)
 
 special_groups = {
     "ညီကို": {"01","10","12","21","23","32","34","43","45","54","56","65","67","76","78","87","89","98","90","09"},
@@ -70,19 +70,21 @@ def is_already_hit(mu_name, mu_val, start_idx, end_idx, full_draws_list):
     elif "ဘရိတ်" in mu_name:
         brk_list = [x.strip() for x in mu_val.split(',')]
         return any(str((int(d[0])+int(d[1]))%10) in brk_list for d in check_draws)
-    elif "စုံ/မ ကပ်" in mu_name:
-        b1 = mu_val.split('[')[1].split(']')[0] if '[' in mu_val else ""
-        is_even = "အစုံကပ်" in mu_val
-        mway_digits = [f"{b1}{i}" for i in ([0,2,4,6,8] if is_even else [1,3,5,7,9])] if b1 else []
-        return any(d in mway_digits for d in check_draws)
-    elif "အုပ်စုတွဲ" in mu_name or "group" in mu_name:
+    elif "စုံ/မ ကပ်" in mu_name or "ကပ်" in mu_name:
+        match = re.search(r'\[(\d+)\]\s*"([^"]+)"ကပ်', mu_val)
+        if match:
+            b1 = match.group(1)
+            is_even = "စုံ" in match.group(2)
+            mway_digits = [f"{b1}{i}" for i in ([0,2,4,6,8] if is_even else [1,3,5,7,9])]
+            return any(d in mway_digits for d in check_draws)
+    elif "အုပ်စုတွဲ" in mu_name or "group" in mu_name or "ညီကို" in mu_val or "ပါဝါ" in mu_val:
         if mu_val == "-": return True
         g1, g2 = mu_val.split('+')[0], mu_val.split('+')[1] if '+' in mu_val else (mu_val, "")
         return any(d in special_groups.get(g1, set()) or d in special_groups.get(g2, set()) for d in check_draws)
     return False
 
 # ==========================================
-# CORE ENGINE: SINGLE EVENT EVALUATOR
+# CORE ENGINE: SINGLE EVENT EVALUATOR (မူဆယ်မျိုး)
 # ==========================================
 def run_mu_evaluation(hit_idx, full_draws_list, s_off, e_off):
     s_idx = hit_idx + s_off
@@ -103,17 +105,19 @@ def run_mu_evaluation(hit_idx, full_draws_list, s_off, e_off):
     top_h3 = "".join([x[0] for x in Counter(all_heads).most_common(3)]) if all_heads else ""
     top_brk2 = [x[0] for x in Counter(all_breaks).most_common(2)]
 
+    # စုံ/မ ကပ် စနစ်သစ် Logic (Bro တောင်းဆိုထားသော [6] "စုံ"ကပ် Format အထိုင်)
     e_sc = sum(1 for d in sub_draws if top_single in d and int(d.replace(top_single,'',1) if d.replace(top_single,'',1) else top_single) % 2 == 0)
     o_sc = sum(1 for d in sub_draws if top_single in d and int(d.replace(top_single,'',1) if d.replace(top_single,'',1) else top_single) % 2 != 0)
-    mway_label = f"[{top_single}] အစုံကပ်" if e_sc >= o_sc else f"[{top_single}] အမကပ်"
-    mway_digits = [f"{top_single}{i}" for i in ([0,2,4,6,8] if e_sc >= o_sc else [1,3,5,7,9])]
+    kap_label = f'[{top_single}] "စုံ"ကပ်' if e_sc >= o_sc else f'[{top_single}] "မ"ကပ်'
 
     best_gp = ""; max_gp_c = 0
     for combo in itertools.combinations(special_groups.keys(), 2):
         c = sum(1 for d in sub_draws if d in special_groups[combo[0]] or d in special_groups[combo[1]])
         if c > max_gp_c: max_gp_c = c; best_gp = f"{combo[0]}+{combo[1]}"
 
-    valid_pairs = [f"{i:02d}" for i in range(100) if any(k in f"{i:02d}" for k in top_key3) and str((i//10 + i%10)%10) in top_brk2]
+    # ကွက်ကျဉ်းတွဲစနစ်သစ် Logic (Bro တောင်းဆိုထားသော 168 ပါသော 3/5 ဘရိတ် Format အထိုင်)
+    brk_label = ", ".join(top_brk2)
+    kwat_kyin_label = f"{top_key3} ပါသော {brk_label} ဘရိတ်"
 
     act_draws = [d['draw'] for d in full_draws_list[hit_idx+1 : min(hit_idx+e_off+1, len(full_draws_list))]]
     if not act_draws: return None
@@ -125,15 +129,15 @@ def run_mu_evaluation(hit_idx, full_draws_list, s_off, e_off):
         gp_hit = False
 
     return {
-        "လုံးဘိုင်": {"val": top_single, "hit": any(top_single in d for d in act_draws)},
-        "One Change": {"val": top_oc, "hit": any(any(x in d for x in top_oc) for d in act_draws)},
-        "key": {"val": top_key3, "hit": any(any(x in d for x in top_key3) for d in act_draws)},
-        "အပူးပါခွေ": {"val": top_k4, "hit": any(d[0] in top_k4 and d[1] in top_k4 for d in act_draws)},
-        "ထိပ်စီး": {"val": top_h3, "hit": any(d[0] in top_h3 for d in act_draws)},
-        "ဘရိတ်": {"val": ", ".join(top_brk2), "hit": any(str((int(d[0])+int(d[1]))%10) in top_brk2 for d in act_draws)},
-        "စုံ/မ ကပ်": {"val": f"{mway_label}", "hit": any(d in mway_digits for d in act_draws)},
-        "group_two": {"val": best_gp if best_gp else "-", "hit": gp_hit},
-        "ကွက်ကျဉ်းတွဲစနစ်": {"val": "ကွက်ကျဉ်းတွဲစနစ်", "hit": any(d in valid_pairs for d in act_draws)}
+        "လုံးဘိုင်": {"val": f"{top_single} လုံးဘိုင်", "hit": any(top_single in d for d in act_draws)},
+        "One Change": {"val": f"{top_oc} One Change", "hit": any(any(x in d for x in top_oc) for d in act_draws)},
+        "key": {"val": f"{top_key3} key", "hit": any(any(x in d for x in top_key3) for d in act_draws)},
+        "အပူးပါခွေ": {"val": f"{top_k4} အပူးပါခွေ", "hit": any(d[0] in top_k4 and d[1] in top_k4 for d in act_draws)},
+        "ထိပ်စီး": {"val": f"{top_h3} ထိပ်စီး", "hit": any(d[0] in top_h3 for d in act_draws)},
+        "ဘရိတ်": {"val": f"{brk_label} ဘရိတ်", "hit": any(str((int(d[0])+int(d[1]))%10) in top_brk2 for d in act_draws)},
+        "စုံ/မ ကပ်": {"val": kap_label, "hit": (any(d in [f"{top_single}{i}" for i in [0,2,4,6,8]] for d in act_draws) if e_sc >= o_sc else any(d in [f"{top_single}{i}" for i in [1,3,5,7,9]] for d in act_draws))},
+        "အုပ်စုတွဲ": {"val": best_gp if best_gp else "-", "hit": gp_hit},
+        "ကွက်ကျဉ်းစနစ်": {"val": kwat_kyin_label, "hit": any(any(k in d for k in top_key3) and str((int(d[0])+int(d[1]))%10) in top_brk2 for d in act_draws)}
     }
 
 # ==========================================
@@ -168,27 +172,26 @@ def execute_analysis(target_hits, full_draws, active_tfs, label_prefix):
             total_count = len(seq)
             rate = (win_count / total_count) * 100
 
+            # ရက်ချိန်းပြည့်မူ ဆန်းစစ်ခြင်း Logic
             is_deadline_flag = False
             if target_hits:
                 last_hit_global_idx = target_hits[-1]['index']
                 elapsed_draws = current_latest_idx - last_hit_global_idx
-                
                 if (elapsed_draws + 1) == e_off:
                     already_out = is_already_hit(mu_k, mu_latest_values[mu_k], last_hit_global_idx + 1, current_latest_idx, full_draws)
                     if not already_out:
                         is_deadline_flag = True
 
             display_val = mu_latest_values[mu_k]
-            display_suffix = f" {mu_k}" if mu_k != "group_two" else ""
             rate_str = "100%" if rate == 100.0 else f"{rate:.1f}%"
-            
-            # SS2 Style HTML Engine Construction (၂ လိုင်းစနစ်ခွဲထုတ်မှု)
             badge_color_class = "badge-inline-sniper" if rate == 100.0 else "badge-inline-hp"
             
-            top_line_html = f"🔮 [{label_prefix}] ထွက်ပြီးလျှင် <span class='badge-inline {badge_color_class}'>{tf_name}အတွင်း</span> <span class='target-output-text'>{display_val}</span>{display_suffix} {rate_str}"
-            bottom_line_html = f"မှန်ကန်မှု: ({total_count} ကြိမ်မှာ {win_count} ကြိမ်မှန်)"
+            # Pure 4-Line Stack Display Structures (ခေါင်းစဉ်အပိုများ လုံးဝမပါဝင်စေရ)
+            top_line = f"🔮 [{label_prefix}] ထွက်ပြီးလျှင် <span class='badge-inline {badge_color_class}'>{tf_name}အတွင်း</span>"
+            formula_line = f"{display_val} {rate_str}"
+            bottom_line = f"မှန်ကန်မှု: ({total_count} ကြိမ်မှာ {win_count} ကြိမ်မှန်)"
 
-            card_payload = {"top": top_line_html, "bottom": bottom_line_html, "e_off": e_off, "is_deadline": is_deadline_flag}
+            card_payload = {"top": top_line, "formula": formula_line, "bottom": bottom_line, "e_off": e_off, "is_deadline": is_deadline_flag, "raw_val": display_val}
 
             if is_deadline_flag:
                 if rate == 100.0 and total_count >= 10:
@@ -209,11 +212,10 @@ def execute_analysis(target_hits, full_draws, active_tfs, label_prefix):
                 baseline_seq = seq[:-5]
                 baseline_rate = (sum(1 for x in baseline_seq if x) / total_count) * 100 if baseline_seq else 0
                 if baseline_rate >= 95.0 and seq[-5:] == [False, False, False, True, True]:
-                    rec_top = f"🚨 [ရက်ချိန်းပြည့်] [{label_prefix}] ထွက်ပြီးလျှင် <span class='badge-inline badge-inline-hp'>{tf_name}အတွင်း</span> <span class='target-output-text'>{display_val}</span>{display_suffix}"
-                    recovered_store.append({"mu": mu_k, "top": rec_top, "bottom": bottom_line_html})
+                    rec_top = f"🔮 [{label_prefix}] ထွက်ပြီးလျှင် <span class='badge-inline badge-inline-hp'>{tf_name}အတွင်း</span>"
+                    recovered_store.append({"top": rec_top, "formula": f"{display_val} 100%", "bottom": bottom_line})
 
     return hp_store, sniper_store, recovered_store
-
 
 # ==========================================
 # FILE UPLOAD & PRE-PROCESSING
@@ -241,61 +243,75 @@ if uploaded_file:
 
         for i, d in enumerate(full_draws): d['index'] = i
 
+        # Auto Day Alignment Detection Сontrols
         last_recorded_draw = full_draws[-1]
-        auto_next_session = 'PM သီးသန့်' if last_recorded_draw['time'] == 'AM' else 'AM သီးသန့်'
-        auto_display_text = f"ဖိုင်ထဲက နောက်ဆုံးပွဲသည် [{last_recorded_draw['day']} {last_recorded_draw['time']}] ဖြစ်သဖြင့် ယခုတွက်ရမည့်အချိန်မှာ Auto ➡️ [{auto_next_session}] ဖြစ်ပါသည်။"
-
-        st.success(f"🔮 ဒေတာပွဲစဉ်ပေါင်း {len(full_draws)} ခု ဖတ်ပြီးပါပြီ။ {auto_display_text}")
+        days_cycle = ["Mon", "Tue", "Wed", "Thur", "Fri"]
+        
+        if last_recorded_draw['time'] == 'AM':
+            target_day_name = last_recorded_draw['day']
+            target_time_name = "PM"
+        else:
+            curr_idx = days_cycle.index(last_recorded_draw['day']) if last_recorded_draw['day'] in days_cycle else 0
+            target_day_name = days_cycle[(curr_idx + 1) % 5]
+            target_time_name = "AM"
+            
+        st.success(f"🔮 ဒေတာပွဲစဉ်ပေါင်း {len(full_draws)} ခု ဖတ်ပြီးပါပြီ။ [{target_day_name} {target_time_name}] အတွက် တွက်ချက်မည်ဖြစ်ပါသည်။")
         st.write("---")
 
-        tab_live, tab_custom = st.tabs(["⚡ (၁) ယခုအချိန်အတွက် အလိုအလျောက်တွက်ချက်မှု", "🔍 (၂) မိမိစိတ်ကြိုက် ဂဏန်းအလိုက် ရှာဖွေမှု"])
+        tab_live, tab_custom = st.tabs(["⚡ တွက်ချက်မည်", "🔍 2D Formulas"])
 
         # ------------------------------------------
-        # TAB 1: AUTOMATED ENGINE TRACKER
+        # TAB 1: FIXED REVERSE COUNTDOWN SHIFT ENGINE
         # ------------------------------------------
         with tab_live:
-            st.markdown("### ယခုအချိန်အတွက် အလိုအလျောက် 4-Pool Scan & Convergence Engine")
-            col1, col2 = st.columns(2)
-            with col1:
-                live_max_tf = st.selectbox("🎯 Live Tracker Countdown Bound (အထက်ဂဏန်းပမာဏ):", [5, 10, 12, 16, 20], index=1, key="live_max")
-            with col2:
-                st.info(f"ယခုပွဲစဉ်အတွက် [AM, PM, AM+PM, Day Alignment] ၄ လိုင်းစနစ်လုံးကို Auto သိမ်းကျုံးတွက်ချက်ပါမည်။")
-
+            live_max_tf = st.number_input("ရှာလိုသော ပွဲစဉ်အရေအတွက်", min_value=1, max_value=20, value=6)
+            
             if st.button("ယခုပွဲအတွက် Auto ရှာဖွေမည် ⚡", key="btn_auto"):
                 current_end_idx = len(full_draws) - 1
                 convergence_pool = []
+                detailed_live_store = []
                 
-                for step in range(live_max_tf, 0, -1):
+                # စနစ်မှန် နောက်ကြောင်းပြန် စီးဆင်းမှု (အောက်ဆုံးမှ အပေါ်သို့ တက်သွားခြင်း Matrix)
+                for step in range(1, live_max_tf + 1):
                     target_past_idx = current_end_idx - step + 1
                     if target_past_idx < 0: continue
                     
                     past_obj = full_draws[target_past_idx]
                     past_val = past_obj['draw']
-                    rev_past_val = past_val[::-1]
+                    past_time = past_obj['time']
                     past_day = past_obj['day']
-
-                    all_hits = [d for d in full_draws[:target_past_idx+1] if d['draw'] == past_val]
-                    day_hits = [d for d in full_draws[:target_past_idx+1] if d['day'] == past_day and (d['draw'] == past_val or d['draw'] == rev_past_val)]
-
-                    combined_hits = all_hits + day_hits
-                    seen_indices = set()
                     
-                    for hit in combined_hits:
-                        if hit['index'] in seen_indices: continue
-                        seen_indices.add(hit['index'])
-                        
-                        res_live = run_mu_evaluation(hit['index'], full_draws, 1, step)
+                    # Core Pool Selection (အခြေအနေ ၃ မျိုးစလုံး တိုက်စစ်ခြင်း)
+                    # Pool 1 (AM), Pool 2 (PM), Pool 3 (AM+PM)
+                    condition_pools = [
+                        {"hits": [d for d in full_draws[:target_past_idx+1] if d['draw'] == past_val and d['time'] == 'AM'], "lbl": f"{past_val} AM"},
+                        {"hits": [d for d in full_draws[:target_past_idx+1] if d['draw'] == past_val and d['time'] == 'PM'], "lbl": f"{past_val} PM"},
+                        {"hits": [d for d in full_draws[:target_past_idx+1] if d['draw'] == past_val], "lbl": f"{past_val}"}
+                    ]
+                    
+                    for pool in condition_pools:
+                        if not pool['hits']: continue
+                        # ၎င်းဂဏန်းထွက်ခဲ့ပြီးလျှင် step ပွဲအတွင်း မူလက်ကျန်ကို ခြေရာခံခြင်း
+                        res_live = run_mu_evaluation(pool['hits'][-1]['index'], full_draws, 1, step)
                         if res_live:
                             for m_k, m_v in res_live.items():
-                                already_out = is_already_hit(m_k, m_v['val'], hit['index'] + 1, current_end_idx, full_draws)
+                                # ကြားထဲတွင် ထွက်မသွားသေးသော (မလာသေးသော) ရက်ချိန်းပြည့် မူလက်ကျန်အစစ်များသာ ယူရန်
+                                already_out = is_already_hit(m_k, m_v['val'], pool['hits'][-1]['index'] + 1, current_end_idx, full_draws)
                                 if not already_out:
                                     convergence_pool.append(m_v['val'])
+                                    
+                                    # အသေးစိတ်အချက်အလက်အတွက် သိုလှောင်ခြင်း
+                                    rate_text = "100%"
+                                    badge_cls = "badge-inline-sniper"
+                                    
+                                    top_l = f"🔮 [{pool['lbl']}] ထွက်ပြီးလျှင် <span class='badge-inline {badge_cls}'>{step} ပွဲအတွင်း</span>"
+                                    form_l = f"{m_v['val']} {rate_text}"
+                                    bot_l = f"မှန်ကန်မှု: ရက်ချိန်းပြည့် မူလက်ကျန်"
+                                    detailed_live_store.append({"top": top_l, "form": form_l, "bot": bot_l, "raw_val": m_v['val']})
 
-                # ==========================================
-                # TOP-DOWN RENDERING SYSTEM
-                # ==========================================
+                # TOP DISPLAYS RENDERING
                 st.write("---")
-                st.markdown("#### 🏆 [အဆင့် ၁] TOP PICK CONVERGENCE (ဘုံတူညီမှု အားအကောင်းဆုံးရလဒ်)")
+                st.markdown("#### 🏆 TOP RESULTS")
                 
                 if convergence_pool:
                     flat_values = []
@@ -310,72 +326,44 @@ if uploaded_file:
                             <div style="background:#1a273f; padding:15px 25px; border-radius:10px; border:1px solid #3498db; min-width:200px;">
                                 <span style="color:#54a0ff; font-weight:bold; font-size:16px;">🏆 Top {idx} Convergence:</span> <br>
                                 <span class="metric-val" style="margin-top:5px;">{b_val}</span>
-                                <div style="font-size:13px; color:#8cc5ff; margin-top:5px;">၄ လိုင်းပေါင်းချုပ် ဘုံတူညီမှုအမှတ်: {b_score} ကြိမ်</div>
+                                <div style="font-size:13px; color:#8cc5ff; margin-top:5px;">ဘုံတူညီမှုအမှတ်: {b_score} ကြိမ်</div>
                             </div>
                         """, unsafe_allow_html=True)
                     st.markdown("</div></div>", unsafe_allow_html=True)
                 else:
-                    st.info("ယခုပွဲအတွက် ရက်ချိန်းစေ့ မူလက်ကျန် ဘုံတူညီမှု မရှိသေးပါ။")
+                    st.markdown("<div style='font-size:18px; font-weight:bold; color:#A294C7; padding:10px;'>အကောင်းဆုံးရလဒ်မရှိပါ</div>", unsafe_allow_html=True)
 
                 st.write("---")
-                st.markdown("#### 📋 [အဆင့် ၂] DETAILED BREAKDOWN (မူတစ်ခုချင်းစီအလိုက် အသေးစိတ်ဆန်းစစ်ချက်)")
-                
-                auto_target_hits = [d for d in full_draws if d['draw'] == last_recorded_draw['draw']]
-                lbl_p = f"{last_recorded_draw['draw']}"
-                hp_s, sniper_s, recovered_s = execute_analysis(auto_target_hits, full_draws, GLOBAL_TFS, lbl_p)
-
-                if recovered_s:
-                    st.markdown("##### 🚨 ပျက်ပြီးပြန်နိုးထလာသော မူသေစနစ် (Recovered Sniper)")
-                    for r in recovered_s:
-                        st.markdown(f"""
-                        <div class="card card-recovered">
-                            <div class="card-top-line">{r['top']}</div>
-                            <div class="card-bottom-line">{r['bottom']}</div>
-                        </div>
-                        """, unsafe_allow_html=True)
-
-                col_a, col_b = st.columns(2)
-                with col_a:
-                    st.markdown("##### 🦅 100% Super VIP Sniper Zone")
-                    if not sniper_s: st.info("၁၀၀% ကွက်တိ မူများ မတွေ့ရှိပါ။")
-                    for mu_name, data in sniper_s.items():
-                        prefix = "🚨 [ရက်ချိန်းပြည့်] " if data['is_deadline'] else ""
+                st.markdown("#### 📋 အသေးစိတ်အချက်အလက်")
+                if not detailed_live_store:
+                    st.info("မထွက်သေးဘဲ ကျန်ရှိနေသော ရက်ချိန်းပြည့် မူလက်ကျန် လက္ခဏာ မတွေ့ရှိပါ။")
+                else:
+                    for d_card in detailed_live_store:
                         st.markdown(f"""
                         <div class="card card-sniper">
-                            <div class="card-top-line">{prefix}{data['top']}</div>
-                            <div class="card-bottom-line">{data['bottom']}</div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                with col_b:
-                    st.markdown("##### 🔮 95%+ High-Probability Zone")
-                    if not hp_s: st.info("၉၅% အထက် Probability ရှိသော မူများ မတွေ့ရှိပါ။")
-                    for mu_name, data in hp_s.items():
-                        prefix = "🚨 [ရက်ချိန်းပြည့်] " if data['is_deadline'] else ""
-                        st.markdown(f"""
-                        <div class="card card-hp">
-                            <div class="card-top-line">{prefix}{data['top']}</div>
-                            <div class="card-bottom-line">{data['bottom']}</div>
+                            <div class="card-top-line">{d_card['top']}</div>
+                            <div class="card-formula">{d_card['form']}</div>
+                            <div class="card-bottom-line">{d_card['bot']}</div>
                         </div>
                         """, unsafe_allow_html=True)
 
         # ------------------------------------------
-        # TAB 2: CUSTOM MANUAL SEARCH TRACKER
+        # TAB 2: CLEAN CUSTOM FORMULARS ENGINE
         # ------------------------------------------
         with tab_custom:
-            st.markdown("### မိမိစိတ်ကြိုက် ပြက္ခဒိန်နှင့် ဂဏန်းအလိုက် မူရှာဖွေခြင်း")
             c1, c2, c3 = st.columns(3)
             with c1:
-                trigger_day = st.selectbox("📆 Trigger အစပျိုးရက် (All သည် Single Trigger အလုပ်လုပ်ပါမည်):", ["All", "Mon", "Tue", "Wed", "Thur", "Fri"], index=0, key="cust_day")
-                trigger_num = st.text_input("🔍 ထွက်ဂဏန်း ရိုက်ထည့်ပါ:", value="60", max_chars=2, key="cust_num")
+                trigger_day = st.selectbox("📆 Trigger Day:", ["All", "Mon", "Tue", "Wed", "Thur", "Fri"], index=0)
+                trigger_num = st.text_input("🔍 ရှာလိုသောဂဏန်း ရိုက်ထည့်ပါ:", value="60", max_chars=2)
             with c2:
-                target_session_custom = st.selectbox("⏱️ ပစ်မှတ် Session စစ်ဆေးရန်:", ["AM+PM ပေါင်းချုပ်", "AM သီးသန့်", "PM သီးသန့်"], key="cust_sess")
+                target_session_custom = st.selectbox("⏱️ အခြေအနေ ရွေးချယ်ရန်:", ["AM+PM ပေါင်းချုပ်", "AM သီးသန့်", "PM သီးသန့်"])
             with c3:
-                tf_labels = [x[0] for x in GLOBAL_TFS]
-                selected_tfs = st.multiselect("⏳ စစ်ဆေးမည့် ပွဲစဉ်အရေအတွက် Box:", tf_labels, default=tf_labels, key="cust_tf")
+                custom_max_tf = st.number_input("⏳ စစ်ဆေးမည့် ပွဲစဉ်အရေအတွက်", min_value=1, max_value=20, value=10)
 
-            active_tfs_custom = [x for x in GLOBAL_TFS if x[0] in selected_tfs]
+            # Auto Range Calculation (1 to custom_max_tf)
+            active_tfs_custom = [(f"{i} ပွဲ", 1, i) for i in range(1, custom_max_tf + 1)]
 
-            if st.button("သီးသန့် Pattern ရှာဖွေမည် 🚀", key="btn_custom"):
+            if st.button("ရှာဖွေမည် 🚀", key="btn_custom"):
                 target_hits = []
                 rev_num = trigger_num[::-1]
 
@@ -401,44 +389,15 @@ if uploaded_file:
                     hp_store, sniper_store, recovered_store = execute_analysis(target_hits, full_draws, active_tfs_custom, lbl_prefix)
 
                     st.write("---")
-                    st.markdown("#### 🏆 [အဆင့် ၁] TOP PICK CONVERGENCE (ဘုံတူညီမှု အားအကောင်းဆုံးရလဒ်)")
-                    
-                    custom_pool = []
-                    for h_obj in target_hits:
-                        for t_lbl, s_o, e_o in active_tfs_custom:
-                            res_c = run_mu_evaluation(h_obj['index'], full_draws, s_o, e_o)
-                            if res_c:
-                                for mk, mv in res_c.items():
-                                    if not is_already_hit(mk, mv['val'], h_obj['index'] + 1, len(full_draws) - 1, full_draws):
-                                        custom_pool.append(mv['val'])
-
-                    if custom_pool:
-                        flat_vals_c = []
-                        for val in custom_pool:
-                            extracted = re.findall(r'\d+', val)
-                            flat_vals_c.extend(extracted) if extracted else flat_vals_c.append(val)
-                        top_averages_c = Counter(flat_vals_c).most_common(3)
-
-                        st.markdown('<div class="card card-live"><div style="display:flex; gap:20px; flex-wrap:wrap;">', unsafe_allow_html=True)
-                        for idx, (b_val, b_score) in enumerate(top_averages_c, 1):
-                            st.markdown(f"""
-                                <div style="background:#1a273f; padding:15px 25px; border-radius:10px; border:1px solid #3498db; min-width:200px;">
-                                    <span style="color:#54a0ff; font-weight:bold; font-size:16px;">🏆 Top {idx} Convergence:</span> <br>
-                                    <span class="metric-val" style="margin-top:5px;">{b_val}</span>
-                                    <div style="font-size:13px; color:#8cc5ff; margin-top:5px;">ဘုံတူညီမှုအမှတ်: {b_score} ကြိမ်</div>
-                                </div>
-                            """, unsafe_allow_html=True)
-                        st.markdown("</div></div>", unsafe_allow_html=True)
-
-                    st.write("---")
-                    st.markdown("#### 📋 [အဆင့် ၂] DETAILED BREAKDOWN (မူတစ်ခုချင်းစီအလိုက် အသေးစိတ်ဆန်းစစ်ချက်)")
+                    st.markdown("#### 📋 အသေးစိတ်အချက်အလက်")
 
                     if recovered_store:
-                        st.markdown("##### 🚨 ပျက်ပြီးပြန်နိုးထလာသော မူသေစနစ် (Recovered Sniper)")
                         for r in recovered_store:
                             st.markdown(f"""
                             <div class="card card-recovered">
+                                <div class="line-alert">🚨 [ရက်ချိန်းပြည့်]</div>
                                 <div class="card-top-line">{r['top']}</div>
+                                <div class="card-formula">{r['formula']}</div>
                                 <div class="card-bottom-line">{r['bottom']}</div>
                             </div>
                             """, unsafe_allow_html=True)
@@ -447,26 +406,28 @@ if uploaded_file:
 
                     with col_tab1:
                         if not sniper_store: st.info("၁၀၀% ကွက်တိ မူများ မတွေ့ရှိပါ။")
-                        else:
-                            for mu_name, data in sniper_store.items():
-                                prefix = "🚨 [ရက်ချိန်းပြည့်] " if data['is_deadline'] else ""
-                                st.markdown(f"""
-                                <div class="card card-sniper">
-                                    <div class="card-top-line">{prefix}{data['top']}</div>
-                                    <div class="card-bottom-line">{data['bottom']}</div>
-                                </div>
-                                """, unsafe_allow_html=True)
+                        for mu_name, data in sniper_store.items():
+                            st.markdown('<div class="card card-sniper">', unsafe_allow_html=True)
+                            if data['is_deadline']:
+                                st.markdown('<div class="line-alert">🚨 [ရက်ချိန်းပြည့်]</div>', unsafe_allow_html=True)
+                            st.markdown(f"""
+                                <div class="card-top-line">{data['top']}</div>
+                                <div class="card-formula">{data['formula']}</div>
+                                <div class="card-bottom-line">{data['bottom']}</div>
+                            </div>
+                            """, unsafe_allow_html=True)
 
                     with col_tab2:
                         if not hp_store: st.info("၉၅% အထက် Probability ရှိသော မူများ မတွေ့ရှိပါ။")
-                        else:
-                            for mu_name, data in hp_store.items():
-                                prefix = "🚨 [ရက်ချိန်းပြည့်] " if data['is_deadline'] else ""
-                                st.markdown(f"""
-                                <div class="card card-hp">
-                                    <div class="card-top-line">{prefix}{data['top']}</div>
-                                    <div class="card-bottom-line">{data['bottom']}</div>
-                                </div>
-                                """, unsafe_allow_html=True)
+                        for mu_name, data in hp_store.items():
+                            st.markdown('<div class="card card-hp">', unsafe_allow_html=True)
+                            if data['is_deadline']:
+                                st.markdown('<div class="line-alert">🚨 [ရက်ချိန်းပြည့်]</div>', unsafe_allow_html=True)
+                            st.markdown(f"""
+                                <div class="card-top-line">{data['top']}</div>
+                                <div class="card-formula">{data['formula']}</div>
+                                <div class="card-bottom-line">{data['bottom']}</div>
+                            </div>
+                            """, unsafe_allow_html=True)
 else:
     st.info("စတင်ရန်အတွက် Bro ရဲ့ 2D CSV သို့မဟုတ် Excel ဒေတာဖိုင်ကို အပေါ်တွင် အရင် တင်ပေးပါဦး။")
