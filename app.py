@@ -15,13 +15,24 @@ st.markdown("""
     .stApp { background-color: #0B031A; color: #E0D5FA; }
     .main-title { color: #A078FF; font-size: 40px; font-weight: bold; text-align: center; margin-bottom: 5px; text-shadow: 0 0 10px rgba(160,120,255,0.5); }
     .sub-title { color: #8F72D6; font-size: 16px; text-align: center; margin-bottom: 30px; }
+    
+    /* Card Styles */
     .card { background-color: #170E2B; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); margin-bottom: 15px; border: 1px solid #2D1B4E; }
     .card-live { border-left: 6px solid #3498db; background-color: #0E1A2F; }
     .card-hp { border-left: 6px solid #2ecc71; background-color: #0D2216; }
     .card-sniper { border-left: 6px solid #9b59b6; background-color: #201135; }
     .card-recovered { border-left: 6px solid #e74c3c; background-color: #291118; }
-    .card-text { font-size: 16px; font-weight: bold; color: #E0D5FA; line-height: 1.8; }
-    .metric-val { font-size: 22px; font-weight: bold; color: #FFD700; background: #2D1B4E; padding: 1px 10px; border-radius: 6px; border: 1px solid #442975; display: inline-block; }
+    
+    /* Layout Inner Elements */
+    .card-top-line { font-size: 18px; font-weight: bold; color: #E0D5FA; line-height: 1.8; margin-bottom: 8px; }
+    .card-bottom-line { font-size: 15px; color: #A294C7; margin-top: 5px; }
+    
+    /* Dynamic Badge Blocks (SS2 Layout Style) */
+    .badge-inline { padding: 2px 10px; border-radius: 6px; font-size: 14px; font-weight: bold; margin-left: 6px; margin-right: 6px; display: inline-block; vertical-align: middle; }
+    .badge-inline-sniper { background-color: #9b59b6; color: white; }
+    .badge-inline-hp { background-color: #2ecc71; color: #0D2216; }
+    
+    .target-output-text { color: #FFD700; font-size: 24px; font-weight: bold; margin-left: 4px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -157,7 +168,6 @@ def execute_analysis(target_hits, full_draws, active_tfs, label_prefix):
             total_count = len(seq)
             rate = (win_count / total_count) * 100
 
-            # ရက်ချိန်းပြည့်မူ ဆန်းစစ်ခြင်း Logic
             is_deadline_flag = False
             if target_hits:
                 last_hit_global_idx = target_hits[-1]['index']
@@ -168,47 +178,39 @@ def execute_analysis(target_hits, full_draws, active_tfs, label_prefix):
                     if not already_out:
                         is_deadline_flag = True
 
-            # Bro တောင်းဆိုထားသော စာသား Format သစ်အတိုင်း တည်ဆောက်ခြင်း
-            # [၆၀] ထွက်ပြီးလျှင် ➡️ [၅ ပွဲ အတွင်း] ...
             display_val = mu_latest_values[mu_k]
-            display_suffix = mu_k
-            
-            # အုပ်စုတွဲ(၂)ခု စာသားကြီးကို ဖြုတ်ပြီး ညီကို+အပူး တိုက်ရိုက်ပြသရန်
-            if mu_k == "group_two":
-                display_suffix = ""
-            
+            display_suffix = f" {mu_k}" if mu_k != "group_two" else ""
             rate_str = "100%" if rate == 100.0 else f"{rate:.1f}%"
             
-            if display_suffix:
-                formatted_text = f"[{label_prefix}] ထွက်ပြီးလျှင် ➡️ [{tf_name} အတွင်း] <span class='metric-val'>{display_val}</span> {display_suffix} {rate_str} သမိုင်းကြောင်းမှန်ကန်မှု: ({total_count} ကြိမ်မှာ {win_count} ကြိမ်မှန်)"
-            else:
-                formatted_text = f"[{label_prefix}] ထွက်ပြီးလျှင် ➡️ [{tf_name} အတွင်း] <span class='metric-val'>{display_val}</span> {rate_str} သမိုင်းကြောင်းမှန်ကန်မှု: ({total_count} ကြိမ်မှာ {win_count} ကြိမ်မှန်)"
+            # SS2 Style HTML Engine Construction (၂ လိုင်းစနစ်ခွဲထုတ်မှု)
+            badge_color_class = "badge-inline-sniper" if rate == 100.0 else "badge-inline-hp"
+            
+            top_line_html = f"🔮 [{label_prefix}] ထွက်ပြီးလျှင် <span class='badge-inline {badge_color_class}'>{tf_name}အတွင်း</span> <span class='target-output-text'>{display_val}</span>{display_suffix} {rate_str}"
+            bottom_line_html = f"မှန်ကန်မှု: ({total_count} ကြိမ်မှာ {win_count} ကြိမ်မှန်)"
+
+            card_payload = {"top": top_line_html, "bottom": bottom_line_html, "e_off": e_off, "is_deadline": is_deadline_flag}
 
             if is_deadline_flag:
                 if rate == 100.0 and total_count >= 10:
-                    sniper_store[mu_k] = {"text": formatted_text, "rate": rate, "e_off": e_off, "is_deadline": True}
+                    sniper_store[mu_k] = card_payload
                 elif rate >= 95.0:
-                    hp_store[mu_k] = {"text": formatted_text, "rate": rate, "e_off": e_off, "is_deadline": True}
+                    hp_store[mu_k] = card_payload
                 continue
 
-            # ပုံမှန် ရက်ချိန်းမစေ့သေးသော နယ်ကုန်စနစ်
             if total_count >= 10 and rate == 100.0:
                 if mu_k not in sniper_store or e_off > sniper_store[mu_k]['e_off']:
-                    sniper_store[mu_k] = {"text": formatted_text, "rate": rate, "e_off": e_off, "is_deadline": False}
+                    sniper_store[mu_k] = card_payload
             elif rate >= 95.0:
                 if mu_k not in hp_store or e_off > hp_store[mu_k]['e_off']:
-                    hp_store[mu_k] = {"text": formatted_text, "rate": rate, "e_off": e_off, "is_deadline": False}
+                    hp_store[mu_k] = card_payload
 
             # ၃ ကြိမ်ဆက်မှား၊ ၂ ကြိမ်ဆက်ပြန်မှန် (Recovered Sniper)
             if total_count >= 19:
                 baseline_seq = seq[:-5]
                 baseline_rate = (sum(1 for x in baseline_seq if x) / total_count) * 100 if baseline_seq else 0
                 if baseline_rate >= 95.0 and seq[-5:] == [False, False, False, True, True]:
-                    if display_suffix:
-                        recovered_text = f"[{label_prefix}] ထွက်ပြီးလျှင် ➡️ [{tf_name} အတွင်း] <span class='metric-val'>{display_val}</span> {display_suffix}"
-                    else:
-                        recovered_text = f"[{label_prefix}] ထွက်ပြီးလျှင် ➡️ [{tf_name} အတွင်း] <span class='metric-val'>{display_val}</span>"
-                    recovered_store.append({"mu": mu_k, "text": recovered_text})
+                    rec_top = f"🚨 [ရက်ချိန်းပြည့်] [{label_prefix}] ထွက်ပြီးလျှင် <span class='badge-inline badge-inline-hp'>{tf_name}အတွင်း</span> <span class='target-output-text'>{display_val}</span>{display_suffix}"
+                    recovered_store.append({"mu": mu_k, "top": rec_top, "bottom": bottom_line_html})
 
     return hp_store, sniper_store, recovered_store
 
@@ -249,7 +251,7 @@ if uploaded_file:
         tab_live, tab_custom = st.tabs(["⚡ (၁) ယခုအချိန်အတွက် အလိုအလျောက်တွက်ချက်မှု", "🔍 (၂) မိမိစိတ်ကြိုက် ဂဏန်းအလိုက် ရှာဖွေမှု"])
 
         # ------------------------------------------
-        # TAB 1: FULL AUTOMATED INTEGRATED WORKSPACE
+        # TAB 1: AUTOMATED ENGINE TRACKER
         # ------------------------------------------
         with tab_live:
             st.markdown("### ယခုအချိန်အတွက် အလိုအလျောက် 4-Pool Scan & Convergence Engine")
@@ -290,7 +292,7 @@ if uploaded_file:
                                     convergence_pool.append(m_v['val'])
 
                 # ==========================================
-                # TOP-DOWN DISPLAY ARCHITECTURE
+                # TOP-DOWN RENDERING SYSTEM
                 # ==========================================
                 st.write("---")
                 st.markdown("#### 🏆 [အဆင့် ၁] TOP PICK CONVERGENCE (ဘုံတူညီမှု အားအကောင်းဆုံးရလဒ်)")
@@ -319,13 +321,18 @@ if uploaded_file:
                 st.markdown("#### 📋 [အဆင့် ၂] DETAILED BREAKDOWN (မူတစ်ခုချင်းစီအလိုက် အသေးစိတ်ဆန်းစစ်ချက်)")
                 
                 auto_target_hits = [d for d in full_draws if d['draw'] == last_recorded_draw['draw']]
-                lbl_p = f"{last_recorded_draw['draw']} {last_recorded_draw['time']}"
+                lbl_p = f"{last_recorded_draw['draw']}"
                 hp_s, sniper_s, recovered_s = execute_analysis(auto_target_hits, full_draws, GLOBAL_TFS, lbl_p)
 
                 if recovered_s:
                     st.markdown("##### 🚨 ပျက်ပြီးပြန်နိုးထလာသော မူသေစနစ် (Recovered Sniper)")
                     for r in recovered_s:
-                        st.markdown(f"""<div class="card card-recovered"><div class="card-text">🚨 [ရက်ချိန်းပြည့်] {r['text']}</div></div>""", unsafe_allow_html=True)
+                        st.markdown(f"""
+                        <div class="card card-recovered">
+                            <div class="card-top-line">{r['top']}</div>
+                            <div class="card-bottom-line">{r['bottom']}</div>
+                        </div>
+                        """, unsafe_allow_html=True)
 
                 col_a, col_b = st.columns(2)
                 with col_a:
@@ -333,16 +340,26 @@ if uploaded_file:
                     if not sniper_s: st.info("၁၀၀% ကွက်တိ မူများ မတွေ့ရှိပါ။")
                     for mu_name, data in sniper_s.items():
                         prefix = "🚨 [ရက်ချိန်းပြည့်] " if data['is_deadline'] else ""
-                        st.markdown(f"""<div class="card card-sniper"><div class="card-text">{prefix}{data['text']}</div></div>""", unsafe_allow_html=True)
+                        st.markdown(f"""
+                        <div class="card card-sniper">
+                            <div class="card-top-line">{prefix}{data['top']}</div>
+                            <div class="card-bottom-line">{data['bottom']}</div>
+                        </div>
+                        """, unsafe_allow_html=True)
                 with col_b:
                     st.markdown("##### 🔮 95%+ High-Probability Zone")
                     if not hp_s: st.info("၉၅% အထက် Probability ရှိသော မူများ မတွေ့ရှိပါ။")
                     for mu_name, data in hp_s.items():
                         prefix = "🚨 [ရက်ချိန်းပြည့်] " if data['is_deadline'] else ""
-                        st.markdown(f"""<div class="card card-hp"><div class="card-text">{prefix}{data['text']}</div></div>""", unsafe_allow_html=True)
+                        st.markdown(f"""
+                        <div class="card card-hp">
+                            <div class="card-top-line">{prefix}{data['top']}</div>
+                            <div class="card-bottom-line">{data['bottom']}</div>
+                        </div>
+                        """, unsafe_allow_html=True)
 
         # ------------------------------------------
-        # TAB 2: CUSTOM MANUAL FILTER WORKSPACE
+        # TAB 2: CUSTOM MANUAL SEARCH TRACKER
         # ------------------------------------------
         with tab_custom:
             st.markdown("### မိမိစိတ်ကြိုက် ပြက္ခဒိန်နှင့် ဂဏန်းအလိုက် မူရှာဖွေခြင်း")
@@ -419,7 +436,12 @@ if uploaded_file:
                     if recovered_store:
                         st.markdown("##### 🚨 ပျက်ပြီးပြန်နိုးထလာသော မူသေစနစ် (Recovered Sniper)")
                         for r in recovered_store:
-                            st.markdown(f"""<div class="card card-recovered"><div class="card-text">🚨 [ရက်ချိန်းပြည့်] {r['text']}</div></div>""", unsafe_allow_html=True)
+                            st.markdown(f"""
+                            <div class="card card-recovered">
+                                <div class="card-top-line">{r['top']}</div>
+                                <div class="card-bottom-line">{r['bottom']}</div>
+                            </div>
+                            """, unsafe_allow_html=True)
 
                     col_tab1, col_tab2 = st.tabs(["🦅 100% Super VIP Sniper Zone", "🔮 95%+ High-Probability Zone"])
 
@@ -428,13 +450,23 @@ if uploaded_file:
                         else:
                             for mu_name, data in sniper_store.items():
                                 prefix = "🚨 [ရက်ချိန်းပြည့်] " if data['is_deadline'] else ""
-                                st.markdown(f"""<div class="card card-sniper"><div class="card-text">{prefix}{data['text']}</div></div>""", unsafe_allow_html=True)
+                                st.markdown(f"""
+                                <div class="card card-sniper">
+                                    <div class="card-top-line">{prefix}{data['top']}</div>
+                                    <div class="card-bottom-line">{data['bottom']}</div>
+                                </div>
+                                """, unsafe_allow_html=True)
 
                     with col_tab2:
                         if not hp_store: st.info("၉၅% အထက် Probability ရှိသော မူများ မတွေ့ရှိပါ။")
                         else:
                             for mu_name, data in hp_store.items():
                                 prefix = "🚨 [ရက်ချိန်းပြည့်] " if data['is_deadline'] else ""
-                                st.markdown(f"""<div class="card card-hp"><div class="card-text">{prefix}{data['text']}</div></div>""", unsafe_allow_html=True)
+                                st.markdown(f"""
+                                <div class="card card-hp">
+                                    <div class="card-top-line">{prefix}{data['top']}</div>
+                                    <div class="card-bottom-line">{data['bottom']}</div>
+                                </div>
+                                """, unsafe_allow_html=True)
 else:
     st.info("စတင်ရန်အတွက် Bro ရဲ့ 2D CSV သို့မဟုတ် Excel ဒေတာဖိုင်ကို အပေါ်တွင် အရင် တင်ပေးပါဦး။")
