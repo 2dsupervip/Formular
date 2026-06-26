@@ -152,7 +152,6 @@ def execute_analysis(target_hits, full_draws, active_tfs, label_prefix, is_custo
         mu_pure_values = {}
         mu_keys_list = []
 
-        # Filter target hits strictly if Tab 2 Custom specific session chosen
         filtered_hits = target_hits
         if is_custom_tab and sel_session != "AM+PM ပေါင်းချုပ်":
             req_time = "AM" if "AM" in sel_session else "PM"
@@ -190,7 +189,6 @@ def execute_analysis(target_hits, full_draws, active_tfs, label_prefix, is_custo
             rate_str = "100%" if rate == 100.0 else f"{rate:.1f}%"
             badge_color_class = "badge-inline-sniper" if rate == 100.0 else "badge-inline-hp"
             
-            # Bro 3/4-Line Stack Architecture Setup (SS Match)
             top_line = f"🔮 [{label_prefix}] ထွက်ပြီးလျှင် <span class='badge-inline {badge_color_class}'>{tf_name}အတွင်း</span>"
             formula_line = f"{display_val} {rate_str}"
             bottom_line = f"မှန်ကန်မှု: ({total_count} ကြိမ်မှာ {win_count} ကြိမ်မှန်)"
@@ -239,7 +237,6 @@ if uploaded_file:
 
         for i, d in enumerate(full_draws): d['index'] = i
 
-        # Auto Day Alignment Engine Control (Excluding Sat, Sun)
         last_recorded_draw = full_draws[-1]
         days_cycle = ["Mon", "Tue", "Wed", "Thur", "Fri"]
         
@@ -257,7 +254,7 @@ if uploaded_file:
         tab_live, tab_custom = st.tabs(["⚡ တွက်ချက်မည်", "🔍 2D Formulas"])
 
         # ------------------------------------------
-        # TAB 1: FIXED REVERSE COUNTDOWN SHIFT ENGINE
+        # TAB 1: AUTOMATED ENGINE TRACKER
         # ------------------------------------------
         with tab_live:
             live_max_tf = st.number_input("ရှာလိုသော ပွဲစဉ်အရေအတွက်", min_value=1, max_value=20, value=6)
@@ -267,7 +264,6 @@ if uploaded_file:
                 convergence_pool = []
                 detailed_live_store = []
                 
-                # စနစ်မှန် နောက်ကြောင်းပြန် Row-by-Row Active Dynamic Mapping
                 for step in range(1, live_max_tf + 1):
                     target_past_idx = current_end_idx - step + 1
                     if target_past_idx < 0: continue
@@ -276,7 +272,6 @@ if uploaded_file:
                     past_val = past_obj['draw']
                     past_time = past_obj['time']
                     
-                    # ကွက်တိထိုးစစ်ရမည့် Session အခြေအနေ ၂ မျိုးတည်းသာ ဆွဲထုတ်ခြင်း Logic
                     condition_pools = [
                         {"hits": [d for d in full_draws[:target_past_idx+1] if d['draw'] == past_val and d['time'] == past_time], "lbl": f"{past_val} {past_time}"},
                         {"hits": [d for d in full_draws[:target_past_idx+1] if d['draw'] == past_val], "lbl": f"{past_val}"}
@@ -342,4 +337,63 @@ if uploaded_file:
                 trigger_day = st.selectbox("📆 Trigger Day:", ["All", "Mon", "Tue", "Wed", "Thur", "Fri"], index=0)
                 trigger_num = st.text_input("🔍 ရှာလိုသောဂဏန်း ရိုက်ထည့်ပါ:", value="60", max_chars=2)
             with c2:
-                target_session_custom = st.selectbox("⏱️ အခြေအနေ ရွေးချယ်ရန်
+                target_session_custom = st.selectbox("⏱️ အခြေအနေ ရွေးချယ်ရန်:", ["AM+PM ပေါင်းချုပ်", "AM သီးသန့်", "PM သီးသန့်"], index=0)
+            with c3:
+                custom_max_tf = st.number_input("⏳ စစ်ဆေးမည့် ပွဲစဉ်အရေအတွက်", min_value=1, max_value=20, value=10)
+
+            active_tfs_custom = [(f"{i} ပွဲ", 1, i) for i in range(1, custom_max_tf + 1)]
+
+            if st.button("ရှာဖွေမည် 🚀", key="btn_custom"):
+                target_hits = []
+                rev_num = trigger_num[::-1]
+
+                if trigger_day == "All":
+                    target_hits = [d for d in full_draws if d['draw'] == trigger_num or d['draw'] == rev_num]
+                    lbl_prefix = f"{trigger_num}"
+                else:
+                    matched_weeks = {d['row_idx'] for d in full_draws if d['day'] == trigger_day and (d['draw'] == trigger_num or d['draw'] == rev_num)}
+                    for d in full_draws:
+                        if d['row_idx'] in matched_weeks:
+                            target_hits.append(d)
+                    
+                    t_time_label = "PM" if "PM" in target_session_custom else "AM" if "AM" in target_session_custom else ""
+                    lbl_prefix = f"{trigger_num} {t_time_label}".strip()
+
+                if not target_hits:
+                    st.error("⚠️ သတ်မှတ်ချက်များနှင့် ကိုက်ညီသော သမိုင်းကြောင်းမှတ်တမ်း မရှိပါ Bro!")
+                else:
+                    hp_store, sniper_store, _ = execute_analysis(target_hits, full_draws, active_tfs_custom, lbl_prefix, is_custom_tab=True, sel_session=target_session_custom)
+
+                    st.write("---")
+                    st.markdown("#### 📋 အသေးစိတ်အချက်အလက်")
+
+                    col_tab1, col_tab2 = st.tabs(["🦅 100% Super VIP Sniper Zone", "🔮 95%+ High-Probability Zone"])
+
+                    with col_tab1:
+                        if not sniper_store: st.info("၁၀၀% ကွက်တိ မူများ မတွေ့ရှိပါ။")
+                        for mu_name, data in sniper_store.items():
+                            st.markdown('<div class="card card-sniper">', unsafe_allow_html=True)
+                            if data['is_deadline']:
+                                st.markdown('<span class="line-alert">🚨 [ရက်ချိန်းပြည့်]</span>', unsafe_allow_html=True)
+                            st.markdown(f"""
+                                <span class="line-trigger">{data['top']}</span>
+                                <span class="line-formula">{data['formula']}</span>
+                                <span class="line-history">{data['bottom']}</span>
+                            </div>
+                            """, unsafe_allow_html=True)
+
+                    with col_tab2:
+                        if not hp_store: st.info("၉၅% အထက် Probability ရှိသော မူများ မတွေ့ရှိပါ။")
+                        for mu_name, data in hp_store.items():
+                            st.markdown('<div class="card card-hp">', unsafe_allow_html=True)
+                            if data['is_deadline']:
+                                Indian_label = '<span class="line-alert">🚨 [ရက်ချိန်းပြည့်]</span>'
+                                st.markdown(Indian_label, unsafe_allow_html=True)
+                            st.markdown(f"""
+                                <span class="line-trigger">{data['top']}</span>
+                                <span class="line-formula">{data['formula']}</span>
+                                <span class="line-history">{data['bottom']}</span>
+                            </div>
+                            """, unsafe_allow_html=True)
+else:
+    st.info("စတင်ရန်အတွက် Bro ရဲ့ 2D CSV သို့မဟုတ် Excel ဒေတာဖိုင်ကို အပေါ်တွင် အရင် တင်ပေးပါဦး။")
