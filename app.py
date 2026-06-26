@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import io
 import itertools
+import re
 from collections import Counter
 
 # ==========================================
@@ -142,10 +143,9 @@ if uploaded_file:
             trigger_num = st.text_input("🔍 ထွက်ဂဏန်း ရိုက်ထည့်ပါ (ဥပမာ - 70):", value="70", max_chars=2)
         with col2:
             target_session = st.selectbox("⏱️ ပစ်မှတ် Session စစ်ဆေးရန်:", ["AM+PM ပေါင်းချုပ်", "AM သီးသန့်", "PM သီးသန့်"])
-            # Timeframes Multi-Select Box Feature
             tf_labels = [x[0] for x in GLOBAL_TFS]
             selected_tfs = st.multiselect("⏳ စစ်ဆေးမည့် ပွဲစဉ်အရေအတွက် (Timeframes):", tf_labels, default=tf_labels)
-        with c3 = col3:
+        with col3:
             st.write("⚙️ Live Tracker Configuration")
             live_max_tf = st.selectbox("🎯 Live Tracker အမြင့်ဆုံးပွဲစဉ်ဘောင် (Countdown Bound):", [5, 10, 12, 16, 20], index=1)
 
@@ -220,7 +220,6 @@ if uploaded_file:
                 st.write("---")
                 st.markdown("### ⚡ REAL-TIME LIVE TRACKER & CONVERGENCE DASHBOARD")
                 
-                # လက်ရှိပွဲစဉ်၏ Countdown အထက်ပွဲစဉ်ဂဏန်းများကို ဖတ်ယူခြင်း
                 current_end_idx = len(full_draws) - 1
                 convergence_pool = []
 
@@ -231,20 +230,17 @@ if uploaded_file:
                     past_draw_obj = full_draws[target_past_idx]
                     past_draw_val = past_draw_obj['draw']
                     
-                    # ၎င်းအတိတ်ဂဏန်း၏ သမိုင်းကြောင်းအား Reverse ရှာဖွေပြီး မထွက်သေးသော မူလက်ကျန်ကို ခြေရာခံခြင်း
                     p_hits = [d for d in full_draws[:target_past_idx+1] if d['draw'] == past_draw_val]
                     if p_hits:
                         res_live = run_mu_evaluation(p_hits[-1]['index'], full_draws, 1, step)
                         if res_live:
                             for m_k, m_v in res_live.items():
-                                if not m_v['hit']: # မထွက်သေးဘဲကျန်ရှိနေသော မူလက္ခဏာဖြစ်ပါက စုဆောင်းမည်
+                                if not m_v['hit']: 
                                     convergence_pool.append(m_v['val'])
 
-                # ဘုံတူရာ ပျှမ်းမျှ တွက်ချက်မှု (Scoring & Average Engine)
                 if convergence_pool:
                     flat_values = []
                     for val in convergence_pool:
-                        # စာသားများထဲမှ ဂဏန်းခွဲထုတ်ခြင်း သို့မဟုတ် သန့်စင်ခြင်း
                         extracted = re.findall(r'\d+', val)
                         if extracted: flat_values.extend(extracted)
                         else: flat_values.append(val)
@@ -273,7 +269,6 @@ if uploaded_file:
                 # ==========================================
                 st.write("---")
                 
-                # ၃။ RECOVERED TREND SNIPER ZONE (Flash Box)
                 if recovered_store:
                     st.markdown("#### 🚨 RECOVERED TREND SNIPER ZONE (၃ကြိမ်မှား၊ ၂ကြိမ်မှန် ပြီး ပြန်နိုးထလာသောမူ)")
                     for r in recovered_store:
