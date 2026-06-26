@@ -49,37 +49,53 @@ special_groups = {
 }
 
 # ==========================================
-# HELPER: CHECK IF VALUE ALREADY HIT IN RECENT TIMELINE
+# STUCT ALREADY HIT TRACKER (စနစ်မှန် တိုက်စစ်ပယ်ဖျက်ခြင်း Logic)
 # ==========================================
 def is_already_hit(mu_name, mu_val, start_idx, end_idx, full_draws_list):
     if start_idx >= len(full_draws_list): return True
     check_draws = [d['draw'] for d in full_draws_list[start_idx : min(end_idx + 1, len(full_draws_list))]]
     if not check_draws: return False
     
-    clean_val = re.sub(r'[^\d,\+]', '', mu_val).strip()
-    
-    if "လုံးဘိုင်" in mu_name:
-        return any(clean_val in d for d in check_draws)
-    elif "One Change" in mu_name or "key" in mu_name or "အမာခံ" in mu_name:
-        return any(any(x in d for x in clean_val) for d in check_draws)
-    elif "ခွေ" in mu_name:
-        return any(d[0] in clean_val and d[1] in clean_val for d in check_draws)
-    elif "ထိပ်စီး" in mu_name:
-        return any(d[0] in clean_val for d in check_draws)
-    elif "ဘရိတ်" in mu_name:
-        brk_list = [x.strip() for x in clean_val.split(',') if x.strip()]
-        return any(str((int(d[0])+int(d[1]))%10) in brk_list for d in check_draws)
-    elif "စုံ/မ ကပ်" in mu_name or "ကပ်" in mu_name:
-        match = re.search(r'\[(\d+)\]\s*"([^"]+)"ကပ်', mu_val)
-        if match:
-            b1 = match.group(1)
-            is_even = "စုံ" in match.group(2)
-            mway_digits = [f"{b1}{i}" for i in ([0,2,4,6,8] if is_even else [1,3,5,7,9])]
-            return any(d in mway_digits for d in check_draws)
-    elif "အုပ်စုတွဲ" in mu_name or "+" in mu_val:
-        g1 = "ညီကို" if "ညီကို" in mu_val else "ပါဝါ" if "ပါဝါ" in mu_val else "နက္ခတ်" if "နက္ခတ်" in mu_val else "ထိုင်းပါဝါ" if "ထိုင်းပါဝါ" in mu_val else "အပူး" if "အပူး" in mu_val else "ဆယ်ပြည့်"
-        g2 = "အပူး" if "အပူး" in mu_val and g1 != "အပူး" else "ပါဝါ" if "ပါဝါ" in mu_val and g1 != "ပါဝါ" else ""
-        return any(d in special_groups.get(g1, set()) or (g2 and d in special_groups.get(g2, set())) for d in check_draws)
+    for d in check_draws:
+        d_head = d[0]
+        d_break = str((int(d[0]) + int(d[1])) % 10)
+        
+        if mu_name == "လုံးဘိုင်":
+            pure_num = mu_val.split()[0]
+            if pure_num in d: return True
+        elif mu_name == "One Change":
+            pure_oc = mu_val.split()[0]
+            if any(x in d for x in pure_oc): return True
+        elif mu_name == "key":
+            pure_key = mu_val.split()[0]
+            if any(x in d for x in pure_key): return True
+        elif mu_name == "အပူးပါခွေ":
+            pure_k4 = mu_val.split()[0]
+            if d[0] in pure_k4 and d[1] in pure_k4: return True
+        elif mu_name == "ဘရိတ်":
+            pure_brk = mu_val.split()[0].split(',')
+            if d_break in [b.strip() for b in pure_brk]: return True
+        elif mu_name == "စုံ/မ ကပ်":
+            match = re.search(r'\[(\d+)\]\s*"([^"]+)"ကပ်', mu_val)
+            if match:
+                b1 = match.group(1)
+                is_even = "စုံ" in match.group(2)
+                if b1 in d:
+                    rem = d.replace(b1, '', 1)
+                    rem_digit = int(rem if rem else b1)
+                    if is_even and rem_digit % 2 == 0: return True
+                    if not is_even and rem_digit % 2 != 0: return True
+        elif mu_name == "အုပ်စုတွဲ":
+            if mu_val == "-" or not mu_val: return True
+            gps = mu_val.split('+')
+            for g in gps:
+                if d in special_groups.get(g.strip(), set()): return True
+        elif mu_name == "ကွက်ကျဉ်းစနစ်":
+            match = re.search(r'^(\d+)\s*ပါသော\s*([\d,\s]+)\s*ဘရိတ်', mu_val)
+            if match:
+                pure_k = match.group(1)
+                pure_b = [b.strip() for b in match.group(2).split(',')]
+                if any(k in d for k in pure_k) and d_break in pure_b: return True
     return False
 
 # ==========================================
@@ -127,20 +143,20 @@ def run_mu_evaluation(hit_idx, full_draws_list, s_off, e_off):
         gp_hit = False
 
     return {
-        "လုံးဘိုင်": {"val": f"{top_single} လုံးဘိုင်", "hit": any(top_single in d for d in act_draws), "pure": top_single},
-        "One Change": {"val": f"{top_oc} One Change", "hit": any(any(x in d for x in top_oc) for d in act_draws), "pure": top_oc},
-        "key": {"val": f"{top_key3} key", "hit": any(any(x in d for x in top_key3) for d in act_draws), "pure": top_key3},
-        "အပူးပါခွေ": {"val": f"{top_k4} အပူးပါခွေ", "hit": any(d[0] in top_k4 and d[1] in top_k4 for d in act_draws), "pure": top_k4},
-        "ဘရိတ်": {"val": f"{brk_label} ဘရိတ်", "hit": any(str((int(d[0])+int(d[1]))%10) in top_brk2 for d in act_draws), "pure": brk_label},
-        "စုံ/မ ကပ်": {"val": kap_label, "hit": (any(d in [f"{top_single}{i}" for i in [0,2,4,6,8]] for d in act_draws) if e_sc >= o_sc else any(d in [f"{top_single}{i}" for i in [1,3,5,7,9]] for d in act_draws)), "pure": top_single},
+        "လုံးဘိုင်": {"val": f"{top_single} လုံးဘိုင်", "hit": any(top_single in d for d in act_draws), "pure": f"{top_single} လုံးဘိုင်"},
+        "One Change": {"val": f"{top_oc} One Change", "hit": any(any(x in d for x in top_oc) for d in act_draws), "pure": f"{top_oc} One Change"},
+        "key": {"val": f"{top_key3} key", "hit": any(any(x in d for x in top_key3) for d in act_draws), "pure": f"{top_key3} key"},
+        "အပူးပါခွေ": {"val": f"{top_k4} အပူးပါခွေ", "hit": any(d[0] in top_k4 and d[1] in top_k4 for d in act_draws), "pure": f"{top_k4} အပူးပါခွေ"},
+        "ဘရိတ်": {"val": f"{brk_label} ဘရိတ်", "hit": any(str((int(d[0])+int(d[1]))%10) in top_brk2 for d in act_draws), "pure": f"{brk_label} ဘရိတ်"},
+        "စုံ/မ ကပ်": {"val": kap_label, "hit": (any(d in [f"{top_single}{i}" for i in [0,2,4,6,8]] for d in act_draws) if e_sc >= o_sc else any(d in [f"{top_single}{i}" for i in [1,3,5,7,9]] for d in act_draws)), "pure": kap_label},
         "အုပ်စုတွဲ": {"val": best_gp if best_gp else "-", "hit": gp_hit, "pure": best_gp},
-        "ကွက်ကျဉ်းစနစ်": {"val": kwat_kyin_label, "hit": any(any(k in d for k in top_key3) and str((int(d[0])+int(d[1]))%10) in top_brk2 for d in act_draws), "pure": top_key3}
+        "ကွက်ကျဉ်းစနစ်": {"val": kwat_kyin_label, "hit": any(any(k in d for k in top_key3) and str((int(d[0])+int(d[1]))%10) in top_brk2 for d in act_draws), "pure": kwat_kyin_label}
     }
 
 # ==========================================
 # MASTER ROUTINE: HYBRID DATA ANALYSIS ENGINE
 # ==========================================
-def execute_analysis(target_hits, full_draws, active_tfs, label_prefix, is_custom_tab=False, sel_session=""):
+def execute_analysis(target_hits, full_draws, active_tfs, is_custom_tab=False, sel_session="", custom_trigger=""):
     hp_store = {}
     sniper_store = {}
     recovered_store = []
@@ -189,7 +205,12 @@ def execute_analysis(target_hits, full_draws, active_tfs, label_prefix, is_custo
             rate_str = "100%" if rate == 100.0 else f"{rate:.1f}%"
             badge_color_class = "badge-inline-sniper" if rate == 100.0 else "badge-inline-hp"
             
-            top_line = f"🔮 [{label_prefix}] ထွက်ပြီးလျှင် <span class='badge-inline {badge_color_class}'>{tf_name}အတွင်း</span>"
+            if is_custom_tab:
+                lbl_prefix = custom_trigger
+            else:
+                lbl_prefix = f"{filtered_hits[-1]['draw']} {filtered_hits[-1]['time']}" if filtered_hits else ""
+
+            top_line = f"🔮 [{lbl_prefix}] ထွက်ပြီးလျှင် <span class='badge-inline {badge_color_class}'>{tf_name}အတွင်း</span>"
             formula_line = f"{display_val} {rate_str}"
             bottom_line = f"မှန်ကန်မှု: ({total_count} ကြိမ်မှာ {win_count} ကြိမ်မှန်)"
 
@@ -212,7 +233,7 @@ def execute_analysis(target_hits, full_draws, active_tfs, label_prefix, is_custo
     return hp_store, sniper_store, recovered_store
 
 # ==========================================
-# FILE UPLOAD & DYNAMIC CHRONOLOGY
+# FILE UPLOAD & PRE-PROCESSING
 # ==========================================
 uploaded_file = st.file_uploader("Bro ရဲ့ 2D CSV သို့မဟုတ် Excel ဖိုင်ကို ရွေးချယ်တင်ပေးပါ...", type=['csv', 'xlsx', 'xls'])
 
@@ -264,6 +285,7 @@ if uploaded_file:
                 convergence_pool = []
                 detailed_live_store = []
                 
+                # စနစ်မှန် နောက်ကြောင်းပြန် Row-by-Row Active Dynamic Mapping
                 for step in range(1, live_max_tf + 1):
                     target_past_idx = current_end_idx - step + 1
                     if target_past_idx < 0: continue
@@ -272,6 +294,7 @@ if uploaded_file:
                     past_val = past_obj['draw']
                     past_time = past_obj['time']
                     
+                    # ၎င်းပွဲစဉ်အလိုက် သက်ဆိုင်ရာ အခြေအနေ ၂ မျိုးတည်းသာ စစ်ဆေးခြင်း
                     condition_pools = [
                         {"hits": [d for d in full_draws[:target_past_idx+1] if d['draw'] == past_val and d['time'] == past_time], "lbl": f"{past_val} {past_time}"},
                         {"hits": [d for d in full_draws[:target_past_idx+1] if d['draw'] == past_val], "lbl": f"{past_val}"}
@@ -282,13 +305,10 @@ if uploaded_file:
                         res_live = run_mu_evaluation(pool['hits'][-1]['index'], full_draws, 1, step)
                         if res_live:
                             for m_k, m_v in res_live.items():
-                                already_out = is_already_hit(m_k, m_v['val'], pool['hits'][-1]['index'] + 1, current_end_idx, full_draws)
+                                # ကွက်တိ ပယ်ထုတ်စစ်ဆေးခြင်း Logic (True Anti-Overlap-Hit Filter)
+                                already_out = is_already_hit(m_k, m_v['pure'], pool['hits'][-1]['index'] + 1, current_end_idx, full_draws)
                                 if not already_out:
-                                    pure_digits = "".join(re.findall(r'\d', m_v['pure']))
-                                    if pure_digits:
-                                        convergence_pool.extend(list(pure_digits))
-                                    elif "+" in m_v['pure']:
-                                        convergence_pool.append(m_v['pure'])
+                                    convergence_pool.append(m_v['pure'])
                                     
                                     badge_cls = "badge-inline-sniper"
                                     top_l = f"🔮 [{pool['lbl']}] ထွက်ပြီးလျှင် <span class='badge-inline {badge_cls}'>{step} ပွဲအတွင်း</span>"
@@ -306,7 +326,7 @@ if uploaded_file:
                         st.markdown(f"""
                             <div style="background:#1a273f; padding:15px 25px; border-radius:10px; border:1px solid #3498db; min-width:200px;">
                                 <span style="color:#54a0ff; font-weight:bold; font-size:16px;">🏆 Top {idx} Convergence:</span> <br>
-                                <span class="metric-val" style="margin-top:5px;">{b_val}</span>
+                                <span class="metric-val" style="margin-top:5px; font-size:16px;">{b_val}</span>
                                 <div style="font-size:13px; color:#8cc5ff; margin-top:5px;">ဘုံတူညီမှုအမှတ်: {b_score} ကြိမ်</div>
                             </div>
                         """, unsafe_allow_html=True)
@@ -335,9 +355,9 @@ if uploaded_file:
             c1, c2, c3 = st.columns(3)
             with c1:
                 trigger_day = st.selectbox("📆 Trigger Day:", ["All", "Mon", "Tue", "Wed", "Thur", "Fri"], index=0)
-                trigger_num = st.text_input("🔍 ရှာလိုသောဂဏန်း ရိုက်ထည့်ပါ:", value="60", max_chars=2)
+                trigger_num = st.text_input("🔍 ရှာလိုသောဂဏန်း ရိုက်ထည့်ပါ:", value="01", max_chars=2)
             with c2:
-                target_session_custom = st.selectbox("⏱️ အခြေအနေ ရွေးချယ်ရန်:", ["AM+PM ပေါင်းချုပ်", "AM သီးသန့်", "PM သီးသန့်"], index=0)
+                target_session_custom = st.selectbox("⏱️ အခြေအနေ ရွေးချယ်ရန်:", ["AM+PM ပေါင်းချုပ်", "AM သီးသန့်", "PM သီးသန့်"], index=2)
             with c3:
                 custom_max_tf = st.number_input("⏳ စစ်ဆေးမည့် ပွဲစဉ်အရေအတွက်", min_value=1, max_value=20, value=10)
 
@@ -345,24 +365,23 @@ if uploaded_file:
 
             if st.button("ရှာဖွေမည် 🚀", key="btn_custom"):
                 target_hits = []
-                rev_num = trigger_num[::-1]
-
+                
+                # Tab 2 Display Label Logic အမှန်အတိုင်း တည့်မတ်ခြင်း
                 if trigger_day == "All":
-                    target_hits = [d for d in full_draws if d['draw'] == trigger_num or d['draw'] == rev_num]
-                    lbl_prefix = f"{trigger_num}"
+                    target_hits = [d for d in full_draws if d['draw'] == trigger_num or d['draw'] == trigger_num[::-1]]
                 else:
-                    matched_weeks = {d['row_idx'] for d in full_draws if d['day'] == trigger_day and (d['draw'] == trigger_num or d['draw'] == rev_num)}
+                    matched_weeks = {d['row_idx'] for d in full_draws if d['day'] == trigger_day and (d['draw'] == trigger_num or d['draw'] == trigger_num[::-1])}
                     for d in full_draws:
                         if d['row_idx'] in matched_weeks:
                             target_hits.append(d)
-                    
-                    t_time_label = "PM" if "PM" in target_session_custom else "AM" if "AM" in target_session_custom else ""
-                    lbl_prefix = f"{trigger_num} {t_time_label}".strip()
+                
+                t_time_label = "PM" if "PM" in target_session_custom else "AM" if "AM" in target_session_custom else ""
+                lbl_prefix_custom = f"{trigger_num} {t_time_label}".strip()
 
                 if not target_hits:
                     st.error("⚠️ သတ်မှတ်ချက်များနှင့် ကိုက်ညီသော သမိုင်းကြောင်းမှတ်တမ်း မရှိပါ Bro!")
                 else:
-                    hp_store, sniper_store, _ = execute_analysis(target_hits, full_draws, active_tfs_custom, lbl_prefix, is_custom_tab=True, sel_session=target_session_custom)
+                    hp_store, sniper_store, _ = execute_analysis(target_hits, full_draws, active_tfs_custom, is_custom_tab=True, sel_session=target_session_custom, custom_trigger=lbl_prefix_custom)
 
                     st.write("---")
                     st.markdown("#### 📋 အသေးစိတ်အချက်အလက်")
@@ -387,8 +406,7 @@ if uploaded_file:
                         for mu_name, data in hp_store.items():
                             st.markdown('<div class="card card-hp">', unsafe_allow_html=True)
                             if data['is_deadline']:
-                                Indian_label = '<span class="line-alert">🚨 [ရက်ချိန်းပြည့်]</span>'
-                                st.markdown(Indian_label, unsafe_allow_html=True)
+                                st.markdown('<span class="line-alert">🚨 [ရက်ချိန်းပြည့်]</span>', unsafe_allow_html=True)
                             st.markdown(f"""
                                 <span class="line-trigger">{data['top']}</span>
                                 <span class="line-formula">{data['formula']}</span>
