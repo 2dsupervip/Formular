@@ -21,9 +21,8 @@ st.markdown("""
     .card-live { border-left: 6px solid #3498db; background-color: #0E1A2F; }
     .card-hp { border-left: 6px solid #2ecc71; background-color: #0D2216; }
     .card-sniper { border-left: 6px solid #9b59b6; background-color: #201135; }
-    .card-recovered { border-left: 6px solid #e74c3c; background-color: #291118; }
     
-    /* Bro 3/4-Line Stack Display Typography */
+    /* Bro 3/4-Line Stack Display Typography (Screenshot Exact Match) */
     .line-alert { color: #FF4D4D; font-size: 16px; font-weight: bold; margin-bottom: 6px; display: block; }
     .line-trigger { font-size: 18px; font-weight: bold; color: #E0D5FA; margin-bottom: 6px; display: block; }
     .line-formula { font-size: 22px; font-weight: bold; color: #FFD700; margin-bottom: 6px; display: block; }
@@ -38,7 +37,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V26 PRO)</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Ultimate Reverse Countdown Matrix Engine | Pure Line Display Architecture</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Ultimate Calendar Matrix Engine | Pure Line Display Architecture</div>', unsafe_allow_html=True)
 
 special_groups = {
     "ညီကို": {"01","10","12","21","23","32","34","43","45","54","56","65","67","76","78","87","89","98","90","09"},
@@ -72,6 +71,12 @@ def is_already_hit(mu_name, mu_val, start_idx, end_idx, full_draws_list):
         elif mu_name == "အပူးပါခွေ":
             pure_k4 = mu_val.split()[0]
             if d[0] in pure_k4 and d[1] in pure_k4: return True
+        elif mu_name == "ထိပ်စီး":
+            pure_h = mu_val.split()[0]
+            if d[0] in pure_h: return True
+        elif mu_name == "နောက်ပိတ်":
+            pure_t = mu_val.split()[0]
+            if d[1] in pure_t: return True
         elif mu_name == "ဘရိတ်":
             pure_brk = mu_val.split()[0].split(',')
             if d_break in [b.strip() for b in pure_brk]: return True
@@ -99,7 +104,7 @@ def is_already_hit(mu_name, mu_val, start_idx, end_idx, full_draws_list):
     return False
 
 # ==========================================
-# CORE ENGINE: SINGLE EVENT EVALUATOR
+# CORE ENGINE: MASTER 10 FORMULAS EVALUATOR
 # ==========================================
 def run_mu_evaluation(hit_idx, full_draws_list, s_off, e_off):
     s_idx = hit_idx + s_off
@@ -110,6 +115,8 @@ def run_mu_evaluation(hit_idx, full_draws_list, s_off, e_off):
     if not sub_draws: return None
 
     all_singles = "".join(sub_draws)
+    all_heads = [d[0] for d in sub_draws]
+    all_tails = [d[1] for d in sub_draws]
     all_breaks = [str((int(d[0]) + int(d[1])) % 10) for d in sub_draws]
 
     top_single = Counter(all_singles).most_common(1)[0][0] if all_singles else ""
@@ -117,6 +124,9 @@ def run_mu_evaluation(hit_idx, full_draws_list, s_off, e_off):
     top_key3 = "".join([x[0] for x in Counter(all_singles).most_common(3)]) if len(Counter(all_singles)) >= 3 else top_oc
     top_k4 = "".join([x[0] for x in Counter(all_singles).most_common(4)]) if len(Counter(all_singles)) >= 4 else top_key3
     
+    top_h3 = "".join([x[0] for x in Counter(all_heads).most_common(3)]) if all_heads else ""
+    top_t3 = "".join([x[0] for x in Counter(all_tails).most_common(3)]) if all_tails else ""
+
     top_brk_data = Counter(all_breaks).most_common(2)
     top_brk2 = [x[0] for x in top_brk_data]
     if len(top_brk2) < 2: top_brk2.append(str((int(top_brk2[0])+1)%10 if top_brk2 else 0))
@@ -136,17 +146,18 @@ def run_mu_evaluation(hit_idx, full_draws_list, s_off, e_off):
     act_draws = [d['draw'] for d in full_draws_list[hit_idx+1 : min(hit_idx+e_off+1, len(full_draws_list))]]
     if not act_draws: return None
 
+    gp_hit = False
     if best_gp and '+' in best_gp:
         g1_key, g2_key = best_gp.split('+')[0], best_gp.split('+')[1]
         gp_hit = any(d in special_groups.get(g1_key, set()) or d in special_groups.get(g2_key, set()) for d in act_draws)
-    else:
-        gp_hit = False
 
     return {
         "လုံးဘိုင်": {"val": f"{top_single} လုံးဘိုင်", "hit": any(top_single in d for d in act_draws), "pure": f"{top_single} လုံးဘိုင်"},
         "One Change": {"val": f"{top_oc} One Change", "hit": any(any(x in d for x in top_oc) for d in act_draws), "pure": f"{top_oc} One Change"},
         "key": {"val": f"{top_key3} key", "hit": any(any(x in d for x in top_key3) for d in act_draws), "pure": f"{top_key3} key"},
         "အပူးပါခွေ": {"val": f"{top_k4} အပူးပါခွေ", "hit": any(d[0] in top_k4 and d[1] in top_k4 for d in act_draws), "pure": f"{top_k4} အပူးပါခွေ"},
+        "ထိပ်စီး": {"val": f"{top_h3} ထိပ်စီး", "hit": any(d[0] in top_h3 for d in act_draws), "pure": f"{top_h3} ထိပ်စီး"},
+        "နောက်ပိတ်": {"val": f"{top_t3} နောက်ပိတ်", "hit": any(d[1] in top_t3 for d in act_draws), "pure": f"{top_t3} နောက်ပိတ်"},
         "ဘရိတ်": {"val": f"{brk_label} ဘရိတ်", "hit": any(str((int(d[0])+int(d[1]))%10) in top_brk2 for d in act_draws), "pure": f"{brk_label} ဘရိတ်"},
         "စုံ/မ ကပ်": {"val": kap_label, "hit": (any(d in [f"{top_single}{i}" for i in [0,2,4,6,8]] for d in act_draws) if e_sc >= o_sc else any(d in [f"{top_single}{i}" for i in [1,3,5,7,9]] for d in act_draws)), "pure": kap_label},
         "အုပ်စုတွဲ": {"val": best_gp if best_gp else "-", "hit": gp_hit, "pure": best_gp},
@@ -156,22 +167,26 @@ def run_mu_evaluation(hit_idx, full_draws_list, s_off, e_off):
 # ==========================================
 # MASTER ROUTINE: HYBRID DATA ANALYSIS ENGINE
 # ==========================================
-def execute_analysis(target_hits, full_draws, active_tfs, is_custom_tab=False, sel_session="", custom_trigger=""):
+def execute_analysis(target_hits, full_draws, active_tfs, is_custom_tab=False, sel_session="", custom_trigger="", strict_day_mode=False):
     hp_store = {}
     sniper_store = {}
     recovered_store = []
     current_latest_idx = len(full_draws) - 1
 
+    # Filter target hits based on choice or strict day-lock framework
     filtered_hits = target_hits
-    if is_custom_tab and sel_session != "AM+PM ပေါင်းချုပ်":
-        req_time = "AM" if "AM" in sel_session else "PM"
-        filtered_hits = [h for h in target_hits if h['time'] == req_time]
+    if is_custom_tab:
+        if strict_day_mode:
+            filtered_hits = target_hits # Keeps entire AM+PM composite dataset intact
+        elif sel_session != "AM+PM ပေါင်းချုပ်":
+            req_time = "AM" if "AM" in sel_session else "PM"
+            filtered_hits = [h for h in target_hits if h['time'] == req_time]
 
     total_count = len(filtered_hits)
     if total_count == 0: return hp_store, sniper_store, recovered_store
 
     for tf_name, s_off, e_off in active_tfs:
-        mu_keys_list = ["လုံးဘိုင်", "One Change", "key", "အပူးပါခွေ", "ဘရိတ်", "စုံ/မ ကပ်", "အုပ်စုတွဲ", "ကွက်ကျဉ်းစနစ်"]
+        mu_keys_list = ["လုံးဘိုင်", "One Change", "key", "အပူးပါခွေ", "ထိပ်စီး", "နောက်ပိတ်", "ဘရိတ်", "စုံ/မ ကပ်", "အုပ်စုတွဲ", "ကွက်ကျဉ်းစနစ်"]
         
         for mu_k in mu_keys_list:
             win_count = 0
@@ -189,7 +204,7 @@ def execute_analysis(target_hits, full_draws, active_tfs, is_custom_tab=False, s
             if not latest_val: continue
             rate = (win_count / total_count) * 100
 
-            # Dynamic Tab 2 Smart Guidelines Insertion (STRICT ORIGINAL VERSION)
+            # Dynamic Tab 2 Smart Guidelines Insertion
             advisor_text = ""
             if is_custom_tab:
                 if rate == 100.0 and total_count >= 10:
@@ -197,7 +212,7 @@ def execute_analysis(target_hits, full_draws, active_tfs, is_custom_tab=False, s
                 else:
                     advisor_text = "⚠️ သမိုင်းကြောင်း အားနည်းသည် - အရန်အဖြစ်သာ စဉ်းစားပါ"
             else:
-                # Tab 1 Engine: Overlap ဖြစ်ပြီးသားမူများကို လုံးဝ (လုံးဝ) ဖြုတ်ပစ်မည့် ဇကာတင်စနစ်အစစ်
+                # Tab 1 Engine: Strict Purge Logic for Overlap Hits
                 if filtered_hits:
                     if is_already_hit(mu_k, latest_val, filtered_hits[-1]['index'] + 1, current_latest_idx, full_draws):
                         continue
@@ -361,7 +376,7 @@ if uploaded_file:
                         """, unsafe_allow_html=True)
 
         # ------------------------------------------
-        # TAB 2: CLEAN CUSTOM FORMULARS ENGINE (ORIGINAL LOOPS RESTORED)
+        # TAB 2: CLEAN CUSTOM FORMULARS ENGINE (Day + R Combo Strategy)
         # ------------------------------------------
         with tab_custom:
             c1, c2, c3 = st.columns(3)
@@ -369,7 +384,12 @@ if uploaded_file:
                 trigger_day = st.selectbox("📆 Trigger Day:", ["All", "Mon", "Tue", "Wed", "Thur", "Fri"], index=0)
                 trigger_num = st.text_input("🔍 ရှာလိုသောဂဏန်း ရိုက်ထည့်ပါ:", value="01", max_chars=5)
             with c2:
-                target_session_custom = st.selectbox("⏱️ အခြေအနေ ရွေးချယ်ရန်:", ["AM+PM ပေါင်းချုပ်", "AM သီးသန့်", "PM သီးသန့်"], index=2)
+                # Dynamic Banner UI updates strictly for day-lock parameters
+                if trigger_day != "All":
+                    st.markdown("<span style='color:#00FFCC; font-size:13px;'>ℹ️ Day စနစ်သုံးထားသဖြင့် အကြိမ်ရေပြည့်မီစေရန် R-စနစ် နှင့် AM+PM ပေါင်းချုပ် စနစ်ကို Backend က Auto Lock ချပေးထားပါသည်။</span>", unsafe_allow_html=True)
+                    target_session_custom = "AM+PM ပေါင်းချုပ်"
+                else:
+                    target_session_custom = st.selectbox("⏱️ အခြေအနေ ရွေးချယ်ရန်:", ["AM+PM ပေါင်းချုပ်", "AM သီးသန့်", "PM သီးသန့်"], index=2)
             with c3:
                 custom_max_tf = st.number_input("⏳ စစ်ဆေးမည့် ပွဲစဉ်အရေအတွက်", min_value=1, max_value=20, value=10)
 
@@ -378,7 +398,9 @@ if uploaded_file:
             if st.button("ရှာဖွေမည် 🚀", key="btn_custom"):
                 target_hits = []
                 clean_trigger = trigger_num.strip().upper()
-                is_composite = "+" in clean_trigger or "R" in clean_trigger
+                
+                # Bro ညွှန်ကြားထားသော Master Strict Framework (Day ရွေးချယ်ပါက 01, 10 နှစ်ဖက်စလုံး Auto R-System ယူမည်)
+                is_composite = "+" in clean_trigger or "R" in clean_trigger or (trigger_day != "All")
                 
                 digits_found = re.findall(r'\d+', clean_trigger)
                 
@@ -392,23 +414,23 @@ if uploaded_file:
                         else:
                             target_hits = [d for d in full_draws if d['draw'] == primary_digit]
                     else:
-                        if is_composite:
-                            matched_weeks = {d['row_idx'] for d in full_draws if d['day'] == trigger_day and (d['draw'] == primary_digit or d['draw'] == secondary_digit)}
-                        else:
-                            matched_weeks = {d['row_idx'] for d in full_draws if d['day'] == trigger_day and d['draw'] == primary_digit}
-                        
+                        # Day Combo Enabled: Pulling all combined Monday rows regardless of alignment
+                        matched_weeks = {d['row_idx'] for d in full_draws if d['day'] == trigger_day and (d['draw'] == primary_digit or d['draw'] == secondary_digit)}
                         for d in full_draws:
                             if d['row_idx'] in matched_weeks:
                                 target_hits.append(d)
                 
-                t_time_label = "PM" if "PM" in target_session_custom else "AM" if "AM" in target_session_custom else ""
-                lbl_prefix_custom = f"{trigger_num} {t_time_label}".strip()
+                t_time_label = "PM" if target_session_custom == "PM သီးသန့်" else "AM" if target_session_custom == "AM သီးသန့်" else ""
+                lbl_prefix_custom = f"{trigger_num}{'R' if (trigger_day != 'All' and 'R' not in trigger_num) else ''} {trigger_day if trigger_day != 'All' else ''} {t_time_label}".strip()
 
                 if not target_hits:
                     st.error("⚠️ သတ်မှတ်ချက်များနှင့် ကိုက်ညီသော သမိုင်းကြောင်းမှတ်တမ်း မရှိပါ Bro!")
                 else:
-                    # Tab 2 Strictly Connected to Original Analysis Function Setup
-                    hp_store, sniper_store, _ = execute_analysis(target_hits, full_draws, active_tfs_custom, is_custom_tab=True, sel_session=target_session_custom, custom_trigger=lbl_prefix_custom)
+                    hp_store, sniper_store, _ = execute_analysis(
+                        target_hits, full_draws, active_tfs_custom, 
+                        is_custom_tab=True, sel_session=target_session_custom, 
+                        custom_trigger=lbl_prefix_custom, strict_day_mode=(trigger_day != "All")
+                    )
 
                     st.write("---")
                     st.markdown("#### 📋 အသေးစိတ်အချက်အလက်")
