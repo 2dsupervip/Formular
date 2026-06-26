@@ -50,7 +50,7 @@ special_groups = {
 }
 
 # ==========================================
-# STUCT ALREADY HIT TRACKER
+# STUCT ALREADY HIT TRACKER (စစ်စစ်ပေါက် ပယ်ဖျက်ခြင်း Logic)
 # ==========================================
 def is_already_hit(mu_name, mu_val, start_idx, end_idx, full_draws_list):
     if start_idx >= len(full_draws_list): return True
@@ -187,13 +187,19 @@ def execute_analysis(target_hits, full_draws, active_tfs, is_custom_tab=False, s
                     latest_pure = res[mu_k]['pure']
 
             if not latest_val: continue
+            
+            # 🚨 True Anti-Overlap Filter: ကြားထဲတွင် ထွက်ဖူးပါက လုံးဝ (လုံးဝ) ဖြုတ်ပစ်မည်၊ Dashboard ပေါ် ပေးမတက်ပါ Bro!
+            if filtered_hits:
+                if is_already_hit(mu_k, latest_val, filtered_hits[-1]['index'] + 1, current_latest_idx, full_draws):
+                    continue
+
             rate = (win_count / total_count) * 100
 
             # Dynamic Tab 2 Smart Guidelines Insertion
             advisor_text = ""
             if is_custom_tab:
                 if rate == 100.0 and total_count >= 10:
-                    advisor_text = "💡 သမိုင်းကြောင်းအရ ကစားရန်သင့်လျော်သောမူဖြစ်သည် - ခန့်မှန်းချက်သာဖြစ်၍ အပိုင်မဟုတ်ပါ"
+                    advisor_text = "💡 သමိုင်းကြောင်းအရ ကစားရန်သင့်လျော်သောမူဖြစ်သည် - ခန့်မှန်းချက်သာဖြစ်၍ အပိုင်မဟုတ်ပါ"
                 else:
                     advisor_text = "⚠️ သမိုင်းကြောင်း အားနည်းသည် - အရန်အဖြစ်သာ စဉ်းစားပါ"
             else:
@@ -209,9 +215,7 @@ def execute_analysis(target_hits, full_draws, active_tfs, is_custom_tab=False, s
                 last_hit_global_idx = filtered_hits[-1]['index']
                 elapsed_draws = current_latest_idx - last_hit_global_idx
                 if (elapsed_draws + 1) == e_off:
-                    already_out = is_already_hit(mu_k, latest_val, last_hit_global_idx + 1, current_latest_idx, full_draws)
-                    if not already_out:
-                        is_deadline_flag = True
+                    is_deadline_flag = True
 
             lbl_prefix = custom_trigger if is_custom_tab else (f"{filtered_hits[-1]['draw']} {filtered_hits[-1]['time']}" if filtered_hits else "")
             rate_str = "100%" if rate == 100.0 else f"{rate:.1f}%"
@@ -295,7 +299,7 @@ if uploaded_file:
                 convergence_pool = []
                 detailed_live_store = []
                 
-                # Bro တောင်းဆိုထားသော Auto-Backstep Core Engine Framework (1 to 20 Dynamic Scan)
+                # Auto-Backstep Core Engine Framework (1 to 20 Dynamic Scan)
                 actual_scan_limit = max(live_max_tf, 20)
                 
                 for step in range(1, actual_scan_limit + 1):
@@ -317,11 +321,10 @@ if uploaded_file:
                         
                         combined_res = {**hp_s, **sniper_s}
                         for mk, mv in combined_res.items():
-                            # Filter to make sure it only displays initial limit unless fallback is needed
                             if step <= live_max_tf or not detailed_live_store:
                                 convergence_pool.append(mv['pure'])
                                 prefix = "🚨 [ရက်ချိန်းပြည့်] " if mv['is_deadline'] else ""
-                                detailed_live_store.append({"top": f"{prefix}{mv['top']}", "form": mv['formula'], "bot": f"မှန်ကန်မှု: ရက်ချိန်းပြည့် မူလက်ကျန် ({past_val} ထွက်ပြီး)", "step": step})
+                                detailed_live_store.append({"top": f"{prefix}{mv['top']}", "form": mv['formula'], "bot": mv['bottom'], "step": step})
 
                 st.write("---")
                 st.markdown("#### 🏆 TOP RESULTS")
@@ -347,7 +350,6 @@ if uploaded_file:
                     st.info("မထွက်သေးဘဲ ကျန်ရှိနေသော ရက်ချိန်းပြည့် မူလက်ကျန် လက္ခဏာ မတွေ့ရှိပါ။")
                 else:
                     for d_card in detailed_live_store:
-                        # Auto-Fallback Notice Label
                         fallback_label = ""
                         if d_card['step'] > live_max_tf:
                             fallback_label = f" <span style='color:#FF4D4D; font-size:12px;'>[Auto Backstep ခြေရာခံမှု: ပွဲစဉ် {d_card['step']}]</span>"
@@ -367,7 +369,7 @@ if uploaded_file:
             c1, c2, c3 = st.columns(3)
             with c1:
                 trigger_day = st.selectbox("📆 Trigger Day:", ["All", "Mon", "Tue", "Wed", "Thur", "Fri"], index=0)
-                trigger_num = st.text_input("🔍 ရှာလိုသောဂဏန်း ရိုက်ထည့်ပါ:", value="01", max_chars=5) # Expanded to fit strict manual strings
+                trigger_num = st.text_input("🔍 ရှာလိုသောဂဏန်း ရိုက်ထည့်ပါ:", value="01", max_chars=5)
             with c2:
                 target_session_custom = st.selectbox("⏱️ အခြေအနေ ရွေးချယ်ရန်:", ["AM+PM ပေါင်းချုပ်", "AM သီးသန့်", "PM သီးသန့်"], index=2)
             with c3:
@@ -377,8 +379,6 @@ if uploaded_file:
 
             if st.button("ရှာဖွေမည် 🚀", key="btn_custom"):
                 target_hits = []
-                
-                # Strict Regex parsing logic for 01, 10 or 01+10 to resolve overlap counter bug completely
                 clean_trigger = trigger_num.strip().upper()
                 is_composite = "+" in clean_trigger or "R" in clean_trigger
                 
