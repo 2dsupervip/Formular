@@ -28,8 +28,9 @@ st.markdown("""
     .line-trigger { font-size: 18px; font-weight: bold; color: #E0D5FA; margin-bottom: 6px; display: block; }
     .line-formula { font-size: 22px; font-weight: bold; color: #FFD700; margin-bottom: 6px; display: block; }
     .line-history { font-size: 15px; color: #A294C7; display: block; }
+    .line-advisor { font-size: 14px; color: #00FFCC; font-style: italic; margin-top: 4px; display: block; }
     
-    /* Dynamic Badge Blocks (SS Style) */
+    /* Dynamic Badge Blocks */
     .badge-inline { padding: 2px 10px; border-radius: 6px; font-size: 14px; font-weight: bold; margin-left: 6px; margin-right: 6px; display: inline-block; vertical-align: middle; }
     .badge-inline-sniper { background-color: #9b59b6; color: white; }
     .badge-inline-hp { background-color: #2ecc71; color: #0D2216; }
@@ -161,13 +162,11 @@ def execute_analysis(target_hits, full_draws, active_tfs, is_custom_tab=False, s
     recovered_store = []
     current_latest_idx = len(full_draws) - 1
 
-    # Filter target hits strictly if Tab 2 Custom specific session chosen
     filtered_hits = target_hits
     if is_custom_tab and sel_session != "AM+PM ပေါင်းချုပ်":
         req_time = "AM" if "AM" in sel_session else "PM"
         filtered_hits = [h for h in target_hits if h['time'] == req_time]
 
-    # Total Count စစ်စစ်သည် target_hits (ထွက်ဖူးသော Unique Global Index) အရေအတွက်ထက် လုံးဝ ပို၍မရပါ Bro!
     total_count = len(filtered_hits)
     if total_count == 0: return hp_store, sniper_store, recovered_store
 
@@ -175,7 +174,6 @@ def execute_analysis(target_hits, full_draws, active_tfs, is_custom_tab=False, s
         mu_keys_list = ["လုံးဘိုင်", "One Change", "key", "အပူးပါခွေ", "ဘရိတ်", "စုံ/မ ကပ်", "အုပ်စုတွဲ", "ကွက်ကျဉ်းစနစ်"]
         
         for mu_k in mu_keys_list:
-            # တွက်ချက်မှုအမှန်အတွက် Unique Target Match တိုင်းကို စနစ်တကျ ပြန်လည်ရေတွက်ခြင်း
             win_count = 0
             latest_val = ""
             latest_pure = ""
@@ -191,13 +189,20 @@ def execute_analysis(target_hits, full_draws, active_tfs, is_custom_tab=False, s
             if not latest_val: continue
             rate = (win_count / total_count) * 100
 
-            # 🚨 Bro ညွှန်ကြားထားသော Matrix Filters အသစ် (HP: 95%+, Sniper: >=10 ကြိမ်နှင့် 100%)
-            if rate == 100.0 and total_count >= 10:
-                pass
-            elif rate >= 95.0:
-                pass
+            # Dynamic Tab 2 Smart Guidelines Insertion
+            advisor_text = ""
+            if is_custom_tab:
+                if rate == 100.0 and total_count >= 10:
+                    advisor_text = "💡 သမိုင်းကြောင်းအရ ကစားရန်သင့်လျော်သောမူဖြစ်သည် - ခန့်မှန်းချက်သာဖြစ်၍ အပိုင်မဟုတ်ပါ"
+                else:
+                    advisor_text = "⚠️ သမိုင်းကြောင်း အားနည်းသည် - အရန်အဖြစ်သာ စဉ်းစားပါ"
             else:
-                continue # Threshold စည်းမျဉ်းနှင့်မကိုက်ညီက လုံးဝ ရှင်းထုတ်ပယ်ဖျက်မည်
+                if rate == 100.0 and total_count >= 10:
+                    pass
+                elif rate >= 95.0:
+                    pass
+                else:
+                    continue
 
             is_deadline_flag = False
             if filtered_hits:
@@ -208,11 +213,7 @@ def execute_analysis(target_hits, full_draws, active_tfs, is_custom_tab=False, s
                     if not already_out:
                         is_deadline_flag = True
 
-            if is_custom_tab:
-                lbl_prefix = custom_trigger
-            else:
-                lbl_prefix = f"{filtered_hits[-1]['draw']} {filtered_hits[-1]['time']}" if filtered_hits else ""
-
+            lbl_prefix = custom_trigger if is_custom_tab else (f"{filtered_hits[-1]['draw']} {filtered_hits[-1]['time']}" if filtered_hits else "")
             rate_str = "100%" if rate == 100.0 else f"{rate:.1f}%"
             badge_color_class = "badge-inline-sniper" if rate == 100.0 else "badge-inline-hp"
             
@@ -220,7 +221,10 @@ def execute_analysis(target_hits, full_draws, active_tfs, is_custom_tab=False, s
             formula_line = f"{latest_val} {rate_str}"
             bottom_line = f"မှန်ကန်မှု: ({total_count} ကြိမ်မှာ {win_count} ကြိမ်မှန်)"
 
-            card_payload = {"top": top_line, "formula": formula_line, "bottom": bottom_line, "e_off": e_off, "is_deadline": is_deadline_flag, "pure": latest_pure}
+            card_payload = {
+                "top": top_line, "formula": formula_line, "bottom": bottom_line, 
+                "e_off": e_off, "is_deadline": is_deadline_flag, "pure": latest_pure, "advisor": advisor_text
+            }
 
             if is_deadline_flag:
                 if rate == 100.0 and total_count >= 10:
@@ -239,7 +243,7 @@ def execute_analysis(target_hits, full_draws, active_tfs, is_custom_tab=False, s
     return hp_store, sniper_store, recovered_store
 
 # ==========================================
-# FILE UPLOAD & RENDERING ENGINE
+# FILE UPLOAD & PRE-PROCESSING
 # ==========================================
 uploaded_file = st.file_uploader("Bro ရဲ့ 2D CSV သို့မဟုတ် Excel ဖိုင်ကို ရွေးချယ်တင်ပေးပါ...", type=['csv', 'xlsx', 'xls'])
 
@@ -281,22 +285,20 @@ if uploaded_file:
         tab_live, tab_custom = st.tabs(["⚡ တွက်ချက်မည်", "🔍 2D Formulas"])
 
         # ------------------------------------------
-        # TAB 1: AUTOMATED ENGINE TRACKER
+        # TAB 1: AUTOMATED BACKSTEP MATRIX ENGINE
         # ------------------------------------------
         with tab_live:
-            st.markdown("### ယခုအချိန်အတွက် အလိုအလျောက် 4-Pool Scan & Convergence Engine")
-            col1, col2 = st.columns(2)
-            with col1:
-                live_max_tf = st.number_input("🎯 ရှာလိုသော ပွဲစဉ်အရေအတွက်", min_value=1, max_value=20, value=6, key="live_max")
-            with col2:
-                st.info(f"ယခုပွဲစဉ်အတွက် [AM, PM, AM+PM, Day Alignment] ၄ လိုင်းစနစ်လုံးကို Auto သိမ်းကျုံးတွက်ချက်ပါမည်။")
-
+            live_max_tf = st.number_input("ရှာလိုသော ပွဲစဉ်အရေအတွက်", min_value=1, max_value=20, value=6, key="live_max")
+            
             if st.button("ယခုပွဲအတွက် Auto ရှာဖွေမည် ⚡", key="btn_auto"):
                 current_end_idx = len(full_draws) - 1
                 convergence_pool = []
                 detailed_live_store = []
                 
-                for step in range(1, live_max_tf + 1):
+                # Bro တောင်းဆိုထားသော Auto-Backstep Core Engine Framework (1 to 20 Dynamic Scan)
+                actual_scan_limit = max(live_max_tf, 20)
+                
+                for step in range(1, actual_scan_limit + 1):
                     target_past_idx = current_end_idx - step + 1
                     if target_past_idx < 0: continue
                     
@@ -311,14 +313,15 @@ if uploaded_file:
                     
                     for pool in condition_pools:
                         if not pool['hits']: continue
-                        # တွက်ချက်မှုအပိုင်းအစစ်ကို ပြုလုပ်ခြင်း
                         hp_s, sniper_s, _ = execute_analysis(pool['hits'], full_draws, [(f"{step} ပွဲ", 1, step)], is_custom_tab=False)
                         
                         combined_res = {**hp_s, **sniper_s}
                         for mk, mv in combined_res.items():
-                            convergence_pool.append(mv['pure'])
-                            prefix = "🚨 [ရက်ချိန်းပြည့်] " if mv['is_deadline'] else ""
-                            detailed_live_store.append({"top": f"{prefix}{mv['top']}", "form": mv['formula'], "bot": f"မှန်ကန်မှု: ရက်ချိန်းပြည့် မူလက်ကျန် ({past_val} ထွက်ပြီး)"})
+                            # Filter to make sure it only displays initial limit unless fallback is needed
+                            if step <= live_max_tf or not detailed_live_store:
+                                convergence_pool.append(mv['pure'])
+                                prefix = "🚨 [ရက်ချိန်းပြည့်] " if mv['is_deadline'] else ""
+                                detailed_live_store.append({"top": f"{prefix}{mv['top']}", "form": mv['formula'], "bot": f"မှန်ကန်မှု: ရက်ချိန်းပြည့် မူလက်ကျန် ({past_val} ထွက်ပြီး)", "step": step})
 
                 st.write("---")
                 st.markdown("#### 🏆 TOP RESULTS")
@@ -344,9 +347,14 @@ if uploaded_file:
                     st.info("မထွက်သေးဘဲ ကျန်ရှိနေသော ရက်ချိန်းပြည့် မူလက်ကျန် လက္ခဏာ မတွေ့ရှိပါ။")
                 else:
                     for d_card in detailed_live_store:
+                        # Auto-Fallback Notice Label
+                        fallback_label = ""
+                        if d_card['step'] > live_max_tf:
+                            fallback_label = f" <span style='color:#FF4D4D; font-size:12px;'>[Auto Backstep ခြေရာခံမှု: ပွဲစဉ် {d_card['step']}]</span>"
+                        
                         st.markdown(f"""
                         <div class="card card-sniper">
-                            <span class="line-trigger">{d_card['top']}</span>
+                            <span class="line-trigger">{d_card['top']}{fallback_label}</span>
                             <span class="line-formula">{d_card['form']}</span>
                             <span class="line-history">{d_card['bot']}</span>
                         </div>
@@ -359,7 +367,7 @@ if uploaded_file:
             c1, c2, c3 = st.columns(3)
             with c1:
                 trigger_day = st.selectbox("📆 Trigger Day:", ["All", "Mon", "Tue", "Wed", "Thur", "Fri"], index=0)
-                trigger_num = st.text_input("🔍 ရှာလိုသောဂဏန်း ရိုက်ထည့်ပါ:", value="01", max_chars=2)
+                trigger_num = st.text_input("🔍 ရှာလိုသောဂဏန်း ရိုက်ထည့်ပါ:", value="01", max_chars=5) # Expanded to fit strict manual strings
             with c2:
                 target_session_custom = st.selectbox("⏱️ အခြေအနေ ရွေးချယ်ရန်:", ["AM+PM ပေါင်းချုပ်", "AM သီးသန့်", "PM သီးသန့်"], index=2)
             with c3:
@@ -370,14 +378,30 @@ if uploaded_file:
             if st.button("ရှာဖွေမည် 🚀", key="btn_custom"):
                 target_hits = []
                 
-                # Scan Logic Strict Control to match Display Key Exactly
-                if trigger_day == "All":
-                    target_hits = [d for d in full_draws if d['draw'] == trigger_num or d['draw'] == trigger_num[::-1]]
-                else:
-                    matched_weeks = {d['row_idx'] for d in full_draws if d['day'] == trigger_day and (d['draw'] == trigger_num or d['draw'] == trigger_num[::-1])}
-                    for d in full_draws:
-                        if d['row_idx'] in matched_weeks:
-                            target_hits.append(d)
+                # Strict Regex parsing logic for 01, 10 or 01+10 to resolve overlap counter bug completely
+                clean_trigger = trigger_num.strip().upper()
+                is_composite = "+" in clean_trigger or "R" in clean_trigger
+                
+                digits_found = re.findall(r'\d+', clean_trigger)
+                
+                if digits_found:
+                    primary_digit = digits_found[0]
+                    secondary_digit = digits_found[1] if len(digits_found) > 1 else primary_digit[::-1]
+                    
+                    if trigger_day == "All":
+                        if is_composite:
+                            target_hits = [d for d in full_draws if d['draw'] == primary_digit or d['draw'] == secondary_digit]
+                        else:
+                            target_hits = [d for d in full_draws if d['draw'] == primary_digit]
+                    else:
+                        if is_composite:
+                            matched_weeks = {d['row_idx'] for d in full_draws if d['day'] == trigger_day and (d['draw'] == primary_digit or d['draw'] == secondary_digit)}
+                        else:
+                            matched_weeks = {d['row_idx'] for d in full_draws if d['day'] == trigger_day and d['draw'] == primary_digit}
+                        
+                        for d in full_draws:
+                            if d['row_idx'] in matched_weeks:
+                                target_hits.append(d)
                 
                 t_time_label = "PM" if "PM" in target_session_custom else "AM" if "AM" in target_session_custom else ""
                 lbl_prefix_custom = f"{trigger_num} {t_time_label}".strip()
@@ -402,6 +426,7 @@ if uploaded_file:
                                 <span class="line-trigger">{data['top']}</span>
                                 <span class="line-formula">{data['formula']}</span>
                                 <span class="line-history">{data['bottom']}</span>
+                                <span class="line-advisor">{data['advisor']}</span>
                             </div>
                             """, unsafe_allow_html=True)
 
@@ -415,6 +440,7 @@ if uploaded_file:
                                 <span class="line-trigger">{data['top']}</span>
                                 <span class="line-formula">{data['formula']}</span>
                                 <span class="line-history">{data['bottom']}</span>
+                                <span class="line-advisor">{data['advisor']}</span>
                             </div>
                             """, unsafe_allow_html=True)
 else:
