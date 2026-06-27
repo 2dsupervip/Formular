@@ -130,6 +130,8 @@ def execute_analysis(target_hits, full_draws, active_tfs, is_custom_tab=False, s
                 if start_history_idx >= end_history_idx: continue
                 
                 sub_draws = [d['draw'] for d in full_draws[start_history_idx : end_history_idx + 1]]
+                if not sub_draws: continue
+                
                 all_singles = "".join(sub_draws)
                 all_heads = [d[0] for d in sub_draws]
                 all_tails = [d[1] for d in sub_draws]
@@ -167,7 +169,7 @@ def execute_analysis(target_hits, full_draws, active_tfs, is_custom_tab=False, s
                 latest_val = mapping[mu_k]
                 latest_pure = mapping[mu_k]
                 
-                # 🚨 Bro's Exact Step Boundary Validation
+                # 🚨 Bro's Exact Target Step Boundary Validation
                 exact_target_idx = hit_idx + e_off
                 if exact_target_idx < len(full_draws):
                     d_target = full_draws[exact_target_idx]
@@ -187,7 +189,7 @@ def execute_analysis(target_hits, full_draws, active_tfs, is_custom_tab=False, s
             if not latest_val: continue
             rate = (win_count / total_count) * 100
 
-            # 🚨 Rate >= 90% and Total Sample >= 10
+            # 🚨 Bro's Precision Safety Guard Limits (Rate >= 90% and Sample >= 10)
             if rate < 90.0 or total_count < 10:
                 continue
 
@@ -211,9 +213,16 @@ def execute_analysis(target_hits, full_draws, active_tfs, is_custom_tab=False, s
             formula_line = f"{latest_val} {rate_str}"
             bottom_line = f"မှန်ကန်မှု: ({total_count} ကြိမ်မှာ {win_count} ကြိမ်မှန်)"
 
+            advisor_text = ""
+            if is_custom_tab:
+                if rate == 100.0 and total_count >= 10:
+                    advisor_text = "💡 သမိုင်းကြောင်းအရ ကစားရန်သင့်လျော်သောမူဖြစ်သည် - ခန့်မှန်းချက်သာဖြစ်၍ အပိုင်မဟုတ်ပါ"
+                else:
+                    advisor_text = "⚠️ သမိုင်းကြောင်း အားနည်းသည် - အရန်အဖြစ်သာ စဉ်းစားပါ"
+
             card_payload = {
                 "top": top_line, "formula": formula_line, "bottom": bottom_line, 
-                "e_off": e_off, "is_deadline": is_deadline_flag, "pure": latest_pure, "advisor": ""
+                "e_off": e_off, "is_deadline": is_deadline_flag, "pure": latest_pure, "advisor": advisor_text
             }
 
             if is_deadline_flag:
