@@ -104,10 +104,10 @@ def is_already_hit(mu_name, mu_val, start_idx, end_idx, full_draws_list):
     return False
 
 # ==========================================
-# CORE ENGINE: PRECISE HISTORICAL PATTERN SLICER
+# CORE ENGINE: FIXED & CLEAN EXACT STEP SLICER
 # ==========================================
 def run_mu_evaluation(hit_idx, full_draws_list, s_off, e_off, target_session_type="AM+PM ပေါင်းချုပ်"):
-    # Pull history backward cleanly
+    # Safe historical window collection (Look backward)
     start_history_idx = max(0, hit_idx - 50)
     end_history_idx = hit_idx - 1
     if start_history_idx >= end_history_idx: return None
@@ -151,10 +151,10 @@ def run_mu_evaluation(hit_idx, full_draws_list, s_off, e_off, target_session_typ
         "ဘရိတ်": f"{brk_label} ဘရိတ်", "စုံ/မ ကပ်": kap_label, "အုပ်စုတွဲ": best_gp if best_gp else "-", "ကွက်ကျဉ်းစနစ်": kwat_kyin_label
     }
 
-    # 🚨 Bro's Core Rule: Strict Exact Step Target Check
+    # 🚨 Bro's Exact Boundary Lock Routine (100% Repaired & Stable)
     for k, label in mu_configs.items():
         if e_off > 1:
-            # ရှေ့ပွဲတွေမှာ ကြိုထွက်ဖူးရင် ဤပွဲအတွက် ပယ်ဖျက်သည်
+            # Check prior intervals for early leaks
             hit_early = is_already_hit(k, label, hit_idx + 1, hit_idx + e_off - 1, full_draws_list)
         else:
             hit_early = False
@@ -163,11 +163,15 @@ def run_mu_evaluation(hit_idx, full_draws_list, s_off, e_off, target_session_typ
         if exact_target_idx >= len(full_draws_list): continue
         
         target_draw = full_draws_list[exact_target_idx]
-        if target_session_type != "AM+PM ပေါင်းချုပ်" and target_draw['time'] != ("AM" if "AM" in target_session_type else "PM"):
-            is_hit_now = False
-        else:
-            is_hit_now = is_already_hit(k, label, exact_target_idx, exact_target_idx, full_draws_list)
-            
+        
+        # Verify alignment logic matches constraints
+        if target_session_type != "AM+PM ပေါင်းချုပ်" and "သီးသန့်" in target_session_type:
+            req_time = "AM" if "AM" in target_session_type else "PM"
+            if target_draw['time'] != req_time:
+                output_res[k] = {"val": label, "hit": False, "pure": label}
+                continue
+                
+        is_hit_now = is_already_hit(k, label, exact_target_idx, exact_target_idx, full_draws_list)
         is_step_hit = (not hit_early) and is_hit_now
         output_res[k] = {"val": label, "hit": is_step_hit, "pure": label}
         
@@ -204,11 +208,11 @@ def execute_analysis(target_hits, full_draws, active_tfs, is_custom_tab=False, s
             if not latest_val: continue
             rate = (win_count / total_count) * 100
 
-            # 🚨 Bro's Precision Safety Boundaries: Rate >= 90% and Total hits >= 10
+            # 🚨 Bro's Precision Filter Guard: Rate >= 90% and Sample >= 10
             if rate < 90.0 or total_count < 10:
                 continue
 
-            # Tab 1 Overlap Purge Guard
+            # Tab 1 Overlap Purge Logic
             if not is_custom_tab and filtered_hits:
                 if is_already_hit(mu_k, latest_val, filtered_hits[-1]['index'] + 1, current_latest_idx, full_draws):
                     continue
@@ -228,9 +232,16 @@ def execute_analysis(target_hits, full_draws, active_tfs, is_custom_tab=False, s
             formula_line = f"{latest_val} {rate_str}"
             bottom_line = f"မှန်ကန်မှု: ({total_count} ကြိမ်မှာ {win_count} ကြိမ်မှန်)"
 
+            advisor_text = ""
+            if is_custom_tab:
+                if rate == 100.0 and total_count >= 10:
+                    advisor_text = "💡 သမိုင်းကြောင်းအရ ကစားရန်သင့်လျော်သောမူဖြစ်သည် - ခန့်မှန်းချက်သာဖြစ်၍ အပိုင်မဟုတ်ပါ"
+                else:
+                    advisor_text = "⚠️ သမိုင်းကြောင်း အားနည်းသည် - အရန်အဖြစ်သာ စဉ်းစားပါ"
+
             card_payload = {
                 "top": top_line, "formula": formula_line, "bottom": bottom_line, 
-                "e_off": e_off, "is_deadline": is_deadline_flag, "pure": latest_pure, "advisor": ""
+                "e_off": e_off, "is_deadline": is_deadline_flag, "pure": latest_pure, "advisor": advisor_text
             }
 
             if is_deadline_flag:
@@ -284,7 +295,7 @@ if uploaded_file:
             target_day_name = days_cycle[(curr_idx + 1) % 5]
             target_time_name = "AM"
             
-        st.success(f"🔮 ဒေတာပွဲစဉ်ပေါင်း {len(full_draws)} ခု ဖတ်ပြီးပါပြီ。 [{target_day_name} {target_time_name}] အတွက် တွက်ချက်မည်ဖြစ်ပါသည်။")
+        st.success(f"🔮 ဒေတာပွဲစဉ်ပေါင်း {len(full_draws)} ခု ဖတ်ပြီးပါပြီ။ [{target_day_name} {target_time_name}] အတွက် တွက်ချက်မည်ဖြစ်ပါသည်။")
         st.write("---")
 
         tab_live, tab_custom = st.tabs(["⚡ တွက်ချက်မည်", "🔍 2D Formulas"])
@@ -377,7 +388,7 @@ if uploaded_file:
                                 """, unsafe_allow_html=True)
 
         # ------------------------------------------
-        # TAB 2: CLEAN CUSTOM FORMULARS ENGINE (Exact Step Boundary)
+        # TAB 2: CLEAN CUSTOM FORMULARS ENGINE (Exact Bounds Main Frame)
         # ------------------------------------------
         with tab_custom:
             c1, c2, c3 = st.columns(3)
@@ -408,7 +419,7 @@ if uploaded_file:
                             secondary_digit = digits_found[1] if len(digits_found) > 1 else primary_digit[::-1]
                             target_hits = [d for d in full_draws if d['draw'] == primary_digit or d['draw'] == secondary_digit]
                         else:
-                            # Strict Session Base Target Filtering For Exact Counts
+                            # Strict alignment tracking lock for exact single target entries
                             if target_session_custom != "AM+PM ပေါင်းချုပ်":
                                 req_time_init = "AM" if "AM" in target_session_custom else "PM"
                                 target_hits = [d for d in full_draws if d['draw'] == primary_digit and d['time'] == req_time_init]
@@ -421,9 +432,10 @@ if uploaded_file:
                             if d['row_idx'] in matched_weeks:
                                 target_hits.append(d)
                 
+                # Filter rows logic mapping bounds setup
                 if trigger_day == "All" and target_session_custom != "AM+PM ပေါင်းချုပ်" and len(target_hits) > 0:
-                    req_time = "AM" if "AM" in target_session_custom else "PM"
-                    target_hits = [h for h in target_hits if h['time'] == req_time]
+                    req_time_filter = "AM" if "AM" in target_session_custom else "PM"
+                    target_hits = [h for h in target_hits if h['time'] == req_time_filter]
 
                 t_time_label = "PM" if target_session_custom == "PM သီးသန့်" else "AM" if target_session_custom == "AM သီးသန့်" else ""
                 lbl_prefix_custom = f"{trigger_num}{'R' if (trigger_day != 'All' and 'R' not in trigger_num) else ''} {trigger_day if trigger_day != 'All' else ''} {t_time_label}".strip()
