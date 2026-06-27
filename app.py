@@ -49,7 +49,7 @@ special_groups = {
 }
 
 # ==========================================
-# STUCT ALREADY HIT TRACKER
+# STUCT ALREADY HIT TRACKER (STABLE INTERNAL LOOKUP)
 # ==========================================
 def is_already_hit(mu_name, mu_val, start_idx, end_idx, full_draws_list):
     if start_idx >= len(full_draws_list): return True
@@ -104,80 +104,6 @@ def is_already_hit(mu_name, mu_val, start_idx, end_idx, full_draws_list):
     return False
 
 # ==========================================
-# CORE ENGINE: FIXED & CLEAN EXACT STEP SLICER
-# ==========================================
-def run_mu_evaluation(hit_idx, full_draws_list, s_off, e_off, target_session_type="AM+PM ပေါင်းချုပ်"):
-    # Safe historical window collection (Look backward)
-    start_history_idx = max(0, hit_idx - 50)
-    end_history_idx = hit_idx - 1
-    if start_history_idx >= end_history_idx: return None
-    
-    sub_draws = [d['draw'] for d in full_draws_list[start_history_idx : end_history_idx + 1]]
-    if not sub_draws: return None
-
-    all_singles = "".join(sub_draws)
-    all_heads = [d[0] for d in sub_draws]
-    all_tails = [d[1] for d in sub_draws]
-    all_breaks = [str((int(d[0]) + int(d[1])) % 10) for d in sub_draws]
-
-    top_single = Counter(all_singles).most_common(1)[0][0] if all_singles else ""
-    top_oc = "".join([x[0] for x in Counter(all_singles).most_common(2)]) if len(Counter(all_singles)) >= 2 else top_single
-    top_key3 = "".join([x[0] for x in Counter(all_singles).most_common(3)]) if len(Counter(all_singles)) >= 3 else top_oc
-    top_k4 = "".join([x[0] for x in Counter(all_singles).most_common(4)]) if len(Counter(all_singles)) >= 4 else top_key3
-    
-    top_h3 = "".join([x[0] for x in Counter(all_heads).most_common(3)]) if all_heads else ""
-    top_t3 = "".join([x[0] for x in Counter(all_tails).most_common(3)]) if all_tails else ""
-
-    top_brk_data = Counter(all_breaks).most_common(2)
-    top_brk2 = [x[0] for x in top_brk_data]
-    if len(top_brk2) < 2: top_brk2.append(str((int(top_brk2[0])+1)%10 if top_brk2 else 0))
-    brk_label = f"{top_brk2[0]}, {top_brk2[1]}"
-
-    e_sc = sum(1 for d in sub_draws if top_single in d and int(d.replace(top_single,'',1) if d.replace(top_single,'',1) else top_single) % 2 == 0)
-    o_sc = sum(1 for d in sub_draws if top_single in d and int(d.replace(top_single,'',1) if d.replace(top_single,'',1) else top_single) % 2 != 0)
-    kap_label = f'[{top_single}] "စုံ"ကပ်' if e_sc >= o_sc else f'[{top_single}] "မ"ကပ်'
-
-    best_gp = ""; max_gp_c = 0
-    for combo in itertools.combinations(special_groups.keys(), 2):
-        c = sum(1 for d in sub_draws if d in special_groups[combo[0]] or d in special_groups[combo[1]])
-        if c > max_gp_c: max_gp_c = c; best_gp = f"{combo[0]}+{combo[1]}"
-
-    kwat_kyin_label = f"{top_key3} ပါသော {brk_label} ဘရိတ်"
-
-    output_res = {}
-    mu_configs = {
-        "လုံးဘိုင်": f"{top_single} လုံးဘိုင်", "One Change": f"{top_oc} One Change", "key": f"{top_key3} key",
-        "အပူးပါခွေ": f"{top_k4} အပူးပါခွေ", "ထိပ်စီး": f"{top_h3} ထိပ်စီး", "နောက်ပိတ်": f"{top_t3} နောက်ပိတ်",
-        "ဘရိတ်": f"{brk_label} ဘရိတ်", "စုံ/မ ကပ်": kap_label, "အုပ်စုတွဲ": best_gp if best_gp else "-", "ကွက်ကျဉ်းစနစ်": kwat_kyin_label
-    }
-
-    # 🚨 Bro's Exact Boundary Lock Routine (100% Repaired & Stable)
-    for k, label in mu_configs.items():
-        if e_off > 1:
-            # Check prior intervals for early leaks
-            hit_early = is_already_hit(k, label, hit_idx + 1, hit_idx + e_off - 1, full_draws_list)
-        else:
-            hit_early = False
-            
-        exact_target_idx = hit_idx + e_off
-        if exact_target_idx >= len(full_draws_list): continue
-        
-        target_draw = full_draws_list[exact_target_idx]
-        
-        # Verify alignment logic matches constraints
-        if target_session_type != "AM+PM ပေါင်းချုပ်" and "သီးသန့်" in target_session_type:
-            req_time = "AM" if "AM" in target_session_type else "PM"
-            if target_draw['time'] != req_time:
-                output_res[k] = {"val": label, "hit": False, "pure": label}
-                continue
-                
-        is_hit_now = is_already_hit(k, label, exact_target_idx, exact_target_idx, full_draws_list)
-        is_step_hit = (not hit_early) and is_hit_now
-        output_res[k] = {"val": label, "hit": is_step_hit, "pure": label}
-        
-    return output_res
-
-# ==========================================
 # MASTER ROUTINE: HYBRID DATA ANALYSIS ENGINE
 # ==========================================
 def execute_analysis(target_hits, full_draws, active_tfs, is_custom_tab=False, sel_session="AM+PM ပေါင်းချုပ်", custom_trigger="", strict_day_mode=False):
@@ -198,21 +124,78 @@ def execute_analysis(target_hits, full_draws, active_tfs, is_custom_tab=False, s
             latest_pure = ""
             
             for hit in filtered_hits:
-                res = run_mu_evaluation(hit['index'], full_draws, s_off, e_off, target_session_type=sel_session)
-                if res and mu_k in res:
-                    if res[mu_k]['hit']:
-                        win_count += 1
-                    latest_val = res[mu_k]['val']
-                    latest_pure = res[mu_k]['pure']
+                # 🚨 Stable History Window Extraction (Backward Look Base)
+                hit_idx = hit['index']
+                start_history_idx = max(0, hit_idx - 50)
+                end_history_idx = hit_idx - 1
+                if start_history_idx >= end_history_idx: continue
+                
+                sub_draws = [d['draw'] for d in full_draws[start_history_idx : end_history_idx + 1]]
+                all_singles = "".join(sub_draws)
+                all_heads = [d[0] for d in sub_draws]
+                all_tails = [d[1] for d in sub_draws]
+                all_breaks = [str((int(d[0]) + int(d[1])) % 10) for d in sub_draws]
+
+                top_single = Counter(all_singles).most_common(1)[0][0] if all_singles else ""
+                top_oc = "".join([x[0] for x in Counter(all_singles).most_common(2)]) if len(Counter(all_singles)) >= 2 else top_single
+                top_key3 = "".join([x[0] for x in Counter(all_singles).most_common(3)]) if len(Counter(all_singles)) >= 3 else top_oc
+                top_k4 = "".join([x[0] for x in Counter(all_singles).most_common(4)]) if len(Counter(all_singles)) >= 4 else top_key3
+                top_h3 = "".join([x[0] for x in Counter(all_heads).most_common(3)]) if all_heads else ""
+                top_t3 = "".join([x[0] for x in Counter(all_tails).most_common(3)]) if all_tails else ""
+                top_brk2 = [x[0] for x in Counter(all_breaks).most_common(2)]
+                if len(top_brk2) < 2: top_brk2.append(str((int(top_brk2[0])+1)%10 if top_brk2 else 0))
+                brk_label = f"{top_brk2[0]}, {top_brk2[1]}"
+                
+                e_sc = sum(1 for d in sub_draws if top_single in d and int(d.replace(top_single,'',1) if d.replace(top_single,'',1) else top_single) % 2 == 0)
+                o_sc = sum(1 for d in sub_draws if top_single in d and int(d.replace(top_single,'',1) if d.replace(top_single,'',1) else top_single) % 2 != 0)
+                kap_label = f'[{top_single}] "စုံ"ကပ်' if e_sc >= o_sc else f'[{top_single}] "မ"ကပ်'
+                
+                best_gp = ""
+                max_gp_c = 0
+                for combo in itertools.combinations(special_groups.keys(), 2):
+                    c = sum(1 for d in sub_draws if d in special_groups[combo[0]] or d in special_groups[combo[1]])
+                    if c > max_gp_c: max_gp_c = c; best_gp = f"{combo[0]}+{combo[1]}"
+                kwat_kyin_label = f"{top_key3} ပါသော {brk_label} ဘရိတ်"
+
+                mapping = {
+                    "လုံးဘိုင်": f"{top_single} လုံးဘိုင်", "One Change": f"{top_oc} One Change",
+                    "key": f"{top_key3} key", "အပူးပါခွေ": f"{top_k4} အပူးပါခွေ",
+                    "ထိပ်စီး": f"{top_h3} ထိပ်စီး", "နောက်ပိတ်": f"{top_t3} နောက်ပိတ်",
+                    "ဘရိတ်": f"{brk_label} ဘရိတ်", "စုံ/မ ကပ်": kap_label, "အုပ်စုတွဲ": best_gp if best_gp else "-",
+                    "ကွက်ကျဉ်းစနစ်": kwat_kyin_label
+                }
+                
+                latest_val = mapping[mu_k]
+                latest_pure = mapping[mu_k]
+                
+                # 🚨 Bro's Core Rule: Strict Exact Step Target Boundary Validation
+                exact_target_idx = hit_idx + e_off
+                if exact_target_idx < len(full_draws):
+                    d_target = full_draws[exact_target_idx]
+                    
+                    if is_custom_tab and sel_session != "AM+PM ပေါင်းချုပ်" and "သီးသန့်" in sel_session:
+                        req_t = "AM" if "AM" in sel_session else "PM"
+                        if d_target['time'] != req_t: continue
+                    
+                    # 1. ရှေ့ပွဲစဉ် (1 to step-1) အတွင်း ကြိုထွက်ဖူးခြင်း ရှိ/မရှိ စစ်ဆေးသည်
+                    if e_off > 1:
+                        was_early_leak = is_already_hit(mu_k, latest_val, hit_idx + 1, hit_idx + e_off - 1, full_draws)
+                    else:
+                        was_early_leak = False
+                        
+                    # 2. ရှေ့မှာ လုံးဝမထွက်ခဲ့ဘဲ ယခု သတ်မှတ်ရက်ချိန်းပွဲတွင်မှ ကွက်တိထွက်ခြင်း ဟုတ်/မဟုတ် စစ်ဆေးသည်
+                    if not was_early_leak:
+                        if is_already_hit(mu_k, latest_val, exact_target_idx, exact_target_idx, full_draws):
+                            win_count += 1
 
             if not latest_val: continue
             rate = (win_count / total_count) * 100
 
-            # 🚨 Bro's Precision Filter Guard: Rate >= 90% and Sample >= 10
+            # 🚨 Bro's Strict Cut-off Guard: Rate >= 90% and Total Sample >= 10
             if rate < 90.0 or total_count < 10:
                 continue
 
-            # Tab 1 Overlap Purge Logic
+            # Tab 1 Anti-Overlap Purge Logic
             if not is_custom_tab and filtered_hits:
                 if is_already_hit(mu_k, latest_val, filtered_hits[-1]['index'] + 1, current_latest_idx, full_draws):
                     continue
@@ -402,73 +385,4 @@ if uploaded_file:
                 else:
                     target_session_custom = st.selectbox("⏱️ Target ပွဲစဉ် အခြေအနေ ရွေးရန်:", ["AM+PM ပေါင်းချုပ်", "AM သီးသန့်", "PM သီးသန့်"], index=2)
             with c3:
-                custom_max_tf = st.number_input("⏳ စစ်ဆေးမည့် ပွဲစဉ်အရေအတွက်", min_value=1, max_value=20, value=10)
-
-            if st.button("ရှာဖွေမည် 🚀", key="btn_custom"):
-                target_hits = []
-                clean_trigger = trigger_num.strip().upper()
-                is_composite = "+" in clean_trigger or "R" in clean_trigger or (trigger_day != "All")
-                
-                digits_found = re.findall(r'\d+', clean_trigger)
-                
-                if digits_found:
-                    primary_digit = digits_found[0]
-                    
-                    if trigger_day == "All":
-                        if is_composite:
-                            secondary_digit = digits_found[1] if len(digits_found) > 1 else primary_digit[::-1]
-                            target_hits = [d for d in full_draws if d['draw'] == primary_digit or d['draw'] == secondary_digit]
-                        else:
-                            # Strict alignment tracking lock for exact single target entries
-                            if target_session_custom != "AM+PM ပေါင်းချုပ်":
-                                req_time_init = "AM" if "AM" in target_session_custom else "PM"
-                                target_hits = [d for d in full_draws if d['draw'] == primary_digit and d['time'] == req_time_init]
-                            else:
-                                target_hits = [d for d in full_draws if d['draw'] == primary_digit]
-                    else:
-                        secondary_digit = digits_found[1] if len(digits_found) > 1 else primary_digit[::-1]
-                        matched_weeks = {d['row_idx'] for d in full_draws if d['day'] == trigger_day and (d['draw'] == primary_digit or d['draw'] == secondary_digit)}
-                        for d in full_draws:
-                            if d['row_idx'] in matched_weeks:
-                                target_hits.append(d)
-                
-                # Filter rows logic mapping bounds setup
-                if trigger_day == "All" and target_session_custom != "AM+PM ပေါင်းချုပ်" and len(target_hits) > 0:
-                    req_time_filter = "AM" if "AM" in target_session_custom else "PM"
-                    target_hits = [h for h in target_hits if h['time'] == req_time_filter]
-
-                t_time_label = "PM" if target_session_custom == "PM သီးသန့်" else "AM" if target_session_custom == "AM သီးသန့်" else ""
-                lbl_prefix_custom = f"{trigger_num}{'R' if (trigger_day != 'All' and 'R' not in trigger_num) else ''} {trigger_day if trigger_day != 'All' else ''} {t_time_label}".strip()
-
-                if not target_hits:
-                    st.error("⚠️ သတ်မှတ်ချက်များနှင့် ကိုက်ညီသော သမိုင်းကြောင်းမှတ်တမ်း မရှိပါ Bro!")
-                else:
-                    st.write("---")
-                    st.markdown("#### 📋 အသေးစိတ်အချက်အလက် (Window အလိုက် ခေါက်သိမ်းစနစ်)")
-                    
-                    for step in range(1, custom_max_tf + 1):
-                        hp_store, sniper_store = execute_analysis(
-                            target_hits, full_draws, [(f"{step} ပွဲ", 1, step)], 
-                            is_custom_tab=True, sel_session=target_session_custom, 
-                            custom_trigger=lbl_prefix_custom, strict_day_mode=(trigger_day != "All")
-                        )
-                        
-                        combined_step_res = {**sniper_store, **hp_store}
-                        if not combined_step_res: continue
-                        
-                        is_step_deadline = any(v['is_deadline'] for v in combined_step_res.values())
-                        tab2_header = f"⚠️ {step} ပွဲအတွင်း မူများ [ရက်ချိန်းပြည့်]" if is_step_deadline else f"🔽 {step} ပွဲအတွင်း မူများ"
-                            
-                        with st.expander(tab2_header, expanded=(step == 1)):
-                            for mu_name, data in combined_step_res.items():
-                                card_border_class = "card-sniper" if "100%" in data['formula'] else "card-hp"
-                                st.markdown(f"""
-                                <div class="card {card_border_class}">
-                                    <span class="line-trigger">{data['top']}</span>
-                                    <span class="line-formula">{data['formula']}</span>
-                                    <span class="line-history">{data['bottom']}</span>
-                                    <span class="line-advisor">{data['advisor']}</span>
-                                </div>
-                                """, unsafe_allow_html=True)
-else:
-    st.info("စတင်ရန်အတွက် Bro ရဲ့ 2D CSV သို့မဟုတ် Excel ဒေတာဖိုင်ကို အပေါ်တွင် အရင် တင်ပေးပါဦး။")
+                custom_max_tf = st.number_input("⏳ စစ်ဆေးမည့် ပွဲစဉ်အရေအတွက်", min_value=1, max
