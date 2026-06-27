@@ -37,7 +37,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V26 PRO)</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Ultimate Verified Calendar Matrix Engine | Strict 90%+ Cut-off Guard</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Ultimate Verified Calendar Matrix Engine | The Best Precision Guard</div>', unsafe_allow_html=True)
 
 special_groups = {
     "ညီကို": {"01","10","12","21","23","32","34","43","45","54","56","65","67","76","78","87","89","98","90","09"},
@@ -104,10 +104,9 @@ def is_already_hit(mu_name, mu_val, start_idx, end_idx, full_draws_list):
     return False
 
 # ==========================================
-# CORE ENGINE: STABLE HISTORICAL SLICER (FIXED WINDOWS)
+# CORE ENGINE: STABLE HISTORICAL SLICER
 # ==========================================
 def run_mu_evaluation(hit_idx, full_draws_list, s_off, e_off, target_session_type="AM+PM ပေါင်းချုပ်"):
-    # Fix: Look backward from hit index to properly collect historical patterns
     end_history_idx = hit_idx - 1
     start_history_idx = end_history_idx - (e_off - s_off)
     if start_history_idx < 0: return None
@@ -144,7 +143,6 @@ def run_mu_evaluation(hit_idx, full_draws_list, s_off, e_off, target_session_typ
 
     kwat_kyin_label = f"{top_key3} ပါသော {brk_label} ဘရိတ်"
 
-    # Fix: Strict Next Target Evaluation (Immediate following step validation)
     act_draws_all = full_draws_list[hit_idx : min(hit_idx + e_off, len(full_draws_list))]
     if target_session_type != "AM+PM ပေါင်းချုပ်":
         req_time = "AM" if "AM" in target_session_type else "PM"
@@ -203,8 +201,9 @@ def execute_analysis(target_hits, full_draws, active_tfs, is_custom_tab=False, s
             if not latest_val: continue
             rate = (win_count / total_count) * 100
 
-            # 🚨 Bro's Core Safety Filter: ၉၀% အောက်ရောက်နေရင် လုံးဝမပြဘူးမသုံးဘူး
-            if rate < 90.0:
+            # 🚨 Bro's Golden Boundaries Rule 1: 90% နှင့် အထက်ပဲပြမယ် 90% အောက်ရောက်နေရင် မပြဘူးမသုံးဘူး
+            # 🚨 Bro's Golden Boundaries Rule 2: 10 ကြိမ်နှင့်အထက် မှန်ကန်ခဲ့သော မူဖြစ်ရမည်
+            if rate < 90.0 or total_count < 10:
                 continue
 
             # Tab 1 Overlap Purge Guard
@@ -369,7 +368,6 @@ if uploaded_file:
                     for step_key in sorted(grouped_by_step.keys()):
                         card_list = grouped_by_step[step_key]
                         is_any_deadline = any(c['deadline'] for c in card_list)
-                        
                         header_title = f"⚠️ {step_key} ပွဲအတွင်း မူများ [ရက်ချိန်းပြည့်]" if is_any_deadline else f"🔽 {step_key} ပွဲအတွင်း မူများ"
                             
                         with st.expander(header_title, expanded=True):
@@ -387,25 +385,27 @@ if uploaded_file:
                                 """, unsafe_allow_html=True)
 
         # ------------------------------------------
-        # TAB 2: CLEAN CUSTOM FORMULARS ENGINE (Premium Collapse)
+        # TAB 2: CLEAN CUSTOM FORMULARS ENGINE (Strict Single vs R Logic Matcher)
         # ------------------------------------------
         with tab_custom:
             c1, c2, c3 = st.columns(3)
             with c1:
                 trigger_day = st.selectbox("📆 Trigger Day:", ["All", "Mon", "Tue", "Wed", "Thur", "Fri"], index=0)
-                trigger_num = st.text_input("🔍 ရှာလိုသောဂဏန်း ရိုက်ထည့်ပါ:", value="01", max_chars=5)
+                trigger_num = st.text_input("🔍 ရှာလိုသောဂဏန်း ရိုက်ထည့်ပါ:", value="48", max_chars=7)
             with c2:
                 if trigger_day != "All":
                     st.markdown("<span style='color:#00FFCC; font-size:13px;'>ℹ️ Day စနစ်သုံးထားသဖြင့် အကြိမ်ရေပြည့်မီစေရန် R-စနစ် နှင့် AM+PM ပေါင်းချုပ် စနစ်ကို Backend က Auto Lock ချပေးထားပါသည်။</span>", unsafe_allow_html=True)
                     target_session_custom = "AM+PM ပေါင်းချုပ်"
                 else:
-                    target_session_custom = st.selectbox("⏱️ Target ပွဲစဉ် အခြေအနေ ရွေးရန်:", ["AM+PM ပေါင်းချုပ်", "AM သီးသန့်", "PM သီးသန့်"], index=0)
+                    target_session_custom = st.selectbox("⏱️ Target ပွဲစဉ် အခြေအနေ ရွေးရန်:", ["AM+PM ပေါင်းချုပ်", "AM သီးသန့်", "PM သီးသန့်"], index=2)
             with c3:
                 custom_max_tf = st.number_input("⏳ စစ်ဆေးမည့် ပွဲစဉ်အရေအတွက်", min_value=1, max_value=20, value=10)
 
             if st.button("ရှာဖွေမည် 🚀", key="btn_custom"):
                 target_hits = []
                 clean_trigger = trigger_num.strip().upper()
+                
+                # 🚨 Bro's Core Filter Logic: 48R သို့မဟုတ် 48+84 လို့ ရိုက်မှသာ (R System) ဝင်မည်၊ သက်သက်ရိုက်ရင် Single အတိုင်း ၃၅ ကြိမ်သာ ယူမည်။
                 is_composite = "+" in clean_trigger or "R" in clean_trigger or (trigger_day != "All")
                 
                 digits_found = re.findall(r'\d+', clean_trigger)
@@ -418,8 +418,10 @@ if uploaded_file:
                         if is_composite:
                             target_hits = [d for d in full_draws if d['draw'] == primary_digit or d['draw'] == secondary_digit]
                         else:
+                            # Strict Single Matching Guard -> Yields exact 35 items for '48'
                             target_hits = [d for d in full_draws if d['draw'] == primary_digit]
                     else:
+                        # Day Lock Loop System
                         matched_weeks = {d['row_idx'] for d in full_draws if d['day'] == trigger_day and (d['draw'] == primary_digit or d['draw'] == secondary_digit)}
                         for d in full_draws:
                             if d['row_idx'] in matched_weeks:
