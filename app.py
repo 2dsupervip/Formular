@@ -37,7 +37,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V26 PRO)</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Ultimate Collapse Matrix Engine | Premium Accordion Architecture</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Ultimate Verified Calendar Matrix Engine | Strict 90%+ Cut-off Guard</div>', unsafe_allow_html=True)
 
 special_groups = {
     "ညီကို": {"01","10","12","21","23","32","34","43","45","54","56","65","67","76","78","87","89","98","90","09"},
@@ -104,15 +104,15 @@ def is_already_hit(mu_name, mu_val, start_idx, end_idx, full_draws_list):
     return False
 
 # ==========================================
-# CORE ENGINE: MASTER 10 FORMULAS EVALUATOR
+# CORE ENGINE: STABLE HISTORICAL SLICER (FIXED WINDOWS)
 # ==========================================
 def run_mu_evaluation(hit_idx, full_draws_list, s_off, e_off, target_session_type="AM+PM ပေါင်းချုပ်"):
-    # Target Matrix Step Calculation
-    s_idx = hit_idx + s_off
-    e_idx = min(hit_idx + e_off + 1, len(full_draws_list))
-    if s_idx >= len(full_draws_list): return None
+    # Fix: Look backward from hit index to properly collect historical patterns
+    end_history_idx = hit_idx - 1
+    start_history_idx = end_history_idx - (e_off - s_off)
+    if start_history_idx < 0: return None
     
-    sub_draws = [d['draw'] for d in full_draws_list[s_idx : e_idx]]
+    sub_draws = [d['draw'] for d in full_draws_list[start_history_idx : end_history_idx + 1]]
     if not sub_draws: return None
 
     all_singles = "".join(sub_draws)
@@ -144,8 +144,8 @@ def run_mu_evaluation(hit_idx, full_draws_list, s_off, e_off, target_session_typ
 
     kwat_kyin_label = f"{top_key3} ပါသော {brk_label} ဘရိတ်"
 
-    # 🚨 Bro's New Rule: History လမ်းကြောင်းမခွဲဘဲ Target (ထွက်ရမည့်ပွဲ) အတွက်သာ AM/PM အနုစိတ်ခွဲစစ်ထုတ်ခြင်း
-    act_draws_all = full_draws_list[hit_idx+1 : min(hit_idx+e_off+1, len(full_draws_list))]
+    # Fix: Strict Next Target Evaluation (Immediate following step validation)
+    act_draws_all = full_draws_list[hit_idx : min(hit_idx + e_off, len(full_draws_list))]
     if target_session_type != "AM+PM ပေါင်းချုပ်":
         req_time = "AM" if "AM" in target_session_type else "PM"
         act_draws = [d['draw'] for d in act_draws_all if d['time'] == req_time]
@@ -180,7 +180,6 @@ def execute_analysis(target_hits, full_draws, active_tfs, is_custom_tab=False, s
     sniper_store = {}
     current_latest_idx = len(full_draws) - 1
 
-    # Keep historical pool full & intact as per Bro's instructions, filtering happens inside evaluation target check
     filtered_hits = target_hits
     total_count = len(filtered_hits)
     if total_count == 0: return hp_store, sniper_store
@@ -204,23 +203,13 @@ def execute_analysis(target_hits, full_draws, active_tfs, is_custom_tab=False, s
             if not latest_val: continue
             rate = (win_count / total_count) * 100
 
-            # Dynamic Tab 2 Smart Guidelines Insertion
-            advisor_text = ""
-            if is_custom_tab:
-                if rate == 100.0 and total_count >= 10:
-                    advisor_text = "💡 သမိုင်းကြောင်းအရ ကစားရန်သင့်လျော်သောမူဖြစ်သည် - ခန့်မှန်းချက်သာဖြစ်၍ အပိုင်မဟုတ်ပါ"
-                else:
-                    advisor_text = "⚠️ သမိုင်းကြောင်း အားနည်းသည် - အရန်အဖြစ်သာ စဉ်းစားပါ"
-            else:
-                # Tab 1 Engine: Overlap Purge Logic
-                if filtered_hits:
-                    if is_already_hit(mu_k, latest_val, filtered_hits[-1]['index'] + 1, current_latest_idx, full_draws):
-                        continue
-                if rate == 100.0 and total_count >= 10:
-                    pass
-                elif rate >= 95.0:
-                    pass
-                else:
+            # 🚨 Bro's Core Safety Filter: ၉၀% အောက်ရောက်နေရင် လုံးဝမပြဘူးမသုံးဘူး
+            if rate < 90.0:
+                continue
+
+            # Tab 1 Overlap Purge Guard
+            if not is_custom_tab and filtered_hits:
+                if is_already_hit(mu_k, latest_val, filtered_hits[-1]['index'] + 1, current_latest_idx, full_draws):
                     continue
 
             is_deadline_flag = False
@@ -237,6 +226,14 @@ def execute_analysis(target_hits, full_draws, active_tfs, is_custom_tab=False, s
             top_line = f"🔮 [{lbl_prefix}] ထွက်ပြီးလျှင် <span class='badge-inline {badge_color_class}'>{tf_name}အတွင်း</span>"
             formula_line = f"{latest_val} {rate_str}"
             bottom_line = f"မှန်ကန်မှု: ({total_count} ကြိမ်မှာ {win_count} ကြိမ်မှန်)"
+
+            # Advisor Rules
+            advisor_text = ""
+            if is_custom_tab:
+                if rate == 100.0 and total_count >= 10:
+                    advisor_text = "💡 သမိုင်းကြောင်းအရ ကစားရန်သင့်လျော်သောမူဖြစ်သည် - ခန့်မှန်းချက်သာဖြစ်၍ အပိုင်မဟုတ်ပါ"
+                else:
+                    advisor_text = "⚠️ သမိုင်းကြောင်း အားနည်းသည် - အရန်အဖြစ်သာ စဉ်းစားပါ"
 
             card_payload = {
                 "top": top_line, "formula": formula_line, "bottom": bottom_line, 
@@ -302,16 +299,13 @@ if uploaded_file:
         tab_live, tab_custom = st.tabs(["⚡ တွက်ချက်မည်", "🔍 2D Formulas"])
 
         # ------------------------------------------
-        # TAB 1: AUTOMATED TRACKER (SLIDER + BOX ARCHITECTURE)
+        # TAB 1: AUTOMATED ENGINE TRACKER
         # ------------------------------------------
         with tab_live:
-            # Hybrid Input Component as requested
             slider_val = st.slider("ရှာလိုသော ပွဲစဉ်အရေအတွက် ရွေးရန်", min_value=1, max_value=10, value=6)
             input_box_val = st.text_input("10 ပွဲထက်ကျော်ပါက ဤနေရာတွင် ရိုက်ထည့်ပါ (ဥပမာ- 12):", value="")
             
             live_max_tf = int(input_box_val.strip()) if (input_box_val.strip() and input_box_val.strip().isdigit()) else slider_val
-            
-            # Target alignment selector for the immediate next check
             live_session_target = f"{target_time_name} သီးသန့်"
 
             if st.button("ယခုပွဲအတွက် Auto ရှာဖွေမည် ⚡", key="btn_auto"):
@@ -368,7 +362,6 @@ if uploaded_file:
                 if not detailed_live_store:
                     st.info("မထွက်သေးဘဲ ကျန်ရှိနေသော ရက်ချိန်းပြည့် မူလက်ကျန် လက္ခဏာ မတွေ့ရှိပါ။")
                 else:
-                    # Bro's Custom Requested Header Formatting for Tab 1
                     grouped_by_step = {}
                     for item in detailed_live_store:
                         grouped_by_step.setdefault(item['step'], []).append(item)
@@ -377,11 +370,7 @@ if uploaded_file:
                         card_list = grouped_by_step[step_key]
                         is_any_deadline = any(c['deadline'] for c in card_list)
                         
-                        # exact title rendering match mapping
-                        if is_any_deadline:
-                            header_title = f"⚠️ {step_key} ပွဲအတွင်း မူများ [ရက်ချိန်းပြည့်]"
-                        else:
-                            header_title = f"🔽 {step_key} ပွဲအတွင်း မူများ"
+                        header_title = f"⚠️ {step_key} ပွဲအတွင်း မူများ [ရက်ချိန်းပြည့်]" if is_any_deadline else f"🔽 {step_key} ပွဲအတွင်း မူများ"
                             
                         with st.expander(header_title, expanded=True):
                             for d_card in card_list:
@@ -398,7 +387,7 @@ if uploaded_file:
                                 """, unsafe_allow_html=True)
 
         # ------------------------------------------
-        # TAB 2: CLEAN CUSTOM FORMULARS ENGINE (PREMIUM COLLAPSE VERSION)
+        # TAB 2: CLEAN CUSTOM FORMULARS ENGINE (Premium Collapse)
         # ------------------------------------------
         with tab_custom:
             c1, c2, c3 = st.columns(3)
@@ -445,7 +434,6 @@ if uploaded_file:
                     st.write("---")
                     st.markdown("#### 📋 အသေးစိတ်အချက်အလက် (Window အလိုက် ခေါက်သိမ်းစနစ်)")
                     
-                    # 🚀 Bro's Premium Collapsible Loop Frame (1 to X Steps Loops)
                     for step in range(1, custom_max_tf + 1):
                         hp_store, sniper_store = execute_analysis(
                             target_hits, full_draws, [(f"{step} ပွဲ", 1, step)], 
@@ -457,12 +445,7 @@ if uploaded_file:
                         if not combined_step_res: continue
                         
                         is_step_deadline = any(v['is_deadline'] for v in combined_step_res.values())
-                        
-                        # exact requested title formats applied
-                        if is_step_deadline:
-                            tab2_header = f"⚠️ {step} ပွဲအတွင်း မူများ [ရက်ချိန်းပြည့်]"
-                        else:
-                            tab2_header = f"🔽 {step} ပွဲအတွင်း မူများ"
+                        tab2_header = f"⚠️ {step} ပွဲအတွင်း မူများ [ရက်ချိန်းပြည့်]" if is_step_deadline else f"🔽 {step} ပွဲအတွင်း မူများ"
                             
                         with st.expander(tab2_header, expanded=(step == 1)):
                             for mu_name, data in combined_step_res.items():
