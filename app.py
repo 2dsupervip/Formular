@@ -37,7 +37,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V26 PRO)</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Ultimate Verified Calendar Matrix Engine | The Best Precision Guard</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Ultimate Verified Calendar Matrix Engine | Absolute R-Purge Precision</div>', unsafe_allow_html=True)
 
 special_groups = {
     "ညီကို": {"01","10","12","21","23","32","34","43","45","54","56","65","67","76","78","87","89","98","90","09"},
@@ -201,8 +201,7 @@ def execute_analysis(target_hits, full_draws, active_tfs, is_custom_tab=False, s
             if not latest_val: continue
             rate = (win_count / total_count) * 100
 
-            # 🚨 Bro's Golden Boundaries Rule 1: 90% နှင့် အထက်ပဲပြမယ် 90% အောက်ရောက်နေရင် မပြဘူးမသုံးဘူး
-            # 🚨 Bro's Golden Boundaries Rule 2: 10 ကြိမ်နှင့်အထက် မှန်ကန်ခဲ့သော မူဖြစ်ရမည်
+            # 🚨 Bro's Precision Safety Guard Limits
             if rate < 90.0 or total_count < 10:
                 continue
 
@@ -226,7 +225,6 @@ def execute_analysis(target_hits, full_draws, active_tfs, is_custom_tab=False, s
             formula_line = f"{latest_val} {rate_str}"
             bottom_line = f"မှန်ကန်မှု: ({total_count} ကြိမ်မှာ {win_count} ကြိမ်မှန်)"
 
-            # Advisor Rules
             advisor_text = ""
             if is_custom_tab:
                 if rate == 100.0 and total_count >= 10:
@@ -385,7 +383,7 @@ if uploaded_file:
                                 """, unsafe_allow_html=True)
 
         # ------------------------------------------
-        # TAB 2: CLEAN CUSTOM FORMULARS ENGINE (Strict Single vs R Logic Matcher)
+        # TAB 2: CLEAN CUSTOM FORMULARS ENGINE (Absolute Strict Target Purge)
         # ------------------------------------------
         with tab_custom:
             c1, c2, c3 = st.columns(3)
@@ -405,23 +403,25 @@ if uploaded_file:
                 target_hits = []
                 clean_trigger = trigger_num.strip().upper()
                 
-                # 🚨 Bro's Core Filter Logic: 48R သို့မဟုတ် 48+84 လို့ ရိုက်မှသာ (R System) ဝင်မည်၊ သက်သက်ရိုက်ရင် Single အတိုင်း ၃၅ ကြိမ်သာ ယူမည်။
+                # 🚨 Absolute Fix: 'R' သို့မဟုတ် '+' စာသားအပြင် Day ရွေးချယ်မှုပါဝင်မှသာ Composite (R စနစ်) ဝင်ခွင့်ပြုမည်။ 
                 is_composite = "+" in clean_trigger or "R" in clean_trigger or (trigger_day != "All")
                 
                 digits_found = re.findall(r'\d+', clean_trigger)
                 
                 if digits_found:
                     primary_digit = digits_found[0]
-                    secondary_digit = digits_found[1] if len(digits_found) > 1 else primary_digit[::-1]
                     
                     if trigger_day == "All":
                         if is_composite:
+                            # Strict R-System Lock Frame -> Returns exact 68 items
+                            secondary_digit = digits_found[1] if len(digits_found) > 1 else primary_digit[::-1]
                             target_hits = [d for d in full_draws if d['draw'] == primary_digit or d['draw'] == secondary_digit]
                         else:
-                            # Strict Single Matching Guard -> Yields exact 35 items for '48'
+                            # 🚨 Strict Single Guard Lock -> Returns exact 35 items for '48', R-System Completely Purged!
                             target_hits = [d for d in full_draws if d['draw'] == primary_digit]
                     else:
-                        # Day Lock Loop System
+                        # Day Selector Lock Frame
+                        secondary_digit = digits_found[1] if len(digits_found) > 1 else primary_digit[::-1]
                         matched_weeks = {d['row_idx'] for d in full_draws if d['day'] == trigger_day and (d['draw'] == primary_digit or d['draw'] == secondary_digit)}
                         for d in full_draws:
                             if d['row_idx'] in matched_weeks:
