@@ -167,14 +167,14 @@ def execute_analysis(target_hits, full_draws, active_tfs, is_custom_tab=False, s
                 latest_val = mapping[mu_k]
                 latest_pure = mapping[mu_k]
                 
-                # 🚨 Bro's Exact Target Step Boundary Rule
+                # 🚨 Bro's Exact Step Boundary Validation
                 exact_target_idx = hit_idx + e_off
                 if exact_target_idx < len(full_draws):
                     d_target = full_draws[exact_target_idx]
                     
                     if is_custom_tab and sel_session != "AM+PM ပေါင်းချုပ်" and "သီးသန့်" in sel_session:
-                        req_t = "AM" if "AM" in sel_session else "PM"
-                        if d_target['time'] != req_t: continue
+                        req_time_str = "AM" if "AM" in sel_session else "PM"
+                        if d_target['time'] != req_time_str: continue
                     
                     # ရှေ့ပွဲစဉ်များတွင် ကြိုထွက်ဖူးခြင်း ရှိ/မရှိ စစ်ဆေးသည်
                     was_early_leak = is_already_hit(mu_k, latest_val, hit_idx + 1, hit_idx + e_off - 1, full_draws) if e_off > 1 else False
@@ -187,7 +187,7 @@ def execute_analysis(target_hits, full_draws, active_tfs, is_custom_tab=False, s
             if not latest_val: continue
             rate = (win_count / total_count) * 100
 
-            # 🚨 Bro's Strict Cut-off Guard: Rate >= 90% and Sample >= 10
+            # 🚨 Rate >= 90% and Total Sample >= 10
             if rate < 90.0 or total_count < 10:
                 continue
 
@@ -360,7 +360,7 @@ if uploaded_file:
                                 """, unsafe_allow_html=True)
 
         # ------------------------------------------
-        # TAB 2: CLEAN CUSTOM FORMULARS ENGINE (Fixed Lines Line 388)
+        # TAB 2: CLEAN CUSTOM FORMULARS ENGINE 
         # ------------------------------------------
         with tab_custom:
             c1, c2, c3 = st.columns(3)
@@ -374,7 +374,6 @@ if uploaded_file:
                 else:
                     target_session_custom = st.selectbox("⏱️ Target ပွဲစဉ် အခြေအနေ ရွေးရန်:", ["AM+PM ပေါင်းချုပ်", "AM သီးသန့်", "PM သီးသန့်"], index=2)
             with c3:
-                # 🚨 Fix applied: Correct closed parenthesis and complete args syntax mapping
                 custom_max_tf = st.number_input("⏳ စစ်ဆေးမည့် ပွဲစဉ်အရေအတွက်", min_value=1, max_value=20, value=10)
 
             if st.button("ရှာဖွေမည် 🚀", key="btn_custom"):
