@@ -22,7 +22,7 @@ st.markdown("""
     .card-hp { border-left: 6px solid #2ecc71; background-color: #0D2216; }
     .card-sniper { border-left: 6px solid #9b59b6; background-color: #201135; }
     
-    /* Bro 3/4-Line Stack Display Typography (Screenshot Exact Match) */
+    /* Bro 3/4-Line Stack Display Typography */
     .line-alert { color: #FF4D4D; font-size: 16px; font-weight: bold; margin-bottom: 6px; display: block; }
     .line-trigger { font-size: 18px; font-weight: bold; color: #E0D5FA; margin-bottom: 6px; display: block; }
     .line-formula { font-size: 22px; font-weight: bold; color: #FFD700; margin-bottom: 6px; display: block; }
@@ -37,7 +37,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V26 PRO)</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Ultimate Calendar Matrix Engine | Pure Line Display Architecture</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Ultimate Collapse Matrix Engine | Premium Accordion Architecture</div>', unsafe_allow_html=True)
 
 special_groups = {
     "ညီကို": {"01","10","12","21","23","32","34","43","45","54","56","65","67","76","78","87","89","98","90","09"},
@@ -106,7 +106,8 @@ def is_already_hit(mu_name, mu_val, start_idx, end_idx, full_draws_list):
 # ==========================================
 # CORE ENGINE: MASTER 10 FORMULAS EVALUATOR
 # ==========================================
-def run_mu_evaluation(hit_idx, full_draws_list, s_off, e_off):
+def run_mu_evaluation(hit_idx, full_draws_list, s_off, e_off, target_session_type="AM+PM ပေါင်းချုပ်"):
+    # Target Matrix Step Calculation
     s_idx = hit_idx + s_off
     e_idx = min(hit_idx + e_off + 1, len(full_draws_list))
     if s_idx >= len(full_draws_list): return None
@@ -143,7 +144,14 @@ def run_mu_evaluation(hit_idx, full_draws_list, s_off, e_off):
 
     kwat_kyin_label = f"{top_key3} ပါသော {brk_label} ဘရိတ်"
 
-    act_draws = [d['draw'] for d in full_draws_list[hit_idx+1 : min(hit_idx+e_off+1, len(full_draws_list))]]
+    # 🚨 Bro's New Rule: History လမ်းကြောင်းမခွဲဘဲ Target (ထွက်ရမည့်ပွဲ) အတွက်သာ AM/PM အနုစိတ်ခွဲစစ်ထုတ်ခြင်း
+    act_draws_all = full_draws_list[hit_idx+1 : min(hit_idx+e_off+1, len(full_draws_list))]
+    if target_session_type != "AM+PM ပေါင်းချုပ်":
+        req_time = "AM" if "AM" in target_session_type else "PM"
+        act_draws = [d['draw'] for d in act_draws_all if d['time'] == req_time]
+    else:
+        act_draws = [d['draw'] for d in act_draws_all]
+
     if not act_draws: return None
 
     gp_hit = False
@@ -167,23 +175,15 @@ def run_mu_evaluation(hit_idx, full_draws_list, s_off, e_off):
 # ==========================================
 # MASTER ROUTINE: HYBRID DATA ANALYSIS ENGINE
 # ==========================================
-def execute_analysis(target_hits, full_draws, active_tfs, is_custom_tab=False, sel_session="", custom_trigger="", strict_day_mode=False):
+def execute_analysis(target_hits, full_draws, active_tfs, is_custom_tab=False, sel_session="AM+PM ပေါင်းချုပ်", custom_trigger="", strict_day_mode=False):
     hp_store = {}
     sniper_store = {}
-    recovered_store = []
     current_latest_idx = len(full_draws) - 1
 
-    # Filter target hits based on choice or strict day-lock framework
+    # Keep historical pool full & intact as per Bro's instructions, filtering happens inside evaluation target check
     filtered_hits = target_hits
-    if is_custom_tab:
-        if strict_day_mode:
-            filtered_hits = target_hits # Keeps entire AM+PM composite dataset intact
-        elif sel_session != "AM+PM ပေါင်းချုပ်":
-            req_time = "AM" if "AM" in sel_session else "PM"
-            filtered_hits = [h for h in target_hits if h['time'] == req_time]
-
     total_count = len(filtered_hits)
-    if total_count == 0: return hp_store, sniper_store, recovered_store
+    if total_count == 0: return hp_store, sniper_store
 
     for tf_name, s_off, e_off in active_tfs:
         mu_keys_list = ["လုံးဘိုင်", "One Change", "key", "အပူးပါခွေ", "ထိပ်စီး", "နောက်ပိတ်", "ဘရိတ်", "စုံ/မ ကပ်", "အုပ်စုတွဲ", "ကွက်ကျဉ်းစနစ်"]
@@ -194,7 +194,7 @@ def execute_analysis(target_hits, full_draws, active_tfs, is_custom_tab=False, s
             latest_pure = ""
             
             for hit in filtered_hits:
-                res = run_mu_evaluation(hit['index'], full_draws, s_off, e_off)
+                res = run_mu_evaluation(hit['index'], full_draws, s_off, e_off, target_session_type=sel_session)
                 if res and mu_k in res:
                     if res[mu_k]['hit']:
                         win_count += 1
@@ -212,7 +212,7 @@ def execute_analysis(target_hits, full_draws, active_tfs, is_custom_tab=False, s
                 else:
                     advisor_text = "⚠️ သမိုင်းကြောင်း အားနည်းသည် - အရန်အဖြစ်သာ စဉ်းစားပါ"
             else:
-                # Tab 1 Engine: Strict Purge Logic for Overlap Hits
+                # Tab 1 Engine: Overlap Purge Logic
                 if filtered_hits:
                     if is_already_hit(mu_k, latest_val, filtered_hits[-1]['index'] + 1, current_latest_idx, full_draws):
                         continue
@@ -257,7 +257,7 @@ def execute_analysis(target_hits, full_draws, active_tfs, is_custom_tab=False, s
                 if mu_k not in hp_store or e_off > hp_store[mu_k]['e_off']:
                     hp_store[mu_k] = card_payload
 
-    return hp_store, sniper_store, recovered_store
+    return hp_store, sniper_store
 
 # ==========================================
 # FILE UPLOAD & PRE-PROCESSING
@@ -302,17 +302,23 @@ if uploaded_file:
         tab_live, tab_custom = st.tabs(["⚡ တွက်ချက်မည်", "🔍 2D Formulas"])
 
         # ------------------------------------------
-        # TAB 1: AUTOMATED REVERSE COUNTDOWN SHIFT ENGINE
+        # TAB 1: AUTOMATED TRACKER (SLIDER + BOX ARCHITECTURE)
         # ------------------------------------------
         with tab_live:
-            live_max_tf = st.number_input("ရှာလိုသော ပွဲစဉ်အရေအတွက်", min_value=1, max_value=20, value=6, key="live_max")
+            # Hybrid Input Component as requested
+            slider_val = st.slider("ရှာလိုသော ပွဲစဉ်အရေအတွက် ရွေးရန်", min_value=1, max_value=10, value=6)
+            input_box_val = st.text_input("10 ပွဲထက်ကျော်ပါက ဤနေရာတွင် ရိုက်ထည့်ပါ (ဥပမာ- 12):", value="")
             
+            live_max_tf = int(input_box_val.strip()) if (input_box_val.strip() and input_box_val.strip().isdigit()) else slider_val
+            
+            # Target alignment selector for the immediate next check
+            live_session_target = f"{target_time_name} သီးသန့်"
+
             if st.button("ယခုပွဲအတွက် Auto ရှာဖွေမည် ⚡", key="btn_auto"):
                 current_end_idx = len(full_draws) - 1
                 convergence_pool = []
                 detailed_live_store = []
                 
-                # Bro ညွှန်ကြားထားသော Auto-Backstep Framework (1 to 20 Complete Loop)
                 actual_scan_limit = max(live_max_tf, 20)
                 
                 for step in range(1, actual_scan_limit + 1):
@@ -330,14 +336,14 @@ if uploaded_file:
                     
                     for pool in condition_pools:
                         if not pool['hits']: continue
-                        hp_s, sniper_s, _ = execute_analysis(pool['hits'], full_draws, [(f"{step} ပွဲ", 1, step)], is_custom_tab=False)
+                        hp_s, sniper_s = execute_analysis(pool['hits'], full_draws, [(f"{step} ပွဲ", 1, step)], is_custom_tab=False, sel_session=live_session_target)
                         
                         combined_res = {**hp_s, **sniper_s}
                         for mk, mv in combined_res.items():
                             if step <= live_max_tf or not detailed_live_store:
                                 convergence_pool.append(mv['pure'])
                                 prefix = "🚨 [ရက်ချိန်းပြည့်] " if mv['is_deadline'] else ""
-                                detailed_live_store.append({"top": f"{prefix}{mv['top']}", "form": mv['formula'], "bot": mv['bottom'], "step": step})
+                                detailed_live_store.append({"top": f"{prefix}{mv['top']}", "form": mv['formula'], "bot": mv['bottom'], "step": step, "deadline": mv['is_deadline']})
 
                 st.write("---")
                 st.markdown("#### 🏆 TOP RESULTS")
@@ -362,21 +368,37 @@ if uploaded_file:
                 if not detailed_live_store:
                     st.info("မထွက်သေးဘဲ ကျန်ရှိနေသော ရက်ချိန်းပြည့် မူလက်ကျန် လက္ခဏာ မတွေ့ရှိပါ။")
                 else:
-                    for d_card in detailed_live_store:
-                        fallback_label = ""
-                        if d_card['step'] > live_max_tf:
-                            fallback_label = f" <span style='color:#FF4D4D; font-size:12px;'>[Auto Backstep ခြေရာခံမှု: ပွဲစဉ် {d_card['step']}]</span>"
+                    # Bro's Custom Requested Header Formatting for Tab 1
+                    grouped_by_step = {}
+                    for item in detailed_live_store:
+                        grouped_by_step.setdefault(item['step'], []).append(item)
+                    
+                    for step_key in sorted(grouped_by_step.keys()):
+                        card_list = grouped_by_step[step_key]
+                        is_any_deadline = any(c['deadline'] for c in card_list)
                         
-                        st.markdown(f"""
-                        <div class="card card-sniper">
-                            <span class="line-trigger">{d_card['top']}{fallback_label}</span>
-                            <span class="line-formula">{d_card['form']}</span>
-                            <span class="line-history">{d_card['bot']}</span>
-                        </div>
-                        """, unsafe_allow_html=True)
+                        # exact title rendering match mapping
+                        if is_any_deadline:
+                            header_title = f"⚠️ {step_key} ပွဲအတွင်း မူများ [ရက်ချိန်းပြည့်]"
+                        else:
+                            header_title = f"🔽 {step_key} ပွဲအတွင်း မူများ"
+                            
+                        with st.expander(header_title, expanded=True):
+                            for d_card in card_list:
+                                fallback_label = ""
+                                if d_card['step'] > live_max_tf:
+                                    fallback_label = f" <span style='color:#FF4D4D; font-size:12px;'>[Auto Backstep ခြေရာခံမှု: ပွဲစဉ် {d_card['step']}]</span>"
+                                
+                                st.markdown(f"""
+                                <div class="card card-sniper">
+                                    <span class="line-trigger">{d_card['top']}{fallback_label}</span>
+                                    <span class="line-formula">{d_card['form']}</span>
+                                    <span class="line-history">{d_card['bot']}</span>
+                                </div>
+                                """, unsafe_allow_html=True)
 
         # ------------------------------------------
-        # TAB 2: CLEAN CUSTOM FORMULARS ENGINE (Day + R Combo Strategy)
+        # TAB 2: CLEAN CUSTOM FORMULARS ENGINE (PREMIUM COLLAPSE VERSION)
         # ------------------------------------------
         with tab_custom:
             c1, c2, c3 = st.columns(3)
@@ -384,22 +406,17 @@ if uploaded_file:
                 trigger_day = st.selectbox("📆 Trigger Day:", ["All", "Mon", "Tue", "Wed", "Thur", "Fri"], index=0)
                 trigger_num = st.text_input("🔍 ရှာလိုသောဂဏန်း ရိုက်ထည့်ပါ:", value="01", max_chars=5)
             with c2:
-                # Dynamic Banner UI updates strictly for day-lock parameters
                 if trigger_day != "All":
                     st.markdown("<span style='color:#00FFCC; font-size:13px;'>ℹ️ Day စနစ်သုံးထားသဖြင့် အကြိမ်ရေပြည့်မီစေရန် R-စနစ် နှင့် AM+PM ပေါင်းချုပ် စနစ်ကို Backend က Auto Lock ချပေးထားပါသည်။</span>", unsafe_allow_html=True)
                     target_session_custom = "AM+PM ပေါင်းချုပ်"
                 else:
-                    target_session_custom = st.selectbox("⏱️ အခြေအနေ ရွေးချယ်ရန်:", ["AM+PM ပေါင်းချုပ်", "AM သီးသန့်", "PM သီးသန့်"], index=2)
+                    target_session_custom = st.selectbox("⏱️ Target ပွဲစဉ် အခြေအနေ ရွေးရန်:", ["AM+PM ပေါင်းချုပ်", "AM သီးသန့်", "PM သီးသန့်"], index=0)
             with c3:
                 custom_max_tf = st.number_input("⏳ စစ်ဆေးမည့် ပွဲစဉ်အရေအတွက်", min_value=1, max_value=20, value=10)
-
-            active_tfs_custom = [(f"{i} ပွဲ", 1, i) for i in range(1, custom_max_tf + 1)]
 
             if st.button("ရှာဖွေမည် 🚀", key="btn_custom"):
                 target_hits = []
                 clean_trigger = trigger_num.strip().upper()
-                
-                # Bro ညွှန်ကြားထားသော Master Strict Framework (Day ရွေးချယ်ပါက 01, 10 နှစ်ဖက်စလုံး Auto R-System ယူမည်)
                 is_composite = "+" in clean_trigger or "R" in clean_trigger or (trigger_day != "All")
                 
                 digits_found = re.findall(r'\d+', clean_trigger)
@@ -414,7 +431,6 @@ if uploaded_file:
                         else:
                             target_hits = [d for d in full_draws if d['draw'] == primary_digit]
                     else:
-                        # Day Combo Enabled: Pulling all combined Monday rows regardless of alignment
                         matched_weeks = {d['row_idx'] for d in full_draws if d['day'] == trigger_day and (d['draw'] == primary_digit or d['draw'] == secondary_digit)}
                         for d in full_draws:
                             if d['row_idx'] in matched_weeks:
@@ -426,43 +442,38 @@ if uploaded_file:
                 if not target_hits:
                     st.error("⚠️ သတ်မှတ်ချက်များနှင့် ကိုက်ညီသော သမိုင်းကြောင်းမှတ်တမ်း မရှိပါ Bro!")
                 else:
-                    hp_store, sniper_store, _ = execute_analysis(
-                        target_hits, full_draws, active_tfs_custom, 
-                        is_custom_tab=True, sel_session=target_session_custom, 
-                        custom_trigger=lbl_prefix_custom, strict_day_mode=(trigger_day != "All")
-                    )
-
                     st.write("---")
-                    st.markdown("#### 📋 အသေးစိတ်အချက်အလက်")
-
-                    col_tab1, col_tab2 = st.tabs(["🦅 100% Super VIP Sniper Zone", "🔮 95%+ High-Probability Zone"])
-
-                    with col_tab1:
-                        if not sniper_store: st.info("၁၀၀% ကွက်တိ မူများ မတွေ့ရှိပါ။")
-                        for mu_name, data in sniper_store.items():
-                            st.markdown('<div class="card card-sniper">', unsafe_allow_html=True)
-                            if data['is_deadline']:
-                                st.markdown('<span class="line-alert">🚨 [ရက်ချိန်းပြည့်]</span>', unsafe_allow_html=True)
-                            st.markdown(f"""
-                                <span class="line-trigger">{data['top']}</span>
-                                <span class="line-formula">{data['formula']}</span>
-                                <span class="line-history">{data['bottom']}</span>
-                                <span class="line-advisor">{data['advisor']}</span>
-                            </div>
-                            """, unsafe_allow_html=True)
-
-                    with col_tab2:
-                        if not hp_store: st.info("၉၅% အထက် Probability ရှိသော မူများ မတွေ့ရှိပါ။")
-                        for mu_name, data in hp_store.items():
-                            st.markdown('<div class="card card-hp">', unsafe_allow_html=True)
-                            if data['is_deadline']:
-                                st.markdown('<span class="line-alert">🚨 [ရက်ချိန်းပြည့်]</span>', unsafe_allow_html=True)
-                            st.markdown(f"""
-                                <span class="line-trigger">{data['top']}</span>
-                                <span class="line-formula">{data['formula']}</span>
-                                <span class="line-history">{data['bottom']}</span>
-                                <span class="line-advisor">{data['advisor']}</span>
-                            </div>
-                            """, unsafe_allow_html=True)
+                    st.markdown("#### 📋 အသေးစိတ်အချက်အလက် (Window အလိုက် ခေါက်သိမ်းစနစ်)")
+                    
+                    # 🚀 Bro's Premium Collapsible Loop Frame (1 to X Steps Loops)
+                    for step in range(1, custom_max_tf + 1):
+                        hp_store, sniper_store = execute_analysis(
+                            target_hits, full_draws, [(f"{step} ပွဲ", 1, step)], 
+                            is_custom_tab=True, sel_session=target_session_custom, 
+                            custom_trigger=lbl_prefix_custom, strict_day_mode=(trigger_day != "All")
+                        )
+                        
+                        combined_step_res = {**sniper_store, **hp_store}
+                        if not combined_step_res: continue
+                        
+                        is_step_deadline = any(v['is_deadline'] for v in combined_step_res.values())
+                        
+                        # exact requested title formats applied
+                        if is_step_deadline:
+                            tab2_header = f"⚠️ {step} ပွဲအတွင်း မူများ [ရက်ချိန်းပြည့်]"
+                        else:
+                            tab2_header = f"🔽 {step} ပွဲအတွင်း မူများ"
+                            
+                        with st.expander(tab2_header, expanded=(step == 1)):
+                            for mu_name, data in combined_step_res.items():
+                                card_border_class = "card-sniper" if "100%" in data['formula'] else "card-hp"
+                                st.markdown(f"""
+                                <div class="card {card_border_class}">
+                                    <span class="line-trigger">{data['top']}</span>
+                                    <span class="line-formula">{data['formula']}</span>
+                                    <span class="line-history">{data['bottom']}</span>
+                                    <span class="line-advisor">{data['advisor']}</span>
+                                </div>
+                                """, unsafe_allow_html=True)
 else:
     st.info("စတင်ရန်အတွက် Bro ရဲ့ 2D CSV သို့မဟုတ် Excel ဒေတာဖိုင်ကို အပေါ်တွင် အရင် တင်ပေးပါဦး။")
