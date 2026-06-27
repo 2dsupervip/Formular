@@ -49,7 +49,7 @@ special_groups = {
 }
 
 # ==========================================
-# STUCT ALREADY HIT TRACKER (STABLE INTERNAL LOOKUP)
+# STUCT ALREADY HIT TRACKER
 # ==========================================
 def is_already_hit(mu_name, mu_val, start_idx, end_idx, full_draws_list):
     if start_idx >= len(full_draws_list): return True
@@ -124,7 +124,6 @@ def execute_analysis(target_hits, full_draws, active_tfs, is_custom_tab=False, s
             latest_pure = ""
             
             for hit in filtered_hits:
-                # 🚨 Stable History Window Extraction (Backward Look Base)
                 hit_idx = hit['index']
                 start_history_idx = max(0, hit_idx - 50)
                 end_history_idx = hit_idx - 1
@@ -168,7 +167,7 @@ def execute_analysis(target_hits, full_draws, active_tfs, is_custom_tab=False, s
                 latest_val = mapping[mu_k]
                 latest_pure = mapping[mu_k]
                 
-                # 🚨 Bro's Core Rule: Strict Exact Step Target Boundary Validation
+                # 🚨 Bro's Exact Target Step Boundary Rule
                 exact_target_idx = hit_idx + e_off
                 if exact_target_idx < len(full_draws):
                     d_target = full_draws[exact_target_idx]
@@ -177,13 +176,10 @@ def execute_analysis(target_hits, full_draws, active_tfs, is_custom_tab=False, s
                         req_t = "AM" if "AM" in sel_session else "PM"
                         if d_target['time'] != req_t: continue
                     
-                    # 1. ရှေ့ပွဲစဉ် (1 to step-1) အတွင်း ကြိုထွက်ဖူးခြင်း ရှိ/မရှိ စစ်ဆေးသည်
-                    if e_off > 1:
-                        was_early_leak = is_already_hit(mu_k, latest_val, hit_idx + 1, hit_idx + e_off - 1, full_draws)
-                    else:
-                        was_early_leak = False
+                    # ရှေ့ပွဲစဉ်များတွင် ကြိုထွက်ဖူးခြင်း ရှိ/မရှိ စစ်ဆေးသည်
+                    was_early_leak = is_already_hit(mu_k, latest_val, hit_idx + 1, hit_idx + e_off - 1, full_draws) if e_off > 1 else False
                         
-                    # 2. ရှေ့မှာ လုံးဝမထွက်ခဲ့ဘဲ ယခု သတ်မှတ်ရက်ချိန်းပွဲတွင်မှ ကွက်တိထွက်ခြင်း ဟုတ်/မဟုတ် စစ်ဆေးသည်
+                    # ရှေ့မှာ လုံးဝမထွက်ခဲ့ဘဲ ယခုပွဲတွင်မှ ကွက်တိထွက်ခြင်းကို စစ်သည်
                     if not was_early_leak:
                         if is_already_hit(mu_k, latest_val, exact_target_idx, exact_target_idx, full_draws):
                             win_count += 1
@@ -191,11 +187,11 @@ def execute_analysis(target_hits, full_draws, active_tfs, is_custom_tab=False, s
             if not latest_val: continue
             rate = (win_count / total_count) * 100
 
-            # 🚨 Bro's Strict Cut-off Guard: Rate >= 90% and Total Sample >= 10
+            # 🚨 Bro's Strict Cut-off Guard: Rate >= 90% and Sample >= 10
             if rate < 90.0 or total_count < 10:
                 continue
 
-            # Tab 1 Anti-Overlap Purge Logic
+            # Tab 1 Overlap Purge Logic
             if not is_custom_tab and filtered_hits:
                 if is_already_hit(mu_k, latest_val, filtered_hits[-1]['index'] + 1, current_latest_idx, full_draws):
                     continue
@@ -215,16 +211,9 @@ def execute_analysis(target_hits, full_draws, active_tfs, is_custom_tab=False, s
             formula_line = f"{latest_val} {rate_str}"
             bottom_line = f"မှန်ကန်မှု: ({total_count} ကြိမ်မှာ {win_count} ကြိမ်မှန်)"
 
-            advisor_text = ""
-            if is_custom_tab:
-                if rate == 100.0 and total_count >= 10:
-                    advisor_text = "💡 သမိုင်းကြောင်းအရ ကစားရန်သင့်လျော်သောမူဖြစ်သည် - ခန့်မှန်းချက်သာဖြစ်၍ အပိုင်မဟုတ်ပါ"
-                else:
-                    advisor_text = "⚠️ သမိုင်းကြောင်း အားနည်းသည် - အရန်အဖြစ်သာ စဉ်းစားပါ"
-
             card_payload = {
                 "top": top_line, "formula": formula_line, "bottom": bottom_line, 
-                "e_off": e_off, "is_deadline": is_deadline_flag, "pure": latest_pure, "advisor": advisor_text
+                "e_off": e_off, "is_deadline": is_deadline_flag, "pure": latest_pure, "advisor": ""
             }
 
             if is_deadline_flag:
@@ -371,7 +360,7 @@ if uploaded_file:
                                 """, unsafe_allow_html=True)
 
         # ------------------------------------------
-        # TAB 2: CLEAN CUSTOM FORMULARS ENGINE (Exact Bounds Main Frame)
+        # TAB 2: CLEAN CUSTOM FORMULARS ENGINE (Fixed Lines Line 388)
         # ------------------------------------------
         with tab_custom:
             c1, c2, c3 = st.columns(3)
@@ -385,4 +374,72 @@ if uploaded_file:
                 else:
                     target_session_custom = st.selectbox("⏱️ Target ပွဲစဉ် အခြေအနေ ရွေးရန်:", ["AM+PM ပေါင်းချုပ်", "AM သီးသန့်", "PM သီးသန့်"], index=2)
             with c3:
-                custom_max_tf = st.number_input("⏳ စစ်ဆေးမည့် ပွဲစဉ်အရေအတွက်", min_value=1, max
+                # 🚨 Fix applied: Correct closed parenthesis and complete args syntax mapping
+                custom_max_tf = st.number_input("⏳ စစ်ဆေးမည့် ပွဲစဉ်အရေအတွက်", min_value=1, max_value=20, value=10)
+
+            if st.button("ရှာဖွေမည် 🚀", key="btn_custom"):
+                target_hits = []
+                clean_trigger = trigger_num.strip().upper()
+                is_composite = "+" in clean_trigger or "R" in clean_trigger or (trigger_day != "All")
+                
+                digits_found = re.findall(r'\d+', clean_trigger)
+                
+                if digits_found:
+                    primary_digit = digits_found[0]
+                    
+                    if trigger_day == "All":
+                        if is_composite:
+                            secondary_digit = digits_found[1] if len(digits_found) > 1 else primary_digit[::-1]
+                            target_hits = [d for d in full_draws if d['draw'] == primary_digit or d['draw'] == secondary_digit]
+                        else:
+                            if target_session_custom != "AM+PM ပေါင်းချုပ်" and "သီးသန့်" in target_session_custom:
+                                req_time_init = "AM" if "AM" in target_session_custom else "PM"
+                                target_hits = [d for d in full_draws if d['draw'] == primary_digit and d['time'] == req_time_init]
+                            else:
+                                target_hits = [d for d in full_draws if d['draw'] == primary_digit]
+                    else:
+                        secondary_digit = digits_found[1] if len(digits_found) > 1 else primary_digit[::-1]
+                        matched_weeks = {d['row_idx'] for d in full_draws if d['day'] == trigger_day and (d['draw'] == primary_digit or d['draw'] == secondary_digit)}
+                        for d in full_draws:
+                            if d['row_idx'] in matched_weeks:
+                                target_hits.append(d)
+                
+                if trigger_day == "All" and target_session_custom != "AM+PM ပေါင်းချုပ်" and len(target_hits) > 0:
+                    req_time_filter = "AM" if "AM" in target_session_custom else "PM"
+                    target_hits = [h for h in target_hits if h['time'] == req_time_filter]
+
+                t_time_label = "PM" if target_session_custom == "PM သီးသန့်" else "AM" if target_session_custom == "AM သီးသန့်" else ""
+                lbl_prefix_custom = f"{trigger_num}{'R' if (trigger_day != 'All' and 'R' not in trigger_num) else ''} {trigger_day if trigger_day != 'All' else ''} {t_time_label}".strip()
+
+                if not target_hits:
+                    st.error("⚠️ သတ်မှတ်ချက်များနှင့် ကိုက်ညီသော သမိုင်းကြောင်းမှတ်တမ်း မရှိပါ Bro!")
+                else:
+                    st.write("---")
+                    st.markdown("#### 📋 အသေးစိတ်အချက်အလက် (Window အလိုက် ခေါက်သိမ်းစနစ်)")
+                    
+                    for step in range(1, custom_max_tf + 1):
+                        hp_store, sniper_store = execute_analysis(
+                            target_hits, full_draws, [(f"{step} ပွဲ", 1, step)], 
+                            is_custom_tab=True, sel_session=target_session_custom, 
+                            custom_trigger=lbl_prefix_custom, strict_day_mode=(trigger_day != "All")
+                        )
+                        
+                        combined_step_res = {**sniper_store, **hp_store}
+                        if not combined_step_res: continue
+                        
+                        is_step_deadline = any(v['is_deadline'] for v in combined_step_res.values())
+                        tab2_header = f"⚠️ {step} ပွဲအတွင်း မူများ [ရက်ချိန်းပြည့်]" if is_step_deadline else f"🔽 {step} ပွဲအတွင်း မူများ"
+                            
+                        with st.expander(tab2_header, expanded=(step == 1)):
+                            for mu_name, data in combined_step_res.items():
+                                card_border_class = "card-sniper" if "100%" in data['formula'] else "card-hp"
+                                st.markdown(f"""
+                                <div class="card {card_border_class}">
+                                    <span class="line-trigger">{data['top']}</span>
+                                    <span class="line-formula">{data['formula']}</span>
+                                    <span class="line-history">{data['bottom']}</span>
+                                    <span class="line-advisor">{data['advisor']}</span>
+                                </div>
+                                """, unsafe_allow_html=True)
+else:
+    st.info("စတင်ရန်အတွက် Bro ရဲ့ 2D CSV သို့မဟုတ် Excel ဒေတာဖိုင်ကို အပေါ်တွင် အရင် တင်ပေးပါဦး။")
