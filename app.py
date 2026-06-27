@@ -37,7 +37,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V26 PRO)</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Ultimate Verified Calendar Matrix Engine | Absolute R-Purge Precision</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Ultimate Verified Calendar Matrix Engine | Strict 35 Max Ceiling Fixed</div>', unsafe_allow_html=True)
 
 special_groups = {
     "ညီကို": {"01","10","12","21","23","32","34","43","45","54","56","65","67","76","78","87","89","98","90","09"},
@@ -104,12 +104,13 @@ def is_already_hit(mu_name, mu_val, start_idx, end_idx, full_draws_list):
     return False
 
 # ==========================================
-# CORE ENGINE: STABLE HISTORICAL SLICER
+# CORE ENGINE: PRECISE HISTORICAL PATTERN SLICER
 # ==========================================
 def run_mu_evaluation(hit_idx, full_draws_list, s_off, e_off, target_session_type="AM+PM ပေါင်းချုပ်"):
+    # Fix 1: Look backward safely to build the strict pattern matrix base
+    start_history_idx = max(0, hit_idx - 50)
     end_history_idx = hit_idx - 1
-    start_history_idx = end_history_idx - (e_off - s_off)
-    if start_history_idx < 0: return None
+    if start_history_idx >= end_history_idx: return None
     
     sub_draws = [d['draw'] for d in full_draws_list[start_history_idx : end_history_idx + 1]]
     if not sub_draws: return None
@@ -143,7 +144,12 @@ def run_mu_evaluation(hit_idx, full_draws_list, s_off, e_off, target_session_typ
 
     kwat_kyin_label = f"{top_key3} ပါသော {brk_label} ဘရိတ်"
 
-    act_draws_all = full_draws_list[hit_idx : min(hit_idx + e_off, len(full_draws_list))]
+    # Fix 2: Strict Forward Target Check (Shifted exactly to index block boundaries)
+    target_start_idx = hit_idx + s_off
+    target_end_idx = min(hit_idx + e_off + 1, len(full_draws_list))
+    if target_start_idx >= len(full_draws_list): return None
+    
+    act_draws_all = full_draws_list[target_start_idx : target_end_idx]
     if target_session_type != "AM+PM ပေါင်းချုပ်":
         req_time = "AM" if "AM" in target_session_type else "PM"
         act_draws = [d['draw'] for d in act_draws_all if d['time'] == req_time]
@@ -201,7 +207,7 @@ def execute_analysis(target_hits, full_draws, active_tfs, is_custom_tab=False, s
             if not latest_val: continue
             rate = (win_count / total_count) * 100
 
-            # 🚨 Bro's Precision Safety Guard Limits
+            # 🚨 Bro's Precision Safety Boundaries: Rate >= 90% and Total hits >= 10
             if rate < 90.0 or total_count < 10:
                 continue
 
@@ -383,7 +389,7 @@ if uploaded_file:
                                 """, unsafe_allow_html=True)
 
         # ------------------------------------------
-        # TAB 2: CLEAN CUSTOM FORMULARS ENGINE (Absolute Strict Target Purge)
+        # TAB 2: CLEAN CUSTOM FORMULARS ENGINE (Strict 35 Ceiling Matches Guarded)
         # ------------------------------------------
         with tab_custom:
             c1, c2, c3 = st.columns(3)
@@ -391,6 +397,7 @@ if uploaded_file:
                 trigger_day = st.selectbox("📆 Trigger Day:", ["All", "Mon", "Tue", "Wed", "Thur", "Fri"], index=0)
                 trigger_num = st.text_input("🔍 ရှာလိုသောဂဏန်း ရိုက်ထည့်ပါ:", value="48", max_chars=7)
             with c2:
+                # Session Target Setup Box Block
                 if trigger_day != "All":
                     st.markdown("<span style='color:#00FFCC; font-size:13px;'>ℹ️ Day စနစ်သုံးထားသဖြင့် အကြိမ်ရေပြည့်မီစေရန် R-စနစ် နှင့် AM+PM ပေါင်းချုပ် စနစ်ကို Backend က Auto Lock ချပေးထားပါသည်။</span>", unsafe_allow_html=True)
                     target_session_custom = "AM+PM ပေါင်းချုပ်"
@@ -402,8 +409,6 @@ if uploaded_file:
             if st.button("ရှာဖွေမည် 🚀", key="btn_custom"):
                 target_hits = []
                 clean_trigger = trigger_num.strip().upper()
-                
-                # 🚨 Absolute Fix: 'R' သို့မဟုတ် '+' စာသားအပြင် Day ရွေးချယ်မှုပါဝင်မှသာ Composite (R စနစ်) ဝင်ခွင့်ပြုမည်။ 
                 is_composite = "+" in clean_trigger or "R" in clean_trigger or (trigger_day != "All")
                 
                 digits_found = re.findall(r'\d+', clean_trigger)
@@ -413,14 +418,18 @@ if uploaded_file:
                     
                     if trigger_day == "All":
                         if is_composite:
-                            # Strict R-System Lock Frame -> Returns exact 68 items
+                            # Strict R-System Lock Boundary
                             secondary_digit = digits_found[1] if len(digits_found) > 1 else primary_digit[::-1]
                             target_hits = [d for d in full_draws if d['draw'] == primary_digit or d['draw'] == secondary_digit]
                         else:
-                            # 🚨 Strict Single Guard Lock -> Returns exact 35 items for '48', R-System Completely Purged!
-                            target_hits = [d for d in full_draws if d['draw'] == primary_digit]
+                            # 🚨 Fix: Absolute Strict Session Matching (Takes exact rows from user input, e.g., 48 PM yields max 35 entries!)
+                            if target_session_custom != "AM+PM ပေါင်းချုပ်":
+                                req_time_init = "AM" if "AM" in target_session_custom else "PM"
+                                target_hits = [d for d in full_draws if d['draw'] == primary_digit and d['time'] == req_time_init]
+                            else:
+                                target_hits = [d for d in full_draws if d['draw'] == primary_digit]
                     else:
-                        # Day Selector Lock Frame
+                        # Day Lock Mapping Framework
                         secondary_digit = digits_found[1] if len(digits_found) > 1 else primary_digit[::-1]
                         matched_weeks = {d['row_idx'] for d in full_draws if d['day'] == trigger_day and (d['draw'] == primary_digit or d['draw'] == secondary_digit)}
                         for d in full_draws:
