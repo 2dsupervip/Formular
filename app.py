@@ -8,7 +8,7 @@ from collections import Counter
 # ==========================================
 # PAGE CONFIG & PREMIUM DARK-THEME STYLE
 # ==========================================
-st.set_page_config(page_title="2D AI Master V26 Pro", layout="wide", page_icon="🤖")
+st.set_page_config(page_title="2D AI Master V27 Pro", layout="wide", page_icon="🤖")
 
 st.markdown("""
 <style>
@@ -16,19 +16,16 @@ st.markdown("""
     .main-title { color: #A078FF; font-size: 40px; font-weight: bold; text-align: center; margin-bottom: 5px; text-shadow: 0 0 10px rgba(160,120,255,0.5); }
     .sub-title { color: #8F72D6; font-size: 16px; text-align: center; margin-bottom: 30px; }
     
-    /* Card Styles */
     .card { background-color: #170E2B; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); margin-bottom: 15px; border: 1px solid #2D1B4E; }
     .card-live { border-left: 6px solid #3498db; background-color: #0E1A2F; margin-bottom: 15px; }
     .card-hp { border-left: 6px solid #2ecc71; background-color: #0D2216; }
     .card-sniper { border-left: 6px solid #9b59b6; background-color: #201135; }
     
-    /* Typography Styles */
     .line-trigger { font-size: 18px; font-weight: bold; color: #E0D5FA; margin-bottom: 6px; display: block; }
     .line-formula { font-size: 22px; font-weight: bold; color: #FFD700; margin-bottom: 6px; display: block; }
     .line-history { font-size: 15px; color: #A294C7; display: block; }
     .line-advisor { font-size: 16px; color: #00FFCC; font-style: italic; margin-top: 10px; display: block; border-top: 1px dashed #3D2B5E; padding-top: 8px; }
     
-    /* Dynamic Badge Blocks */
     .badge-inline { padding: 2px 10px; border-radius: 6px; font-size: 14px; font-weight: bold; margin-left: 6px; margin-right: 6px; display: inline-block; vertical-align: middle; }
     .badge-inline-sniper { background-color: #9b59b6; color: white; }
     .badge-inline-hp { background-color: #2ecc71; color: #0D2216; }
@@ -38,8 +35,8 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V26 PRO)</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Dynamic Trend Engine & Verified Calendar Matrix | Super VIP Overlay</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V27 PRO)</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Instance Win-Rate Engine | Super VIP Overlap System</div>', unsafe_allow_html=True)
 
 special_groups = {
     "ညီကို": {"01","10","12","21","23","32","34","43","45","54","56","65","67","76","78","87","89","98","90","09"},
@@ -50,8 +47,9 @@ special_groups = {
     "ဆယ်ပြည့်": {"10","01","20","02","30","03","40","04","50","05","60","06","70","07","80","08","90","09"}
 }
 
-mu_keys_list = ["လုံးဘိုင်", "One Change", "key", "အပူးပါခွေ", "ထိပ်စီးစနစ်သစ်", "နောက်ပိတ်စနစ်သစ်", "ဘရိတ်", "စုံ/မ ကပ်", "အုပ်စုတွဲ", "ကွက်ကျဉ်းစနစ်"]
+mu_keys_list = ["လုံးဘိုင်", "One Change", "key", "အပူးပါခွေ", "ထိပ်စီးစနစ်သစ်", "နောက်ပိတ်စနစ်သစ်", "ဘရိတ်", "စုံ/မ ကပ်", "အုပ်စုတွဲ"]
 
+# Helper to check hit against target
 def is_already_hit(mu_name, mu_val, start_idx, end_idx, full_draws_list):
     if start_idx >= len(full_draws_list): return False, ""
     check_draws = [d['draw'] for d in full_draws_list[start_idx : min(end_idx + 1, len(full_draws_list))]]
@@ -62,12 +60,9 @@ def is_already_hit(mu_name, mu_val, start_idx, end_idx, full_draws_list):
         if mu_name == "လုံးဘိုင်":
             pure_num = mu_val.split()[0]
             if pure_num in d: return True, d
-        elif mu_name == "One Change":
-            pure_oc = mu_val.split()[0]
-            if any(x in d for x in pure_oc): return True, d
-        elif mu_name == "key":
-            pure_key = mu_val.split()[0]
-            if any(x in d for x in pure_key): return True, d
+        elif mu_name == "One Change" or mu_name == "key":
+            pure_val = mu_val.split()[0]
+            if any(x in d for x in pure_val): return True, d
         elif mu_name == "အပူးပါခွေ":
             pure_k4 = mu_val.split()[0]
             if d[0] in pure_k4 and d[1] in pure_k4: return True, d
@@ -97,17 +92,11 @@ def is_already_hit(mu_name, mu_val, start_idx, end_idx, full_draws_list):
             gps = mu_val.split('+')
             for g in gps:
                 if d in special_groups.get(g.strip(), set()): return True, d
-        elif mu_name == "ကွက်ကျဉ်းစနစ်":
-            match = re.search(r'^(\d+)\s*ပါသော\s*([\d,\s]+)\s*ဘရိတ်', mu_val)
-            if match:
-                pure_k = match.group(1)
-                pure_b = [b.strip() for b in match.group(2).split(',')]
-                if any(k in d for k in pure_k) and d_break in pure_b: return True, d
     return False, ""
 
+# For AI Trend: Generates dynamic predictions based on 50 pre-history
 def generate_formula_from_pool(analysis_pool):
-    if not analysis_pool:
-        return {k: "-" for k in mu_keys_list}
+    if not analysis_pool: return {k: "-" for k in mu_keys_list}
     
     all_singles = "".join(analysis_pool)
     all_heads = [d[0] for d in analysis_pool]
@@ -117,6 +106,8 @@ def generate_formula_from_pool(analysis_pool):
     top_single = Counter(all_singles).most_common(1)[0][0] if all_singles else ""
     top_oc = "".join([x[0] for x in Counter(all_singles).most_common(2)]) if len(Counter(all_singles)) >= 2 else top_single
     top_key3 = "".join([x[0] for x in Counter(all_singles).most_common(3)]) if len(Counter(all_singles)) >= 3 else top_oc
+    
+    # 4-Digit Fixed Permutation
     top_k4 = "".join([x[0] for x in Counter(all_singles).most_common(4)]) if len(Counter(all_singles)) >= 4 else top_key3
     
     top_h3 = [x[0] for x in Counter(all_heads).most_common(3)]
@@ -144,23 +135,27 @@ def generate_formula_from_pool(analysis_pool):
     for combo in itertools.combinations(special_groups.keys(), 2):
         c = sum(1 for d in analysis_pool if d in special_groups[combo[0]] or d in special_groups[combo[1]])
         if c > max_gp_c: max_gp_c = c; best_gp = f"{combo[0]}+{combo[1]}"
-    kwat_kyin_label = f"{top_key3} ပါသော {brk_label} ဘရိတ်"
 
     return {
         "လုံးဘိုင်": f"{top_single} လုံးဘိုင်" if top_single else "-", 
         "One Change": f"{top_oc} One Change" if top_oc else "-",
         "key": f"{top_key3} key" if top_key3 else "-", 
         "အပူးပါခွေ": f"{top_k4} အပူးပါခွေ" if top_k4 else "-",
-        "ထိပ်စီးစနစ်သစ်": head_formula_str, 
-        "နောက်ပိတ်စနစ်သစ်": tail_formula_str,
+        "ထိပ်စီးစနစ်သစ်": head_formula_str, "နောက်ပိတ်စနစ်သစ်": tail_formula_str,
         "ဘရိတ်": f"{brk_label} ဘရိတ်" if brk_label != "-" else "-", 
-        "စုံ/မ ကပ်": kap_label if top_single else "-", 
-        "အုပ်စုတွဲ": best_gp,
-        "ကွက်ကျဉ်းစနစ်": kwat_kyin_label if top_key3 and brk_label != "-" else "-"
+        "စုံ/မ ကပ်": kap_label if top_single else "-", "အုပ်စုတွဲ": best_gp
     }
 
+# generates fixed candidates for Calendar Mode
+def get_calendar_candidates():
+    candidates = {"လုံးဘိုင်": [], "ဘရိတ်": [], "အုပ်စုတွဲ": []}
+    for i in range(10): candidates["လုံးဘိုင်"].append(f"{i} လုံးဘိုင်")
+    for b in itertools.combinations([str(x) for x in range(10)], 2): candidates["ဘရိတ်"].append(f"{b[0]}, {b[1]} ဘရိတ်")
+    for combo in itertools.combinations(special_groups.keys(), 2): candidates["အုပ်စုတွဲ"].append(f"{combo[0]}+{combo[1]}")
+    return candidates
+
 # ==========================================
-# MASTER ROUTINE: DUAL MODE ENGINE
+# MASTER ROUTINE: INSTANCE WIN-RATE ENGINE
 # ==========================================
 def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=False, sel_session="AM+PM ပေါင်းချုပ်", custom_trigger="", strict_day_mode=False, mode="AI Trend"):
     step_buckets = {step: {} for step in range(1, requested_max_step + 1)}
@@ -168,110 +163,106 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
     total_count = len(target_hits)
     if total_count == 0: return step_buckets
 
-    global_formulas = {}
-    if mode == "Calendar သီးသန့်မူများ (Fixed Pattern)":
-        all_sub_draws = []
-        for hit in target_hits:
-            start_post = hit['index'] + 1
-            end_post = min(hit['index'] + requested_max_step, len(full_draws) - 1)
-            all_sub_draws.extend([d['draw'] for d in full_draws[start_post:end_post + 1]])
-        global_formulas = generate_formula_from_pool(all_sub_draws)
+    calendar_candidates = get_calendar_candidates() if mode == "Calendar သီးသန့်မူများ (Fixed Pattern)" else {}
 
-    for mu_k in mu_keys_list:
-        hit_steps_across_history = []
-        actual_hit_combinations = []
+    # Define formula keys we process
+    processing_keys = ["လုံးဘိုင်", "ဘရိတ်", "အုပ်စုတွဲ"] if mode == "Calendar သီးသန့်မူများ (Fixed Pattern)" else mu_keys_list
+
+    for mu_k in processing_keys:
+        cand_list = calendar_candidates.get(mu_k, []) if mode == "Calendar သီးသန့်မူများ (Fixed Pattern)" else ["DYNAMIC_AI"]
         
-        last_generated_val = ""
+        for cand_val in cand_list:
+            hit_steps_across_history = []
+            actual_hit_combinations = []
+            last_generated_val = cand_val
 
-        for hit in target_hits:
-            hit_idx = hit['index']
-            
-            # 1. GENERATE FORMULA (Dynamic vs Fixed)
-            if mode == "Calendar သီးသန့်မူများ (Fixed Pattern)":
-                current_val = global_formulas.get(mu_k, "-")
-            else:
-                start_history_idx = max(0, hit_idx - 50)
-                pool = [d['draw'] for d in full_draws[start_history_idx : hit_idx]]
-                dynamic_formulas = generate_formula_from_pool(pool)
-                current_val = dynamic_formulas.get(mu_k, "-")
-            
-            last_generated_val = current_val
-            if current_val == "-":
-                hit_steps_across_history.append(999)
-                continue
-
-            # 2. CHECK HIT FOR THIS SPECIFIC OCCURRENCE
-            found_hit_step = None
-            for step_check in range(1, requested_max_step + 1):
-                t_idx = hit_idx + step_check
-                if t_idx >= len(full_draws): break
+            for hit in target_hits:
+                hit_idx = hit['index']
+                current_val = cand_val
                 
-                is_hit, matched_draw = is_already_hit(mu_k, current_val, t_idx, t_idx, full_draws)
-                if is_hit:
-                    if is_custom_tab and sel_session != "AM+PM ပေါင်းချုပ်" and "သီးသန့်" in sel_session:
-                        req_time_str = "AM" if "AM" in sel_session else "PM"
-                        if full_draws[t_idx]['time'] != req_time_str:
-                            continue 
-                    found_hit_step = step_check
-                    actual_hit_combinations.append(matched_draw)
-                    break
-            
-            if found_hit_step is not None:
-                hit_steps_across_history.append(found_hit_step)
-            else:
-                hit_steps_across_history.append(999)
+                # Dynamic Logic for AI Trend
+                if mode != "Calendar သီးသန့်မူများ (Fixed Pattern)":
+                    start_history_idx = max(0, hit_idx - 50)
+                    pool = [d['draw'] for d in full_draws[start_history_idx : hit_idx]]
+                    dynamic_formulas = generate_formula_from_pool(pool)
+                    current_val = dynamic_formulas.get(mu_k, "-")
+                    last_generated_val = current_val
 
-        valid_spans = [s for s in hit_steps_across_history if s <= requested_max_step]
-        if not valid_spans or last_generated_val == "-": continue
-        
-        max_required_span = max(valid_spans)
-        successful_hits_within_max_span = sum(1 for s in hit_steps_across_history if s <= max_required_span)
-        rate = (successful_hits_within_max_span / total_count) * 100
+                if current_val == "-" or not current_val:
+                    hit_steps_across_history.append(999)
+                    continue
 
-        if rate < 90.0 or total_count < 10: continue
-
-        if max_required_span <= requested_max_step:
-            is_deadline_flag = False
-            if target_hits:
-                last_hit_global_idx = target_hits[-1]['index']
-                elapsed_draws = current_latest_idx - last_hit_global_idx
+                # Check Instance Post-Window
+                found_hit_step = None
+                for step_check in range(1, requested_max_step + 1):
+                    t_idx = hit_idx + step_check
+                    if t_idx >= len(full_draws): break
+                    
+                    is_hit, matched_draw = is_already_hit(mu_k, current_val, t_idx, t_idx, full_draws)
+                    if is_hit:
+                        if is_custom_tab and sel_session != "AM+PM ပေါင်းချုပ်" and "သီးသန့်" in sel_session:
+                            req_time_str = "AM" if "AM" in sel_session else "PM"
+                            if full_draws[t_idx]['time'] != req_time_str: continue 
+                        found_hit_step = step_check
+                        actual_hit_combinations.append(matched_draw)
+                        break
                 
-                # STRICT DEADLINE LOGIC FIX
-                if elapsed_draws + 1 == max_required_span:
-                    is_deadline_flag = True
-                elif elapsed_draws >= max_required_span:
-                    continue # Passed the max span without hitting, so the 100% rule is broken on current step
+                hit_steps_across_history.append(found_hit_step if found_hit_step is not None else 999)
+
+            # Win Rate Evaluation (Strictly Instance-Based)
+            valid_spans = [s for s in hit_steps_across_history if s <= requested_max_step]
+            if not valid_spans or last_generated_val == "-": continue
+            
+            max_required_span = max(valid_spans)
+            successful_hits = sum(1 for s in hit_steps_across_history if s <= max_required_span)
+            rate = (successful_hits / total_count) * 100
+
+            # MUST exceed 90% Win-Rate to be considered
+            if rate < 90.0 or total_count < 10: continue
+
+            if max_required_span <= requested_max_step:
+                is_deadline_flag = False
+                if target_hits:
+                    last_hit_global_idx = target_hits[-1]['index']
+                    elapsed_draws = current_latest_idx - last_hit_global_idx
+                    
+                    if elapsed_draws + 1 == max_required_span:
+                        is_deadline_flag = True
+                    elif elapsed_draws >= max_required_span:
+                        continue 
+                    
+                    if not is_custom_tab and elapsed_draws > 0:
+                        is_hit, _ = is_already_hit(mu_k, last_generated_val, last_hit_global_idx + 1, current_latest_idx, full_draws)
+                        if is_hit: continue
+
+                sniper_note = ""
+                if actual_hit_combinations:
+                    top_combos = [x[0] for x in Counter(actual_hit_combinations).most_common(4)]
+                    sniper_note = f"💡 အဖြစ်နိုင်ဆုံး ၃/၄ ကွက်: {', '.join(top_combos)}"
+
+                lbl_prefix = custom_trigger if is_custom_tab else (f"{target_hits[-1]['draw']} {target_hits[-1]['time']}" if target_hits else "")
+                rate_str = "100%" if rate == 100.0 else f"{rate:.1f}%"
                 
-                # Check if already dropped in the elapsed window
-                if not is_custom_tab and elapsed_draws > 0:
-                    is_hit, _ = is_already_hit(mu_k, last_generated_val, last_hit_global_idx + 1, current_latest_idx, full_draws)
-                    if is_hit: continue
-
-            sniper_note = ""
-            if actual_hit_combinations:
-                top_combos = [x[0] for x in Counter(actual_hit_combinations).most_common(4)]
-                sniper_note = f"💡 အဖြစ်နိုင်ဆုံး ၃/၄ ကွက်: {', '.join(top_combos)}"
-
-            lbl_prefix = custom_trigger if is_custom_tab else (f"{target_hits[-1]['draw']} {target_hits[-1]['time']}" if target_hits else "")
-            rate_str = "100%" if rate == 100.0 else f"{rate:.1f}%"
-            
-            card_payload = {
-                "top": f"🔮 [{lbl_prefix}] ထွက်ပြီးလျှင်", 
-                "formula": f"{last_generated_val} {rate_str}", 
-                "bottom": f"မှန်ကန်မှု: ({total_count} ကြိမ်မှာ {successful_hits_within_max_span} ကြိမ်မှန်)", 
-                "is_deadline": is_deadline_flag, 
-                "pure": last_generated_val, 
-                "advisor": sniper_note, 
-                "rate": rate,
-                "max_span": max_required_span
-            }
-            
-            step_buckets[max_required_span][mu_k] = card_payload
+                # Prevent duplicates in Calendar mode from overwriting
+                bucket_key = last_generated_val if mode == "Calendar သီးသန့်မူများ (Fixed Pattern)" else mu_k
+                
+                card_payload = {
+                    "top": f"🔮 [{lbl_prefix}] ထွက်ပြီးလျှင်", 
+                    "formula": f"{last_generated_val} {rate_str}", 
+                    "bottom": f"မှန်ကန်မှု: ({total_count} ကြိမ်မှာ {successful_hits} ကြိမ်မှန်)", 
+                    "is_deadline": is_deadline_flag, 
+                    "pure": last_generated_val, 
+                    "advisor": sniper_note, 
+                    "rate": rate,
+                    "max_span": max_required_span
+                }
+                
+                step_buckets[max_required_span][bucket_key] = card_payload
 
     return step_buckets
 
 # ==========================================
-# FILE UPLOAD & PRE-PROCESSING
+# FILE UPLOAD & UI
 # ==========================================
 uploaded_file = st.file_uploader("Bro ရဲ့ 2D CSV သို့မဟုတ် Excel ဖိုင်ကို ရွေးချယ်တင်ပေးပါ...", type=['csv', 'xlsx', 'xls'])
 
@@ -312,9 +303,6 @@ if uploaded_file:
 
         tab_live, tab_custom = st.tabs(["⚡ တွက်ချက်မည် (ယခုပွဲစဉ်)", "🔍 2D Formulas (Custom)"])
 
-        # ------------------------------------------
-        # TAB 1: AUTOMATED ENGINE TRACKER
-        # ------------------------------------------
         with tab_live:
             input_box_val = st.text_input("⏳ စစ်ဆေးမည့် ပွဲစဉ်အရေအတွက် အတိအကျ (Default: 10):", value="10", key="live_input")
             live_max_tf = int(input_box_val.strip()) if input_box_val.strip().isdigit() else 10
@@ -329,8 +317,6 @@ if uploaded_file:
                 compiled_master_buckets = {step: {} for step in range(1, live_max_tf + 1)}
                 scoring_pool = {}
                 
-                # Tab 1 Logic Fix: We strictly process backwards from the current draw.
-                # If 62 AM was 2 steps ago (step_dist = 2), we only want rules where max_span == 2 (ရက်ချိန်းပြည့်).
                 for step_dist in range(1, live_max_tf + 1):
                     target_past_idx = current_end_idx - step_dist + 1
                     if target_past_idx < 0: continue
@@ -349,8 +335,6 @@ if uploaded_file:
                         
                         step_res = execute_analysis(pool['hits'], full_draws, live_max_tf, is_custom_tab=False, sel_session=live_session_target, mode=live_mode)
                         
-                        # Only extract formulas whose max_span perfectly aligns with the current elapsed distance
-                        # meaning they are explicitly due (ရက်ချိန်းပြည့်) right now.
                         if step_dist in step_res:
                             for mk, mv in step_res[step_dist].items():
                                 f_key = mv['pure']
@@ -366,22 +350,17 @@ if uploaded_file:
                 st.write("---")
                 st.markdown("#### 🏆 VIP ဆုံးဖြတ်ချက် (Super, Second & Backup Overlaps)")
                 
-                # Super VIP Logic Implementation
                 sorted_scores = sorted(scoring_pool.items(), key=lambda x: (x[1]['count'], x[1]['is_anchor']), reverse=True)
                 
                 if sorted_scores:
                     for b_val, b_data in sorted_scores:
                         if b_data['count'] >= 3 or (b_data['count'] >= 2 and b_data['is_anchor']):
-                            tier = "Super VIP"
-                            badge = "badge-super"
+                            tier, badge = "Super VIP", "badge-super"
                         elif b_data['count'] == 2:
-                            tier = "Second VIP"
-                            badge = "badge-second"
+                            tier, badge = "Second VIP", "badge-second"
                         elif b_data['is_anchor']:
-                            tier = "Backup Anchor"
-                            badge = "badge-backup"
-                        else:
-                            continue
+                            tier, badge = "Backup Anchor", "badge-backup"
+                        else: continue
                             
                         with st.expander(f"⭐ {tier}: {b_val} (တူညီမှု: {b_data['count']} ခု)", expanded=(tier == "Super VIP")):
                             st.markdown(f"<span class='{badge}'>{tier}</span><div style='color:#00FFCC; font-size:14px; margin-top:10px; margin-bottom:10px;'>💡 ဤမူကို အောက်ပါ ထောက်တိုင်များက ဘုံတူညီစွာ ညွှန်ပြနေပါသည်-</div>", unsafe_allow_html=True)
@@ -422,9 +401,6 @@ if uploaded_file:
                                 </div>
                                 """, unsafe_allow_html=True)
 
-        # ------------------------------------------
-        # TAB 2: CLEAN CUSTOM FORMULARS ENGINE 
-        # ------------------------------------------
         with tab_custom:
             st.markdown("##### 🧠 တွက်ချက်မှုစနစ် (Mode) ရွေးချယ်ရန်")
             custom_mode = st.radio("", ["AI Trend (ရှေ့သမိုင်း ၅၀ အထိုင်)", "Calendar သီးသန့်မူများ (Fixed Pattern)"], horizontal=True, key="custom_mode")
