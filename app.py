@@ -49,7 +49,7 @@ special_groups = {
 }
 
 # ==========================================
-# STUCT ALREADY HIT TRACKER (EXACT BOUNDS OPTIMIZED)
+# STUCT ALREADY HIT TRACKER
 # ==========================================
 def is_already_hit(mu_name, mu_val, start_idx, end_idx, full_draws_list):
     if start_idx >= len(full_draws_list): return True
@@ -107,7 +107,6 @@ def is_already_hit(mu_name, mu_val, start_idx, end_idx, full_draws_list):
 # MASTER ROUTINE: HYBRID DATA ANALYSIS ENGINE
 # ==========================================
 def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=False, sel_session="AM+PM ပေါင်းချုပ်", custom_trigger="", strict_day_mode=False):
-    # Store matrix for collapsible steps mapping
     step_buckets = {step: {} for step in range(1, requested_max_step + 1)}
     current_latest_idx = len(full_draws) - 1
 
@@ -117,7 +116,6 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
 
     mu_keys_list = ["လုံးဘိုင်", "One Change", "key", "အပူးပါခွေ", "ထိပ်စီး", "နောက်ပိတ်", "ဘရိတ်", "စုံ/မ ကပ်", "အုပ်စုတွဲ", "ကွက်ကျဉ်းစနစ်"]
 
-    # 🚨 Bro's Core Architecture: Loop over formulas first, then determine their Max Time Frame Span across history
     for mu_k in mu_keys_list:
         latest_val = ""
         latest_pure = ""
@@ -163,20 +161,19 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
                 if c > max_gp_c: max_gp_c = c; best_gp = f"{combo[0]}+{combo[1]}"
             kwat_kyin_label = f"{top_key3} ပါသော {brk_label} ဘရိတ်"
 
-            mapping = {
-                "လုံးဘိုင်": f"{top_single} လုံးဘိုင်", "One Change": f"{top_oc} One Change",
-                "key": f"{top_key3} key", "အပူးပါခွေ": f"{top_k4} အပူးပါခွေ",
-                "ထိပ်စီး": f"{top_h3} ထိပ်စီး", "နောက်ပိတ်": f"{top_t3} နောက်ပိတ်",
-                "ဘရိတ်": f"{brk_label} ဘရိတ်", "စုံ/မ ကပ်": kap_label, "အုပ်စုတွဲ": best_gp if best_gp else "-",
-                "ကွက်ကျဉ်းစနစ်": kwat_kyin_label
-            }
+                mapping = {
+                    "လုံးဘိုင်": f"{top_single} လုံးဘိုင်", "One Change": f"{top_oc} One Change",
+                    "key": f"{top_key3} key", "အပူးပါခွေ": f"{top_k4} အပူးပါခွေ",
+                    "ထိပ်စီး": f"{top_h3} ထိပ်စီး", "နောက်ပိတ်": f"{top_t3} နောက်ပိတ်",
+                    "ဘရိတ်": f"{brk_label} ဘရိတ်", "စုံ/မ ကပ်": kap_label, "အုပ်စုတွဲ": best_gp if best_gp else "-",
+                    "ကွက်ကျဉ်းစနစ်": kwat_kyin_label
+                }
             
             latest_val = mapping[mu_k]
             latest_pure = mapping[mu_k]
             
-            # Find the exact step where this formula hits in this specific instance loop block
             found_hit_step = None
-            for step_check in range(1, 21): # Scan up to 20 steps deep for bounding span search
+            for step_check in range(1, 21):
                 t_idx = hit_idx + step_check
                 if t_idx >= len(full_draws): break
                 
@@ -192,29 +189,22 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
             if found_hit_step is not None:
                 hit_steps_across_history.append(found_hit_step)
             else:
-                # If it didn't hit within 20 draws, treat as infinite layout drop out
                 hit_steps_across_history.append(999)
 
         if not is_valid_formula or not hit_steps_across_history: continue
 
-        # 🚨 Bro's Exact Theory Rule: Find the Max Span Time Frame to capture 100% or 90%+ bounds
-        # Filter out infinite drops (999) to get realistic thresholds
         valid_spans = [s for s in hit_steps_across_history if s <= 20]
         if not valid_spans: continue
         
         max_required_span = max(valid_spans)
-        
-        # Calculate strict success rate within this Max Required Time Frame bounds
         successful_hits_within_max_span = sum(1 for s in hit_steps_across_history if s <= max_required_span)
         rate = (successful_hits_within_max_span / total_count) * 100
 
-        # 🚨 Bro's Core Precision Guards Limit Filters: Rate >= 90% and Total historical rows >= 10
+        # 🚨 Rate >= 90% and Sample >= 10
         if rate < 90.0 or total_count < 10:
             continue
 
-        # Check if the max required span fits into the user's requested display buckets layout bounds
         if max_required_span <= requested_max_step:
-            # Tab 1 Live Countdown Overlap Check Guard
             if not is_custom_tab and filtered_hits:
                 if is_already_hit(mu_k, latest_val, filtered_hits[-1]['index'] + 1, current_latest_idx, full_draws):
                     continue
@@ -238,7 +228,6 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
                 "is_deadline": is_deadline_flag, "pure": latest_pure, "advisor": "", "rate": rate
             }
             
-            # Map cleanly directly into its exclusive Max Span bucket layout frame
             step_buckets[max_required_span][mu_k] = card_payload
 
     return step_buckets
@@ -293,13 +282,12 @@ if uploaded_file:
             input_box_val = st.text_input("10 ပွဲထက်ကျော်ပါက ဤနေရာတွင် ရိုက်ထည့်ပါ (ဥပမာ- 12):", value="", key="live_input")
             
             live_max_tf = int(input_box_val.strip()) if (input_box_val.strip() and input_box_val.strip().isdigit()) else slider_val
-            live_session_target = f"{target_time_name} သီးသန့်"
+            live_session_target = f"{target_time_name} Thie Thant"
 
             if st.button("ယခုပွဲအတွက် Auto ရှာဖွေမည် ⚡", key="btn_auto"):
                 current_end_idx = len(full_draws) - 1
                 convergence_pool = []
                 
-                # Dynamic compilation matrix lookup container
                 compiled_master_buckets = {step: {} for step in range(1, live_max_tf + 1)}
                 
                 for step in range(1, live_max_tf + 1):
@@ -317,7 +305,6 @@ if uploaded_file:
                     
                     for pool in condition_pools:
                         if not pool['hits']: continue
-                        # Fetch exclusive steps layout block results
                         step_res = execute_analysis(pool['hits'], full_draws, live_max_tf, is_custom_tab=False, sel_session=live_session_target)
                         
                         for step_key, formulas in step_res.items():
@@ -372,7 +359,7 @@ if uploaded_file:
                                 """, unsafe_allow_html=True)
 
         # ------------------------------------------
-        # TAB 2: CLEAN CUSTOM FORMULARS ENGINE (MAX SPAN EXCLUSIVITY MATCHED)
+        # TAB 2: CLEAN CUSTOM FORMULARS ENGINE 
         # ------------------------------------------
         with tab_custom:
             c1, c2, c3 = st.columns(3)
@@ -415,47 +402,4 @@ if uploaded_file:
                             if d['row_idx'] in matched_weeks:
                                 target_hits.append(d)
                 
-                if trigger_day == "All" and target_session_custom != "AM+PM ပေါင်းချုပ်" and len(target_hits) > 0:
-                    req_time_filter = "AM" if "AM" in target_session_custom else "PM"
-                    target_hits = [h for h in target_hits if h['time'] == req_time_filter]
-
-                t_time_label = "PM" if target_session_custom == "PM သီးသန့်" else "AM" if target_session_custom == "AM သီးသန့်" else ""
-                lbl_prefix_custom = f"{trigger_num}{'R' if (trigger_day != 'All' and 'R' not in trigger_num) else ''} {trigger_day if trigger_day != 'All' else ''} {t_time_label}".strip()
-
-                if not target_hits:
-                    st.error("⚠️ သတ်မှတ်ချက်များနှင့် ကိုက်ညီသော သမိုင်းကြောင်းမှတ်တမ်း မရှိပါ Bro!")
-                else:
-                    st.write("---")
-                    st.markdown("#### 📋 အသေးစိတ်အချက်အလက် (Window အလိုက် ခေါက်သိမ်းစနစ်)")
-                    
-                    # Run the single continuous execution to gather precise max step span alignment
-                    master_step_res = execute_analysis(
-                        target_hits, full_draws, custom_max_tf, 
-                        is_custom_tab=True, sel_session=target_session_custom, 
-                        custom_trigger=lbl_prefix_custom, strict_day_mode=(trigger_day != "All")
-                    )
-                    
-                    has_any_tab2_data = any(master_step_res[sk] for sk in master_step_res)
-                    
-                    if not has_any_tab2_data:
-                        st.info("သတ်မှတ်ထားသော ၉၀% အထက် ရက်ချိန်းနယ်ကုန် သတ်မှတ်ချက်အတွင်း ကိုက်ညီမည့် မူရင်းမှတ်တမ်း မတွေ့ရှိပါ Bro!")
-                    else:
-                        for step in range(1, custom_max_tf + 1):
-                            formulas_dict = master_step_res[step]
-                            if not formulas_dict: continue
-                            
-                            is_step_deadline = any(v['is_deadline'] for v in formulas_dict.values())
-                            tab2_header = f"⚠️ {step} ပွဲအတွင်း မူများ [ရက်ချိန်းပြည့်]" if is_step_deadline else f"🔽 {step} ပွဲအတွင်း မူများ"
-                                
-                            with st.expander(tab2_header, expanded=(step == 1)):
-                                for mu_name, data in formulas_dict.items():
-                                    card_border_class = "card-sniper" if "100%" in data['formula'] else "card-hp"
-                                    badge_class = "badge-inline-sniper" if "100%" in data['formula'] else "badge-inline-hp"
-                                    span_tag = f"<span class='badge-inline {badge_class}'>{step} ပွဲအတွင်း</span>"
-                                    
-                                    st.markdown(f"""
-                                    <div class="card {card_border_class}">
-                                        <span class="line-trigger">{data['top']} {span_tag}</span>
-                                        <span class="line-formula">{data['formula']}</span>
-                                        <span class="line-history">{data['bottom']}</span>
-                                        <span class="line-advisor
+                if trigger
