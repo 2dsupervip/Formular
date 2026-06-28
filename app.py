@@ -22,12 +22,10 @@ st.markdown("""
     .card-hp { border-left: 6px solid #2ecc71; background-color: #0D2216; }
     .card-sniper { border-left: 6px solid #9b59b6; background-color: #201135; }
     
-    /* Bro 3/4-Line Stack Display Typography */
-    .line-alert { color: #FF4D4D; font-size: 16px; font-weight: bold; margin-bottom: 6px; display: block; }
+    /* Typography Styles */
     .line-trigger { font-size: 18px; font-weight: bold; color: #E0D5FA; margin-bottom: 6px; display: block; }
     .line-formula { font-size: 22px; font-weight: bold; color: #FFD700; margin-bottom: 6px; display: block; }
     .line-history { font-size: 15px; color: #A294C7; display: block; }
-    .line-advisor { font-size: 14px; color: #00FFCC; font-style: italic; margin-top: 4px; display: block; }
     
     /* Dynamic Badge Blocks */
     .badge-inline { padding: 2px 10px; border-radius: 6px; font-size: 14px; font-weight: bold; margin-left: 6px; margin-right: 6px; display: inline-block; vertical-align: middle; }
@@ -37,7 +35,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V26 PRO)</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Ultimate Verified Calendar Matrix Engine | Cumulative Max Span Bound Lock</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Ultimate Verified Calendar Matrix Engine | Strict Multi-Trigger Fixed</div>', unsafe_allow_html=True)
 
 special_groups = {
     "ညီကို": {"01","10","12","21","23","32","34","43","45","54","56","65","67","76","78","87","89","98","90","09"},
@@ -90,7 +88,7 @@ def is_already_hit(mu_name, mu_val, start_idx, end_idx, full_draws_list):
                     rem_digit = int(rem if rem else b1)
                     if is_even and rem_digit % 2 == 0: return True
                     if not is_even and rem_digit % 2 != 0: return True
-        elif mu_name == "အုပ်စုတွဲ":
+        elif mu_name == "အုပ်စုဲတွ":
             if mu_val == "-" or not mu_val: return True
             gps = mu_val.split('+')
             for g in gps:
@@ -107,7 +105,8 @@ def is_already_hit(mu_name, mu_val, start_idx, end_idx, full_draws_list):
 # MASTER ROUTINE: HYBRID DATA ANALYSIS ENGINE
 # ==========================================
 def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=False, sel_session="AM+PM ပေါင်းချုပ်", custom_trigger="", strict_day_mode=False):
-    step_buckets = {step: {} for step in range(1, requested_max_step + 1)}
+    max_compiled_limit = max(requested_max_step, 25)
+    step_buckets = {step: {} for step in range(1, max_compiled_limit + 1)}
     current_latest_idx = len(full_draws) - 1
 
     filtered_hits = target_hits
@@ -172,17 +171,19 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
             latest_val = mapping[mu_k]
             latest_pure = mapping[mu_k]
             
+            # 🚨 Fix: Pure Calendar Step Tracker (No Session Truncation in counting steps)
             found_hit_step = None
-            for step_check in range(1, 21):
+            for step_check in range(1, 26):
                 t_idx = hit_idx + step_check
                 if t_idx >= len(full_draws): break
                 
-                d_target = full_draws[t_idx]
-                if is_custom_tab and sel_session != "AM+PM ပေါင်းချုပ်" and "သီးသန့်" in sel_session:
-                    req_time_str = "AM" if "AM" in sel_session else "PM"
-                    if d_target['time'] != req_time_str: continue
-                
+                # Check if the formula hit at this exact calendar step offset
                 if is_already_hit(mu_k, latest_val, t_idx, t_idx, full_draws):
+                    # 🚨 Final Precision Check: Verify if it fits user's AM/PM target block boundary
+                    if is_custom_tab and sel_session != "AM+PM ပေါင်းချုပ်" and "သီးသန့်" in sel_session:
+                        req_time_str = "AM" if "AM" in sel_session else "PM"
+                        if full_draws[t_idx]['time'] != req_time_str:
+                            continue # Shift window to locate accurate aligned match
                     found_hit_step = step_check
                     break
             
@@ -193,18 +194,18 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
 
         if not is_valid_formula or not hit_steps_across_history: continue
 
-        valid_spans = [s for s in hit_steps_across_history if s <= 20]
+        valid_spans = [s for s in hit_steps_across_history if s <= 25]
         if not valid_spans: continue
         
         max_required_span = max(valid_spans)
         successful_hits_within_max_span = sum(1 for s in hit_steps_across_history if s <= max_required_span)
         rate = (successful_hits_within_max_span / total_count) * 100
 
-        # 🚨 Rate >= 90% and Sample >= 10
+        # Strict Limits Protections Cutoff
         if rate < 90.0 or total_count < 10:
             continue
 
-        if max_required_span <= requested_max_step:
+        if max_required_span <= max_compiled_limit:
             if not is_custom_tab and filtered_hits:
                 if is_already_hit(mu_k, latest_val, filtered_hits[-1]['index'] + 1, current_latest_idx, full_draws):
                     continue
@@ -282,12 +283,11 @@ if uploaded_file:
             input_box_val = st.text_input("10 ပွဲထက်ကျော်ပါက ဤနေရာတွင် ရိုက်ထည့်ပါ (ဥပမာ- 12):", value="", key="live_input")
             
             live_max_tf = int(input_box_val.strip()) if (input_box_val.strip() and input_box_val.strip().isdigit()) else slider_val
-            live_session_target = f"{target_time_name} Thie Thant"
+            live_session_target = f"{target_time_name} သီးသန့်"
 
             if st.button("ယခုပွဲအတွက် Auto ရှာဖွေမည် ⚡", key="btn_auto"):
                 current_end_idx = len(full_draws) - 1
                 convergence_pool = []
-                
                 compiled_master_buckets = {step: {} for step in range(1, live_max_tf + 1)}
                 
                 for step in range(1, live_max_tf + 1):
@@ -298,9 +298,10 @@ if uploaded_file:
                     past_val = past_obj['draw']
                     past_time = past_obj['time']
                     
+                    # Fix 1: Aligned explicitly to prevent double matching
                     condition_pools = [
-                        {"hits": [d for d in full_draws[:target_past_idx+1] if d['draw'] == past_val and d['time'] == past_time], "lbl": f"{past_val} {past_time}"},
-                        {"hits": [d for d in full_draws[:target_past_idx+1] if d['draw'] == past_val], "lbl": f"{past_val}"}
+                        {"hits": [d for d in full_draws[:target_past_idx+1] if d['draw'] == past_val and d['time'] == past_time], "lbl": f"{past_val} {past_time} စစ်စစ်"},
+                        {"hits": [d for d in full_draws[:target_past_idx+1] if d['draw'] == past_val], "lbl": f"{past_val} ပေါင်းချုပ်"}
                     ]
                     
                     for pool in condition_pools:
@@ -308,6 +309,8 @@ if uploaded_file:
                         step_res = execute_analysis(pool['hits'], full_draws, live_max_tf, is_custom_tab=False, sel_session=live_session_target)
                         
                         for step_key, formulas in step_res.items():
+                            if step_key not in compiled_master_buckets:
+                                compiled_master_buckets[step_key] = {}
                             for mk, mv in formulas.items():
                                 convergence_pool.append(mv['pure'])
                                 compiled_master_buckets[step_key][f"{pool['lbl']}_{mk}"] = mv
@@ -333,12 +336,13 @@ if uploaded_file:
                 st.write("---")
                 st.markdown("#### 📋 အသေးစိတ်အချက်အလက်")
                 
-                has_any_output_cards = any(compiled_master_buckets[sk] for sk in compiled_master_buckets)
+                has_any_output_cards = any(compiled_master_buckets[sk] for sk in compiled_master_buckets if sk <= live_max_tf)
                 
                 if not has_any_output_cards:
                     st.info("မထွက်သေးဘဲ ကျန်ရှိနေသော ၉၀% အထက် ရက်ချိန်းနယ်ကုန် မူလက်ကျန် လက္ခဏာ မတွေ့ရှိပါ။")
                 else:
                     for step_key in sorted(compiled_master_buckets.keys()):
+                        if step_key > live_max_tf: continue
                         formulas_dict = compiled_master_buckets[step_key]
                         if not formulas_dict: continue
                         
@@ -350,7 +354,6 @@ if uploaded_file:
                                 badge_class = "badge-inline-sniper" if d_card['rate'] == 100.0 else "badge-inline-hp"
                                 span_tag = f"<span class='badge-inline {badge_class}'>{step_key} ပွဲအတွင်း</span>"
                                 
-                                # 🚨 Fix Check: KeyError Resolved (`form` changed back to `formula` correctly)
                                 st.markdown(f"""
                                 <div class="card card-sniper">
                                     <span class="line-trigger">{d_card['top']} {span_tag}</span>
@@ -366,7 +369,7 @@ if uploaded_file:
             c1, c2, c3 = st.columns(3)
             with c1:
                 trigger_day = st.selectbox("📆 Trigger Day:", ["All", "Mon", "Tue", "Wed", "Thur", "Fri"], index=0)
-                trigger_num = st.text_input("🔍 ရှာလိုသောဂဏန်း ရိုက်ထည့်ပါ:", value="48", max_chars=7)
+                trigger_num = st.text_input("🔍 ရှာလိုသောဂဏန်း ရိုက်ထည့်ပါ:", value="01", max_chars=7)
             with c2:
                 if trigger_day != "All":
                     st.markdown("<span style='color:#00FFCC; font-size:13px;'>ℹ️ Day စနစ်သုံးထားသဖြင့် အကြိမ်ရေပြည့်မီစေရန် R-စနစ် နှင့် AM+PM ပေါင်းချုပ် စနစ်ကို Backend က Auto Lock ချပေးထားပါသည်။</span>", unsafe_allow_html=True)
@@ -374,7 +377,7 @@ if uploaded_file:
                 else:
                     target_session_custom = st.selectbox("⏱️ Target ပွဲစဉ် အခြေအနေ ရွေးရန်:", ["AM+PM ပေါင်းချုပ်", "AM သီးသန့်", "PM သီးသန့်"], index=2)
             with c3:
-                custom_max_tf = st.number_input("⏳ စစ်ဆေးမည့် ပွဲစဉ်အရေအတွက်", min_value=1, max_value=20, value=10, key="custom_input_tf")
+                custom_max_tf = st.number_input("⏳ စစ်ဆေးမည့် ပွဲစဉ်အရေအတွက်", min_value=1, max_value=25, value=20, key="custom_input_tf")
 
             if st.button("ရှာဖွေမည် 🚀", key="btn_custom"):
                 target_hits = []
@@ -427,14 +430,14 @@ if uploaded_file:
                     if not has_any_tab2_data:
                         st.info("သတ်မှတ်ထားသော ၉၀% အထက် ရက်ချိန်းနယ်ကုန် သတ်မှတ်ချက်အတွင်း ကိုက်ညီမည့် မူရင်းမှတ်တမ်း မတွေ့ရှိပါ Bro!")
                     else:
-                        for step in range(1, custom_max_tf + 1):
+                        for step in sorted(master_step_res.keys()):
                             formulas_dict = master_step_res[step]
                             if not formulas_dict: continue
                             
                             is_step_deadline = any(v['is_deadline'] for v in formulas_dict.values())
                             tab2_header = f"⚠️ {step} ပွဲအတွင်း မူများ [ရက်ချိန်းပြည့်]" if is_step_deadline else f"🔽 {step} ပွဲအတွင်း မူများ"
                                 
-                            with st.expander(tab2_header, expanded=(step == 1)):
+                            with st.expander(tab2_header, expanded=True):
                                 for mu_name, data in formulas_dict.items():
                                     card_border_class = "card-sniper" if "100%" in data['formula'] else "card-hp"
                                     badge_class = "badge-inline-sniper" if "100%" in data['formula'] else "badge-inline-hp"
