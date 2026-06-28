@@ -17,6 +17,7 @@ st.markdown("""
     .sub-title { color: #8F72D6; font-size: 16px; text-align: center; margin-bottom: 30px; }
     
     .card { background-color: #170E2B; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); margin-bottom: 15px; border: 1px solid #2D1B4E; }
+    .card-top { border-left: 6px solid #f39c12; background-color: #2e1e05; }
     .card-sniper { border-left: 6px solid #e74c3c; background-color: #3b1111; }
     .card-regular { border-left: 6px solid #9b59b6; background-color: #201135; }
     
@@ -32,7 +33,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V26 PRO)</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Dual-Mode Matrix Engine | Exact Step Bound & Sniper Notes</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Ultimate Dual-Mode Matrix Engine | Exact Step Bound & Sniper Notes</div>', unsafe_allow_html=True)
 
 special_groups = {
     "ညီကို": {"01","10","12","21","23","32","34","43","45","54","56","65","67","76","78","87","89","98","90","09"},
@@ -59,7 +60,7 @@ def extract_formula_mapping(analysis_pool):
     top_key3 = "".join([x[0] for x in c_singles.most_common(3)]) if len(c_singles) >= 3 else top_oc
     top_k4 = "".join([x[0] for x in c_singles.most_common(4)]) if len(c_singles) >= 4 else top_key3
     
-    # Upgraded Rule 5
+    # Upgraded Rule 5: 3 Heads + 3 to 5 Dynamic Attached Tails
     top_h3 = [x[0] for x in Counter(all_heads).most_common(3)]
     head_formula_str = "-"
     if top_h3:
@@ -70,7 +71,7 @@ def extract_formula_mapping(analysis_pool):
             best_tails = best_tails[:4]
         head_formula_str = f"{''.join(top_h3)} ထိပ် / {','.join(best_tails)} ကပ်" if best_tails else "-"
 
-    # Upgraded Rule 6
+    # Upgraded Rule 6: 3 Tails + 3 to 5 Dynamic Attached Heads
     top_t3 = [x[0] for x in Counter(all_tails).most_common(3)]
     tail_formula_str = "-"
     if top_t3:
@@ -187,7 +188,7 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
 
     mu_keys_list = ["လုံးဘိုင်", "One Change", "key", "အပူးပါခွေ", "ထိပ်စီးစနစ်သစ်", "နောက်ပိတ်စနစ်သစ်", "ဘရိတ်", "စုံ/မ ကပ်", "အုပ်စုတွဲ", "ကွက်ကျဉ်းစနစ်"]
 
-    # Global mapping for Calendar Mode (Fixed Pattern)
+    # 1. Global mapping for Calendar Mode (Fixed Pattern)
     global_mapping = {}
     if mode == "Calendar":
         all_sub_draws = []
@@ -197,23 +198,24 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
             all_sub_draws.extend([d['draw'] for d in full_draws[start_post:end_post + 1]])
         global_mapping = extract_formula_mapping(all_sub_draws)
 
-    # Current pre-history mapping for AI Trend predictions
+    # 2. UI Mapping for AI Trend Mode (Current UI display based on the most recent hit's pre-history)
     current_recent_hit = filtered_hits[-1]['index']
     current_pool = [d['draw'] for d in full_draws[max(0, current_recent_hit - 50) : current_recent_hit]]
-    trend_prediction_mapping = extract_formula_mapping(current_pool)
+    ui_trend_prediction_mapping = extract_formula_mapping(current_pool)
 
     for mu_k in mu_keys_list:
-        prediction_val = global_mapping.get(mu_k, "") if mode == "Calendar" else trend_prediction_mapping.get(mu_k, "")
-        if not prediction_val or prediction_val == "-": continue
+        # The formula to display on UI
+        ui_val = global_mapping.get(mu_k, "") if mode == "Calendar" else ui_trend_prediction_mapping.get(mu_k, "")
+        if not ui_val or ui_val == "-": continue
 
         hit_steps_across_history = []
         actual_hit_combinations = []
 
-        # Analyze historical success
+        # Analyze historical accuracy strictly matching the algorithm
         for hit in filtered_hits:
             hit_idx = hit['index']
             
-            # AI Trend uses dynamic pre-history for past checks. Calendar uses the fixed global one.
+            # For AI Trend, evaluate historical success using its OWN dynamic local 50-draw pre-history for that hit point
             if mode == "Calendar":
                 test_val = global_mapping.get(mu_k, "")
             else:
@@ -225,13 +227,14 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
                 continue
 
             found_hit_step = None
+            # Absolute bounds lock Check
             for step_check in range(1, requested_max_step + 1):
                 t_idx = hit_idx + step_check
                 if t_idx >= len(full_draws): break
                 
                 is_hit, matched_draw = is_already_hit(mu_k, test_val, t_idx, t_idx, full_draws)
                 if is_hit:
-                    # Chronological Check for exact Target Session
+                    # Target Session Filter for Custom Tab
                     if is_custom_tab and sel_session != "AM+PM ပေါင်းချုပ်" and "သီးသန့်" in sel_session:
                         req_time_str = "AM" if "AM" in sel_session else "PM"
                         if full_draws[t_idx]['time'] != req_time_str:
@@ -242,7 +245,6 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
             
             hit_steps_across_history.append(found_hit_step if found_hit_step is not None else 999)
 
-        # STRICT LIMITS (1 to X boundaries)
         valid_spans = [s for s in hit_steps_across_history if s <= requested_max_step]
         if not valid_spans: continue
         
@@ -250,22 +252,22 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
         successful_hits_within_max_span = sum(1 for s in hit_steps_across_history if s <= max_required_span)
         rate = (successful_hits_within_max_span / total_count) * 100
 
-        # Strict precision guards 
+        # Strict Guards
         if rate < 90.0 or total_count < 10: continue
 
-        # Deadline Check against current elapsed draws
+        # Deadline Flag
         is_deadline_flag = False
         last_hit_global_idx = filtered_hits[-1]['index']
         elapsed_draws = current_latest_idx - last_hit_global_idx
         if (elapsed_draws + 1) == max_required_span:
             is_deadline_flag = True
         
-        # UI Clean-up: If it already hit before reaching deadline, ignore it
+        # Hide if already hit (Tab 1 specific)
         if not is_custom_tab:
-            is_hit, _ = is_already_hit(mu_k, prediction_val, last_hit_global_idx + 1, current_latest_idx, full_draws)
+            is_hit, _ = is_already_hit(mu_k, ui_val, last_hit_global_idx + 1, current_latest_idx, full_draws)
             if is_hit: continue
 
-        # Sniper Notes (3/4 exact digits)
+        # Sniper Note Generataion (Top 3/4 accurate digits)
         sniper_note = ""
         if actual_hit_combinations:
             top_combos = [x[0] for x in Counter(actual_hit_combinations).most_common(4)]
@@ -276,22 +278,61 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
         
         formulas_out.append({
             "top": f"🔮 [{lbl_prefix}] ထွက်ပြီးလျှင်", 
-            "formula": f"{prediction_val} {rate_str}", 
+            "formula": f"{ui_val} {rate_str}", 
             "bottom": f"မှန်ကန်မှု: ({total_count} ကြိမ်မှာ {successful_hits_within_max_span} ကြိမ်မှန်)", 
             "is_deadline": is_deadline_flag, 
             "advisor": sniper_note, 
             "max_span": max_required_span,
-            "lbl": custom_trigger if is_custom_tab else lbl_prefix
+            "lbl": custom_trigger if is_custom_tab else lbl_prefix,
+            "pure_val": ui_val
         })
 
     return formulas_out
+
+def render_top_results_scoring(formulas_list, max_tf):
+    scoring_pool = {}
+    for f in formulas_list:
+        key = f['formula']
+        if key not in scoring_pool:
+            scoring_pool[key] = {'score': 0, 'details': [], 'is_anchor': False}
+        
+        scoring_pool[key]['details'].append(f)
+        
+        if f['is_deadline']:
+            scoring_pool[key]['is_anchor'] = True
+            scoring_pool[key]['score'] += 100
+        else:
+            rem_steps = max_tf - f['max_span'] + 1
+            scoring_pool[key]['score'] += rem_steps
+
+    valid_top = {k: v for k, v in scoring_pool.items() if len(v['details']) >= 2 or v['is_anchor']}
+    top_averages = sorted(valid_top.items(), key=lambda item: item[1]['score'], reverse=True)[:3]
+    
+    st.markdown("#### 🏆 TOP RESULTS (Sniper & Cover Anchors)")
+    if top_averages:
+        for idx, (b_val, b_data) in enumerate(top_averages, 1):
+            icon = "🔥 Sniper Anchor (ရက်ချိန်းပြည့်)" if b_data['is_anchor'] else "🛡️ Top Cover (အကောင်းဆုံး အရန်)"
+            with st.expander(f"🏆 Top {idx}: {b_val} [{icon}] - အမှတ်: {b_data['score']}", expanded=(idx==1)):
+                st.markdown(f"<div style='color:#00FFCC; font-size:14px; margin-bottom:10px;'>💡 ဤမူကို အောက်ပါ ထောက်တိုင်များက ဘုံတူညီစွာ ညွှန်ပြနေပါသည်-</div>", unsafe_allow_html=True)
+                for d_detail in b_data['details']:
+                    badge_class = "badge-inline-alert" if d_detail['is_deadline'] else "badge-inline-reg"
+                    deadline_tag = f"<span class='badge-inline {badge_class}'>⚠️ ယခုပွဲ ရက်ချိန်းပြည့်</span>" if d_detail['is_deadline'] else f"<span class='badge-inline {badge_class}'>{d_detail['max_span']} ပွဲအတွင်း</span>"
+                    st.markdown(f"""
+                    <div class="card card-top" style="padding:10px; margin-bottom:10px;">
+                        <span style="font-size:16px; font-weight:bold; color:#E0D5FA;">{d_detail['top']} {deadline_tag}</span>
+                        <span style="font-size:13px; color:#A294C7; display:block; margin-top:5px;">{d_detail['advisor']}</span>
+                    </div>
+                    """, unsafe_allow_html=True)
+    else:
+        st.markdown("<div style='font-size:15px; font-weight:bold; color:#A294C7; padding:10px;'>ခိုင်မာသော ဘုံတူညီမှု ရလဒ်မရှိပါ (အနည်းဆုံး တိုက်ဆိုင်မှု ၂ ခု လိုအပ်ပါသည်)</div>", unsafe_allow_html=True)
+    st.write("---")
 
 def render_grouped_ui(formulas_list, max_tf):
     if not formulas_list:
         st.info("မထွက်သေးဘဲ ကျန်ရှိနေသော ၉၀% အထက် ရက်ချိန်းနယ်ကုန် မူလက်ကျန် လက္ခဏာ မတွေ့ရှိပါ။")
         return
 
-    # Deduplicate matching cards
+    # Deduplicate matching cards across different sources to keep UI clean
     unique_formulas = []
     seen = set()
     for f in formulas_list:
@@ -300,10 +341,13 @@ def render_grouped_ui(formulas_list, max_tf):
             seen.add(uid)
             unique_formulas.append(f)
 
-    # Separation: Deadline vs Regular
+    # UI Separation: Deadline Group vs Regular Groups
     deadlines = [f for f in unique_formulas if f['is_deadline']]
     regulars = [f for f in unique_formulas if not f['is_deadline']]
     
+    st.markdown("#### 📋 အသေးစိတ်အချက်အလက် (Window အလိုက် ခေါက်သိမ်းစနစ်)")
+    
+    # 1. The Deadline Group (Top Priority)
     if deadlines:
         with st.expander("🔥 ယခုပွဲ ရက်ချိန်းပြည့် မူများ (DEADLINE ALERTS)", expanded=True):
             for d_card in sorted(deadlines, key=lambda x: x['max_span']):
@@ -316,13 +360,14 @@ def render_grouped_ui(formulas_list, max_tf):
                 </div>
                 """, unsafe_allow_html=True)
     
+    # 2. The Regular Groups (By step bounds)
     span_groups = {}
     for f in regulars:
         span_groups.setdefault(f['max_span'], []).append(f)
         
-    for step_key in sorted(span_groups.keys()):
-        if step_key > max_tf: continue # Strict lock
-        with st.expander(f"🔽 {step_key} ပွဲအတွင်း မူများ", expanded=(len(deadlines) == 0)):
+    for step_key in range(1, max_tf + 1):
+        if step_key not in span_groups: continue
+        with st.expander(f"🔽 {step_key} ပွဲအတွင်း မူများ", expanded=(len(deadlines) == 0 and step_key == min(span_groups.keys()))):
             for d_card in span_groups[step_key]:
                 st.markdown(f"""
                 <div class="card card-regular">
@@ -392,6 +437,7 @@ if uploaded_file:
                 current_end_idx = len(full_draws) - 1
                 master_formulas = []
                 
+                # Fetch exact matching bounds from recent history
                 for step in range(1, live_max_tf + 1):
                     target_past_idx = current_end_idx - step + 1
                     if target_past_idx < 0: continue
@@ -413,7 +459,7 @@ if uploaded_file:
                             master_formulas.append(r)
 
                 st.write("---")
-                st.markdown("#### 📋 အသေးစိတ်အချက်အလက် (Window အလိုက် ခေါက်သိမ်းစနစ်)")
+                render_top_results_scoring(master_formulas, live_max_tf)
                 render_grouped_ui(master_formulas, live_max_tf)
 
         # ------------------------------------------
@@ -478,15 +524,12 @@ if uploaded_file:
                     st.error("⚠️ သတ်မှတ်ချက်များနှင့် ကိုက်ညီသော သမိုင်းကြောင်းမှတ်တမ်း မရှိပါ Bro!")
                 else:
                     st.write("---")
-                    st.markdown(f"#### 📋 အသေးစိတ်အချက်အလက် (Window အလိုက် ခေါက်သိမ်းစနစ် - {custom_mode})")
-                    
                     master_step_res = execute_analysis(
                         target_hits, full_draws, custom_max_tf, 
                         is_custom_tab=True, sel_session=target_session_custom, 
                         custom_trigger=lbl_prefix_custom,
                         mode="Calendar" if "Calendar" in custom_mode else "AI Trend"
                     )
-                    
                     render_grouped_ui(master_step_res, custom_max_tf)
 
 else:
