@@ -508,4 +508,9 @@ if uploaded_file:
                                     <div class="card {card_border_class}">
                                         <span class="line-trigger">{data['top']} {span_tag}</span>
                                         <span class="line-formula">{data['formula']}</span>
-                                        <span class="line-history">{data['
+                                        <span class="line-history">{data['bottom']}</span>
+                                        <span class="line-advisor">{data['advisor']}</span>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+else:
+    st.info("စတင်ရန်အတွက် Bro ရဲ့ 2D CSV သို့မဟုတ် Excel ဒေတာဖိုင်ကို အပေါ်တွင် အရင် တင်ပေးပါဦး။")
