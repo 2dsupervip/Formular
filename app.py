@@ -161,13 +161,13 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
                 if c > max_gp_c: max_gp_c = c; best_gp = f"{combo[0]}+{combo[1]}"
             kwat_kyin_label = f"{top_key3} ပါသော {brk_label} ဘရိတ်"
 
-                mapping = {
-                    "လုံးဘိုင်": f"{top_single} လုံးဘိုင်", "One Change": f"{top_oc} One Change",
-                    "key": f"{top_key3} key", "အပူးပါခွေ": f"{top_k4} အပူးပါခွေ",
-                    "ထိပ်စီး": f"{top_h3} ထိပ်စီး", "နောက်ပိတ်": f"{top_t3} နောက်ပိတ်",
-                    "ဘရိတ်": f"{brk_label} ဘရိတ်", "စုံ/မ ကပ်": kap_label, "အုပ်စုတွဲ": best_gp if best_gp else "-",
-                    "ကွက်ကျဉ်းစနစ်": kwat_kyin_label
-                }
+            mapping = {
+                "လုံးဘိုင်": f"{top_single} လုံးဘိုင်", "One Change": f"{top_oc} One Change",
+                "key": f"{top_key3} key", "အပူးပါခွေ": f"{top_k4} အပူးပါခွေ",
+                "ထိပ်စီး": f"{top_h3} ထိပ်စီး", "နောက်ပိတ်": f"{top_t3} နောက်ပိတ်",
+                "ဘရိတ်": f"{brk_label} ဘရိတ်", "စုံ/မ ကပ်": kap_label, "အုပ်စုတွဲ": best_gp if best_gp else "-",
+                "ကွက်ကျဉ်းစနစ်": kwat_kyin_label
+            }
             
             latest_val = mapping[mu_k]
             latest_pure = mapping[mu_k]
@@ -353,8 +353,8 @@ if uploaded_file:
                                 st.markdown(f"""
                                 <div class="card card-sniper">
                                     <span class="line-trigger">{d_card['top']} {span_tag}</span>
-                                    <span class="line-formula">{d_card['formula']}</span>
-                                    <span class="line-history">{d_card['bottom']}</span>
+                                    <span class="line-formula">{d_card['form']}</span>
+                                    <span class="line-history">{d_card['bot']}</span>
                                 </div>
                                 """, unsafe_allow_html=True)
 
@@ -402,4 +402,50 @@ if uploaded_file:
                             if d['row_idx'] in matched_weeks:
                                 target_hits.append(d)
                 
-                if trigger
+                if trigger_day == "All" and target_session_custom != "AM+PM ပေါင်းချုပ်" and len(target_hits) > 0:
+                    req_time_filter = "AM" if "AM" in target_session_custom else "PM"
+                    target_hits = [h for h in target_hits if h['time'] == req_time_filter]
+
+                t_time_label = "PM" if target_session_custom == "PM သီးသန့်" else "AM" if target_session_custom == "AM သီးသန့်" else ""
+                lbl_prefix_custom = f"{trigger_num}{'R' if (trigger_day != 'All' and 'R' not in trigger_num) else ''} {trigger_day if trigger_day != 'All' else ''} {t_time_label}".strip()
+
+                if not target_hits:
+                    st.error("⚠️ သတ်မှတ်ချက်များနှင့် ကိုက်ညီသော သမိုင်းကြောင်းမှတ်တမ်း မရှိပါ Bro!")
+                else:
+                    st.write("---")
+                    st.markdown("#### 📋 အသေးစိတ်အချက်အလက် (Window အလိုက် ခေါက်သိမ်းစနစ်)")
+                    
+                    master_step_res = execute_analysis(
+                        target_hits, full_draws, custom_max_tf, 
+                        is_custom_tab=True, sel_session=target_session_custom, 
+                        custom_trigger=lbl_prefix_custom, strict_day_mode=(trigger_day != "All")
+                    )
+                    
+                    has_any_tab2_data = any(master_step_res[sk] for sk in master_step_res)
+                    
+                    if not has_any_tab2_data:
+                        st.info("သတ်မှတ်ထားသော ၉၀% အထက် ရက်ချိန်းနယ်ကုန် သတ်မှတ်ချက်အတွင်း ကိုက်ညီမည့် မူရင်းမှတ်တမ်း မတွေ့ရှိပါ Bro!")
+                    else:
+                        for step in range(1, custom_max_tf + 1):
+                            formulas_dict = master_step_res[step]
+                            if not formulas_dict: continue
+                            
+                            is_step_deadline = any(v['is_deadline'] for v in formulas_dict.values())
+                            tab2_header = f"⚠️ {step} ပွဲအတွင်း မူများ [ရက်ချိန်းပြည့်]" if is_step_deadline else f"🔽 {step} ပွဲအတွင်း မူများ"
+                                
+                            with st.expander(tab2_header, expanded=(step == 1)):
+                                for mu_name, data in formulas_dict.items():
+                                    card_border_class = "card-sniper" if "100%" in data['formula'] else "card-hp"
+                                    badge_class = "badge-inline-sniper" if "100%" in data['formula'] else "badge-inline-hp"
+                                    span_tag = f"<span class='badge-inline {badge_class}'>{step} ပွဲအတွင်း</span>"
+                                    
+                                    st.markdown(f"""
+                                    <div class="card {card_border_class}">
+                                        <span class="line-trigger">{data['top']} {span_tag}</span>
+                                        <span class="line-formula">{data['formula']}</span>
+                                        <span class="line-history">{data['bottom']}</span>
+                                        <span class="line-advisor">{data['advisor']}</span>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+else:
+    st.info("စတင်ရန်အတွက် Bro ရဲ့ 2D CSV သို့မဟုတ် Excel ဒေတာဖိုင်ကို အပေါ်တွင် အရင် တင်ပေးပါဦး။")
