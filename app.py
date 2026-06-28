@@ -26,6 +26,7 @@ st.markdown("""
     .line-trigger { font-size: 18px; font-weight: bold; color: #E0D5FA; margin-bottom: 6px; display: block; }
     .line-formula { font-size: 22px; font-weight: bold; color: #FFD700; margin-bottom: 6px; display: block; }
     .line-history { font-size: 15px; color: #A294C7; display: block; }
+    .line-advisor { font-size: 14px; color: #00FFCC; font-style: italic; margin-top: 4px; display: block; }
     
     /* Dynamic Badge Blocks */
     .badge-inline { padding: 2px 10px; border-radius: 6px; font-size: 14px; font-weight: bold; margin-left: 6px; margin-right: 6px; display: inline-block; vertical-align: middle; }
@@ -35,7 +36,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V26 PRO)</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Ultimate Verified Calendar Matrix Engine | Strict Multi-Trigger Fixed</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Ultimate Verified Calendar Matrix Engine | Absolute Strict Step Bound Lock</div>', unsafe_allow_html=True)
 
 special_groups = {
     "ညီကို": {"01","10","12","21","23","32","34","43","45","54","56","65","67","76","78","87","89","98","90","09"},
@@ -105,7 +106,7 @@ def is_already_hit(mu_name, mu_val, start_idx, end_idx, full_draws_list):
 # MASTER ROUTINE: HYBRID DATA ANALYSIS ENGINE
 # ==========================================
 def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=False, sel_session="AM+PM ပေါင်းချုပ်", custom_trigger="", strict_day_mode=False):
-    # 🚨 Hard Lock Check: Buckets size must match the requested input step ceiling directly
+    # 🚨 STRICT LOCK: 1 to X exact matching based on User Input Box
     step_buckets = {step: {} for step in range(1, requested_max_step + 1)}
     current_latest_idx = len(full_draws) - 1
 
@@ -125,6 +126,7 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
             hit_idx = hit['index']
             start_history_idx = max(0, hit_idx - 50)
             end_history_idx = hit_idx - 1
+            
             if start_history_idx >= end_history_idx: 
                 is_valid_formula = False
                 break
@@ -172,38 +174,40 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
             latest_pure = mapping[mu_k]
             
             found_hit_step = None
-            # Scan exactly up to 25 draws to find unbiased raw span boundaries first
-            for step_check in range(1, 26):
+            # Scan exactly up to user's absolute max step limit. 
+            for step_check in range(1, requested_max_step + 1):
                 t_idx = hit_idx + step_check
                 if t_idx >= len(full_draws): break
                 
+                # Check pure calendar match first
                 if is_already_hit(mu_k, latest_val, t_idx, t_idx, full_draws):
+                    # Verify session logic matches 
                     if is_custom_tab and sel_session != "AM+PM ပေါင်းချုပ်" and "သီးသန့်" in sel_session:
                         req_time_str = "AM" if "AM" in sel_session else "PM"
                         if full_draws[t_idx]['time'] != req_time_str:
-                            continue 
+                            continue # Keep counting forward if session is misaligned 
                     found_hit_step = step_check
                     break
             
             if found_hit_step is not None:
                 hit_steps_across_history.append(found_hit_step)
             else:
-                hit_steps_across_history.append(999)
+                hit_steps_across_history.append(999) # Marks failure within required boundary
 
         if not is_valid_formula or not hit_steps_across_history: continue
 
-        valid_spans = [s for s in hit_steps_across_history if s <= 25]
+        # Filter strictly by the requested input length (absolute lock)
+        valid_spans = [s for s in hit_steps_across_history if s <= requested_max_step]
         if not valid_spans: continue
         
         max_required_span = max(valid_spans)
         successful_hits_within_max_span = sum(1 for s in hit_steps_across_history if s <= max_required_span)
         rate = (successful_hits_within_max_span / total_count) * 100
 
-        # Strict precision guards 
+        # Strict precision guards: Rate >= 90% and Count >= 10
         if rate < 90.0 or total_count < 10:
             continue
 
-        # 🚨 Hard Lock Filter: Must be within 1 to X requested boundary step. If higher, strict drop!
         if max_required_span <= requested_max_step:
             if not is_custom_tab and filtered_hits:
                 if is_already_hit(mu_k, latest_val, filtered_hits[-1]['index'] + 1, current_latest_idx, full_draws):
@@ -297,6 +301,7 @@ if uploaded_file:
                     past_val = past_obj['draw']
                     past_time = past_obj['time']
                     
+                    # Split identical labels to avoid double mapping
                     condition_pools = [
                         {"hits": [d for d in full_draws[:target_past_idx+1] if d['draw'] == past_val and d['time'] == past_time], "lbl": f"{past_val} {past_time} စစ်စစ်"},
                         {"hits": [d for d in full_draws[:target_past_idx+1] if d['draw'] == past_val], "lbl": f"{past_val} ပေါင်းချုပ်"}
@@ -304,12 +309,11 @@ if uploaded_file:
                     
                     for pool in condition_pools:
                         if not pool['hits']: continue
+                        # Process within strict live max TF bounds
                         step_res = execute_analysis(pool['hits'], full_draws, live_max_tf, is_custom_tab=False, sel_session=live_session_target)
                         
                         for step_key, formulas in step_res.items():
-                            if step_key > live_max_tf: continue # Strict lock display bound constraint
-                            if step_key not in compiled_master_buckets:
-                                compiled_master_buckets[step_key] = {}
+                            if step_key > live_max_tf: continue # Double safeguard
                             for mk, mv in formulas.items():
                                 convergence_pool.append(mv['pure'])
                                 compiled_master_buckets[step_key][f"{pool['lbl']}_{mk}"] = mv
@@ -335,13 +339,12 @@ if uploaded_file:
                 st.write("---")
                 st.markdown("#### 📋 အသေးစိတ်အချက်အလက်")
                 
-                has_any_output_cards = any(compiled_master_buckets[sk] for sk in compiled_master_buckets if sk <= live_max_tf)
+                has_any_output_cards = any(compiled_master_buckets[sk] for sk in compiled_master_buckets)
                 
                 if not has_any_output_cards:
                     st.info("မထွက်သေးဘဲ ကျန်ရှိနေသော ၉၀% အထက် ရက်ချိန်းနယ်ကုန် မူလက်ကျန် လက္ခဏာ မတွေ့ရှိပါ။")
                 else:
                     for step_key in sorted(compiled_master_buckets.keys()):
-                        if step_key > live_max_tf: continue
                         formulas_dict = compiled_master_buckets[step_key]
                         if not formulas_dict: continue
                         
@@ -409,5 +412,50 @@ if uploaded_file:
                     req_time_filter = "AM" if "AM" in target_session_custom else "PM"
                     target_hits = [h for h in target_hits if h['time'] == req_time_filter]
 
+                # Safe prefix building to avoid SyntaxError with missing brackets
+                r_val = "R" if (trigger_day != "All" and "R" not in trigger_num) else ""
+                d_val = trigger_day if trigger_day != "All" else ""
                 t_time_label = "PM" if target_session_custom == "PM သီးသန့်" else "AM" if target_session_custom == "AM သီးသန့်" else ""
-                lbl_prefix_custom = f"{trigger_num}{'R' if (trigger_day != 'All' and 'R' not in trigger_num) else ''} {trigger_day if trigger_day
+                
+                lbl_prefix_custom = f"{trigger_num}{r_val} {d_val} {t_time_label}".strip()
+
+                if not target_hits:
+                    st.error("⚠️ သတ်မှတ်ချက်များနှင့် ကိုက်ညီသော သမိုင်းကြောင်းမှတ်တမ်း မရှိပါ Bro!")
+                else:
+                    st.write("---")
+                    st.markdown("#### 📋 အသေးစိတ်အချက်အလက် (Window အလိုက် ခေါက်သိမ်းစနစ်)")
+                    
+                    master_step_res = execute_analysis(
+                        target_hits, full_draws, custom_max_tf, 
+                        is_custom_tab=True, sel_session=target_session_custom, 
+                        custom_trigger=lbl_prefix_custom, strict_day_mode=(trigger_day != "All")
+                    )
+                    
+                    has_any_tab2_data = any(master_step_res[sk] for sk in master_step_res)
+                    
+                    if not has_any_tab2_data:
+                        st.info("သတ်မှတ်ထားသော ၉၀% အထက် ရက်ချိန်းနယ်ကုန် သတ်မှတ်ချက်အတွင်း ကိုက်ညီမည့် မူရင်းမှတ်တမ်း မတွေ့ရှိပါ Bro!")
+                    else:
+                        for step in sorted(master_step_res.keys()):
+                            formulas_dict = master_step_res[step]
+                            if not formulas_dict: continue
+                            
+                            is_step_deadline = any(v['is_deadline'] for v in formulas_dict.values())
+                            tab2_header = f"⚠️ {step} ပွဲအတွင်း မူများ [ရက်ချိန်းပြည့်]" if is_step_deadline else f"🔽 {step} ပွဲအတွင်း မူများ"
+                                
+                            with st.expander(tab2_header, expanded=True):
+                                for mu_name, data in formulas_dict.items():
+                                    card_border_class = "card-sniper" if "100%" in data['formula'] else "card-hp"
+                                    badge_class = "badge-inline-sniper" if "100%" in data['formula'] else "badge-inline-hp"
+                                    span_tag = f"<span class='badge-inline {badge_class}'>{step} ပွဲအတွင်း</span>"
+                                    
+                                    st.markdown(f"""
+                                    <div class="card {card_border_class}">
+                                        <span class="line-trigger">{data['top']} {span_tag}</span>
+                                        <span class="line-formula">{data['formula']}</span>
+                                        <span class="line-history">{data['bottom']}</span>
+                                        <span class="line-advisor">{data['advisor']}</span>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+else:
+    st.info("စတင်ရန်အတွက် Bro ရဲ့ 2D CSV သို့မဟုတ် Excel ဒေတာဖိုင်ကို အပေါ်တွင် အရင် တင်ပေးပါဦး။")
