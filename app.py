@@ -350,11 +350,12 @@ if uploaded_file:
                                 badge_class = "badge-inline-sniper" if d_card['rate'] == 100.0 else "badge-inline-hp"
                                 span_tag = f"<span class='badge-inline {badge_class}'>{step_key} ပွဲအတွင်း</span>"
                                 
+                                # 🚨 Fix Check: KeyError Resolved (`form` changed back to `formula` correctly)
                                 st.markdown(f"""
                                 <div class="card card-sniper">
                                     <span class="line-trigger">{d_card['top']} {span_tag}</span>
-                                    <span class="line-formula">{d_card['form']}</span>
-                                    <span class="line-history">{d_card['bot']}</span>
+                                    <span class="line-formula">{d_card['formula']}</span>
+                                    <span class="line-history">{d_card['bottom']}</span>
                                 </div>
                                 """, unsafe_allow_html=True)
 
