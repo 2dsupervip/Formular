@@ -40,7 +40,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V29 PRO)</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Ultimate Matrix Intersection & Recovery Score System</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Ultimate Matrix Intersection | Recovery Score System | Full Custom Mode</div>', unsafe_allow_html=True)
 
 special_groups = {
     "ညီကို": {"01","10","12","21","23","32","34","43","45","54","56","65","67","76","78","87","89","98","90","09"},
@@ -286,6 +286,7 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
                 if is_deadline_flag:
                     step_buckets[max_required_span][bucket_key] = card_payload
                 
+                # RECOVERY SCORING (1 or 2 steps remaining)
                 if rem_steps in [1, 2]:
                     score = 80 if rem_steps == 1 else 50
                     recovery_pool.append({
@@ -346,7 +347,7 @@ if uploaded_file:
         tab_live, tab_custom = st.tabs(["⚡ တွက်ချက်မည် (ယခုပွဲစဉ်)", "🔍 2D Formulas (Custom)"])
 
         # ------------------------------------------
-        # TAB 1: AUTOMATED ENGINE TRACKER
+        # TAB 1: LIVE AUTO TRACKER
         # ------------------------------------------
         with tab_live:
             input_box_val = st.text_input("⏳ စစ်ဆေးမည့် ပွဲစဉ်အရေအတွက် အတိအကျ (Default: 10):", value="10", key="live_input")
@@ -411,7 +412,6 @@ if uploaded_file:
                                 if len(global_recovery[r_key]['details']) >= 2:
                                     global_recovery[r_key]['score'] = global_recovery[r_key]['score'] * 2
 
-                # VIP FILTERING: STRICTLY COUNT >= 2
                 valid_vips = {k: v for k, v in scoring_pool.items() if v['count'] >= 2}
                 sorted_scores = sorted(valid_vips.items(), key=lambda x: x[1]['count'], reverse=True)
                 
@@ -438,7 +438,6 @@ if uploaded_file:
                                 </div>
                                 """, unsafe_allow_html=True)
                                 
-                    # 💎 MATRIX INTERSECTION SYSTEM
                     st.write("---")
                     st.markdown("#### 💎 VIP ဘုံဂဏန်း အနှစ်ချုပ် (Matrix Intersection)")
                     if len(vip_formulas_for_matrix) >= 2:
@@ -471,7 +470,6 @@ if uploaded_file:
                 else:
                     st.markdown("<div style='font-size:15px; font-weight:bold; color:#A294C7; padding:10px;'>ခိုင်မာသော VIP တူညီမှု ရလဒ်မရှိပါ (အနည်းဆုံး တိုက်ဆိုင်မှု ၂ ခု လိုအပ်ပါသည်)</div>", unsafe_allow_html=True)
 
-                # 🛡️ RECOVERY SCORE SYSTEM
                 st.write("---")
                 st.markdown("#### 🛡️ Recovery & စောင့်ကြည့်ရမည့် မူကျန်များ (Top 5)")
                 if global_recovery:
@@ -497,7 +495,7 @@ if uploaded_file:
                     st.info("၁ ပွဲ သို့မဟုတ် ၂ ပွဲ အလိုရှိသော ခိုင်မာသည့် မူကျန်များ မရှိပါ။")
 
         # ------------------------------------------
-        # TAB 2: CLEAN CUSTOM FORMULAS ENGINE 
+        # TAB 2: CUSTOM FORMULAS ENGINE
         # ------------------------------------------
         with tab_custom:
             st.markdown("##### 🧠 တွက်ချက်မှုစနစ် (Mode) ရွေးချယ်ရန်")
@@ -511,9 +509,9 @@ if uploaded_file:
             with c2:
                 if trigger_day != "All":
                     st.markdown("<span style='color:#00FFCC; font-size:13px;'>ℹ️ Day စနစ်သုံးထားသဖြင့် အကြိမ်ရေပြည့်မီစေရန် R-စနစ် နှင့် AM+PM ပေါင်းချုပ် စနစ်ကို Backend က Auto Lock ချပေးထားပါသည်။</span>", unsafe_allow_html=True)
-                    target_session_custom = "All"
+                    target_session_custom = "AM+PM ပေါင်းချုပ်"
                 else:
-                    target_session_custom = st.selectbox("⏱️ Target ပွဲစဉ် အခြေအနေ ရွေးရန်:", ["All", "AM သီးသန့်", "PM သီးသန့်"], index=0)
+                    target_session_custom = st.selectbox("⏱️ Target ပွဲစဉ် အခြေအနေ ရွေးရန်:", ["AM+PM ပေါင်းချုပ်", "AM သီးသန့်", "PM သီးသန့်"], index=2)
             with c3:
                 custom_max_tf = st.number_input("⏳ စစ်ဆေးမည့် ပွဲစဉ်အရေအတွက်", min_value=1, max_value=25, value=16, key="custom_input_tf")
 
@@ -532,7 +530,7 @@ if uploaded_file:
                             secondary_digit = digits_found[1] if len(digits_found) > 1 else primary_digit[::-1]
                             target_hits = [d for d in full_draws if d['draw'] == primary_digit or d['draw'] == secondary_digit]
                         else:
-                            if target_session_custom != "All" and "သီးသန့်" in target_session_custom:
+                            if target_session_custom != "AM+PM ပေါင်းချုပ်" and "သီးသန့်" in target_session_custom:
                                 req_time_init = "AM" if "AM" in target_session_custom else "PM"
                                 target_hits = [d for d in full_draws if d['draw'] == primary_digit and d['time'] == req_time_init]
                             else:
@@ -544,13 +542,13 @@ if uploaded_file:
                             if d['row_idx'] in matched_weeks:
                                 target_hits.append(d)
                 
-                if trigger_day == "All" and target_session_custom != "All" and len(target_hits) > 0:
+                if trigger_day == "All" and target_session_custom != "AM+PM ပေါင်းချုပ်" and len(target_hits) > 0:
                     req_time_filter = "AM" if "AM" in target_session_custom else "PM"
                     target_hits = [h for h in target_hits if h['time'] == req_time_filter]
 
                 r_val = "R" if (trigger_day != "All" and "R" not in trigger_num) else ""
                 d_val = trigger_day if trigger_day != "All" else ""
-                t_time_label = "PM" if target_session_custom == "PM သီးသန့်" else ("AM" if target_session_custom == "AM သီးသန့်" else "")
+                t_time_label = "PM" if target_session_custom == "PM သီးသန့်" else "AM" if target_session_custom == "AM သီးသန့်" else ""
                 
                 lbl_prefix_custom = f"{trigger_num}{r_val} {d_val} {t_time_label}".strip()
 
@@ -560,7 +558,7 @@ if uploaded_file:
                     st.write("---")
                     st.markdown(f"#### 📋 အသေးစိတ်အချက်အလက် (Window အလိုက် ခေါက်သိမ်းစနစ် - {custom_mode})")
                     
-                    # Unpacking BOTH return values to avoid errors
+                    # Unpacking the tuple correctly for Tab 2
                     master_step_res, _ = execute_analysis(
                         target_hits, full_draws, custom_max_tf, 
                         is_custom_tab=True, sel_session=target_session_custom, 
