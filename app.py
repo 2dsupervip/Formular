@@ -8,7 +8,7 @@ from collections import Counter
 # ==========================================
 # PAGE CONFIG & PREMIUM DARK-THEME STYLE
 # ==========================================
-st.set_page_config(page_title="2D AI Master V27 Pro", layout="wide", page_icon="🤖")
+st.set_page_config(page_title="2D AI Master V28 Pro", layout="wide", page_icon="🤖")
 
 st.markdown("""
 <style>
@@ -35,8 +35,8 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V27 PRO)</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Instance Win-Rate Engine | Super VIP Overlap System</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V28 PRO)</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Instance Win-Rate Engine | Day Sequence & VIP Overlap System</div>', unsafe_allow_html=True)
 
 special_groups = {
     "ညီကို": {"01","10","12","21","23","32","34","43","45","54","56","65","67","76","78","87","89","98","90","09"},
@@ -49,7 +49,6 @@ special_groups = {
 
 mu_keys_list = ["လုံးဘိုင်", "One Change", "key", "အပူးပါခွေ", "ထိပ်စီးစနစ်သစ်", "နောက်ပိတ်စနစ်သစ်", "ဘရိတ်", "စုံ/မ ကပ်", "အုပ်စုတွဲ"]
 
-# Helper to check hit against target
 def is_already_hit(mu_name, mu_val, start_idx, end_idx, full_draws_list):
     if start_idx >= len(full_draws_list): return False, ""
     check_draws = [d['draw'] for d in full_draws_list[start_idx : min(end_idx + 1, len(full_draws_list))]]
@@ -60,7 +59,7 @@ def is_already_hit(mu_name, mu_val, start_idx, end_idx, full_draws_list):
         if mu_name == "လုံးဘိုင်":
             pure_num = mu_val.split()[0]
             if pure_num in d: return True, d
-        elif mu_name == "One Change" or mu_name == "key":
+        elif mu_name in ["One Change", "key"]:
             pure_val = mu_val.split()[0]
             if any(x in d for x in pure_val): return True, d
         elif mu_name == "အပူးပါခွေ":
@@ -94,7 +93,6 @@ def is_already_hit(mu_name, mu_val, start_idx, end_idx, full_draws_list):
                 if d in special_groups.get(g.strip(), set()): return True, d
     return False, ""
 
-# For AI Trend: Generates dynamic predictions based on 50 pre-history
 def generate_formula_from_pool(analysis_pool):
     if not analysis_pool: return {k: "-" for k in mu_keys_list}
     
@@ -107,7 +105,7 @@ def generate_formula_from_pool(analysis_pool):
     top_oc = "".join([x[0] for x in Counter(all_singles).most_common(2)]) if len(Counter(all_singles)) >= 2 else top_single
     top_key3 = "".join([x[0] for x in Counter(all_singles).most_common(3)]) if len(Counter(all_singles)) >= 3 else top_oc
     
-    # 4-Digit Fixed Permutation
+    # Strictly 4-Digit Fixed Permutation (As requested)
     top_k4 = "".join([x[0] for x in Counter(all_singles).most_common(4)]) if len(Counter(all_singles)) >= 4 else top_key3
     
     top_h3 = [x[0] for x in Counter(all_heads).most_common(3)]
@@ -146,7 +144,6 @@ def generate_formula_from_pool(analysis_pool):
         "စုံ/မ ကပ်": kap_label if top_single else "-", "အုပ်စုတွဲ": best_gp
     }
 
-# generates fixed candidates for Calendar Mode
 def get_calendar_candidates():
     candidates = {"လုံးဘိုင်": [], "ဘရိတ်": [], "အုပ်စုတွဲ": []}
     for i in range(10): candidates["လုံးဘိုင်"].append(f"{i} လုံးဘိုင်")
@@ -157,15 +154,13 @@ def get_calendar_candidates():
 # ==========================================
 # MASTER ROUTINE: INSTANCE WIN-RATE ENGINE
 # ==========================================
-def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=False, sel_session="AM+PM ပေါင်းချုပ်", custom_trigger="", strict_day_mode=False, mode="AI Trend"):
+def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=False, sel_session="All", custom_trigger="", strict_day_mode=False, mode="AI Trend"):
     step_buckets = {step: {} for step in range(1, requested_max_step + 1)}
     current_latest_idx = len(full_draws) - 1
     total_count = len(target_hits)
     if total_count == 0: return step_buckets
 
     calendar_candidates = get_calendar_candidates() if mode == "Calendar သီးသန့်မူများ (Fixed Pattern)" else {}
-
-    # Define formula keys we process
     processing_keys = ["လုံးဘိုင်", "ဘရိတ်", "အုပ်စုတွဲ"] if mode == "Calendar သီးသန့်မူများ (Fixed Pattern)" else mu_keys_list
 
     for mu_k in processing_keys:
@@ -180,7 +175,6 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
                 hit_idx = hit['index']
                 current_val = cand_val
                 
-                # Dynamic Logic for AI Trend
                 if mode != "Calendar သီးသန့်မူများ (Fixed Pattern)":
                     start_history_idx = max(0, hit_idx - 50)
                     pool = [d['draw'] for d in full_draws[start_history_idx : hit_idx]]
@@ -192,7 +186,6 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
                     hit_steps_across_history.append(999)
                     continue
 
-                # Check Instance Post-Window
                 found_hit_step = None
                 for step_check in range(1, requested_max_step + 1):
                     t_idx = hit_idx + step_check
@@ -200,7 +193,7 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
                     
                     is_hit, matched_draw = is_already_hit(mu_k, current_val, t_idx, t_idx, full_draws)
                     if is_hit:
-                        if is_custom_tab and sel_session != "AM+PM ပေါင်းချုပ်" and "သီးသန့်" in sel_session:
+                        if is_custom_tab and sel_session != "All" and "သီးသန့်" in sel_session:
                             req_time_str = "AM" if "AM" in sel_session else "PM"
                             if full_draws[t_idx]['time'] != req_time_str: continue 
                         found_hit_step = step_check
@@ -209,7 +202,6 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
                 
                 hit_steps_across_history.append(found_hit_step if found_hit_step is not None else 999)
 
-            # Win Rate Evaluation (Strictly Instance-Based)
             valid_spans = [s for s in hit_steps_across_history if s <= requested_max_step]
             if not valid_spans or last_generated_val == "-": continue
             
@@ -217,7 +209,6 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
             successful_hits = sum(1 for s in hit_steps_across_history if s <= max_required_span)
             rate = (successful_hits / total_count) * 100
 
-            # MUST exceed 90% Win-Rate to be considered
             if rate < 90.0 or total_count < 10: continue
 
             if max_required_span <= requested_max_step:
@@ -243,7 +234,6 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
                 lbl_prefix = custom_trigger if is_custom_tab else (f"{target_hits[-1]['draw']} {target_hits[-1]['time']}" if target_hits else "")
                 rate_str = "100%" if rate == 100.0 else f"{rate:.1f}%"
                 
-                # Prevent duplicates in Calendar mode from overwriting
                 bucket_key = last_generated_val if mode == "Calendar သီးသန့်မူများ (Fixed Pattern)" else mu_k
                 
                 card_payload = {
@@ -278,6 +268,13 @@ if uploaded_file:
         df = df.dropna(subset=['year', 'day']).reset_index(drop=True)
         df['day'] = df['day'].astype(str).str.strip().str.capitalize()
 
+        # Day Check & Off-days identification
+        full_days = ["Mon", "Tue", "Wed", "Thur", "Fri"]
+        existing_days = set(df['day'].unique())
+        off_days = [d for d in full_days if d not in existing_days]
+        if off_days:
+            st.info(f"ℹ️ သတိပြုရန်: ဒေတာထဲတွင် {', '.join(off_days)} ကို ပိတ်ရက်အဖြစ် သတ်မှတ်ထားပါသည်။")
+
         full_draws = []
         for idx, row in df.iterrows():
             if pd.notna(row['am1']) and pd.notna(row['am2']):
@@ -288,14 +285,14 @@ if uploaded_file:
         for i, d in enumerate(full_draws): d['index'] = i
 
         last_recorded_draw = full_draws[-1]
-        days_cycle = ["Mon", "Tue", "Wed", "Thur", "Fri"]
+        active_days_cycle = [d for d in full_days if d not in off_days]
         
         if last_recorded_draw['time'] == 'AM':
             target_day_name = last_recorded_draw['day']
             target_time_name = "PM"
         else:
-            curr_idx = days_cycle.index(last_recorded_draw['day']) if last_recorded_draw['day'] in days_cycle else 0
-            target_day_name = days_cycle[(curr_idx + 1) % 5]
+            curr_idx = active_days_cycle.index(last_recorded_draw['day']) if last_recorded_draw['day'] in active_days_cycle else 0
+            target_day_name = active_days_cycle[(curr_idx + 1) % len(active_days_cycle)]
             target_time_name = "AM"
             
         st.success(f"🔮 ဒေတာပွဲစဉ်ပေါင်း {len(full_draws)} ခု ဖတ်ပြီးပါပြီ။ [{target_day_name} {target_time_name}] အတွက် တွက်ချက်မည်ဖြစ်ပါသည်။")
@@ -310,7 +307,6 @@ if uploaded_file:
             c1_mode, _ = st.columns([1, 1])
             with c1_mode:
                 live_mode = st.radio("🧠 AI တွက်ချက်မှုစနစ် ရွေးချယ်ရန်:", ["AI Trend (ရှေ့သမိုင်း ၅၀ အထိုင်)", "Calendar သီးသန့်မူများ (Fixed Pattern)"], horizontal=True, key="live_mode")
-            live_session_target = f"{target_time_name} သီးသန့်"
 
             if st.button("ယခုပွဲအတွက် Auto ရှာဖွေမည် ⚡", key="btn_auto"):
                 current_end_idx = len(full_draws) - 1
@@ -324,16 +320,24 @@ if uploaded_file:
                     past_obj = full_draws[target_past_idx]
                     past_val = past_obj['draw']
                     past_time = past_obj['time']
+                    past_day = past_obj['day']
                     
+                    # VIP Overlap System with 3 Pillars & Clear Labels
                     condition_pools = [
                         {"hits": [d for d in full_draws[:target_past_idx+1] if d['draw'] == past_val and d['time'] == past_time], "lbl": f"{past_val} {past_time} စစ်စစ်"},
-                        {"hits": [d for d in full_draws[:target_past_idx+1] if d['draw'] == past_val], "lbl": f"{past_val} ပေါင်းချုပ်"}
+                        {"hits": [d for d in full_draws[:target_past_idx+1] if d['draw'] == past_val], "lbl": f"{past_val} ပေါင်းချုပ်"},
+                        {"hits": [d for d in full_draws[:target_past_idx+1] if d['draw'] == past_val and d['day'] == past_day], "lbl": f"{past_val} {past_day} သီးသန့်"}
                     ]
                     
                     for pool in condition_pools:
                         if not pool['hits']: continue
                         
-                        step_res = execute_analysis(pool['hits'], full_draws, live_max_tf, is_custom_tab=False, sel_session=live_session_target, mode=live_mode)
+                        # Strict Custom Labeling to avoid UI Title Duplication
+                        step_res = execute_analysis(
+                            pool['hits'], full_draws, live_max_tf, 
+                            is_custom_tab=True, sel_session="All", 
+                            custom_trigger=pool['lbl'], mode=live_mode
+                        )
                         
                         if step_dist in step_res:
                             for mk, mv in step_res[step_dist].items():
@@ -343,9 +347,12 @@ if uploaded_file:
                                 if f_key not in scoring_pool:
                                     scoring_pool[f_key] = {'count': 0, 'details': [], 'is_anchor': False}
                                 
-                                scoring_pool[f_key]['details'].append(mv)
-                                scoring_pool[f_key]['count'] += 1
-                                if mv['is_deadline']: scoring_pool[f_key]['is_anchor'] = True
+                                # Prevent double counting exact same pool matches for VIP logic
+                                existing_lbls = [d['top'] for d in scoring_pool[f_key]['details']]
+                                if mv['top'] not in existing_lbls:
+                                    scoring_pool[f_key]['details'].append(mv)
+                                    scoring_pool[f_key]['count'] += 1
+                                    if mv['is_deadline']: scoring_pool[f_key]['is_anchor'] = True
 
                 st.write("---")
                 st.markdown("#### 🏆 VIP ဆုံးဖြတ်ချက် (Super, Second & Backup Overlaps)")
@@ -354,7 +361,7 @@ if uploaded_file:
                 
                 if sorted_scores:
                     for b_val, b_data in sorted_scores:
-                        if b_data['count'] >= 3 or (b_data['count'] >= 2 and b_data['is_anchor']):
+                        if b_data['count'] >= 3 or (b_data['count'] == 2 and b_data['is_anchor']):
                             tier, badge = "Super VIP", "badge-super"
                         elif b_data['count'] == 2:
                             tier, badge = "Second VIP", "badge-second"
@@ -403,12 +410,12 @@ if uploaded_file:
 
         with tab_custom:
             st.markdown("##### 🧠 တွက်ချက်မှုစနစ် (Mode) ရွေးချယ်ရန်")
-            custom_mode = st.radio("", ["AI Trend (ရှေ့သမိုင်း ၅၀ အထိုင်)", "Calendar သီးသန့်မူများ (Fixed Pattern)"], horizontal=True, key="custom_mode")
+            custom_mode = st.radio("", ["AI Trend (ရှေ့သမိုင်း ၅၀ အထိုင်)", "Calendar သီးသန့်မူများ (Fixed Pattern)"], horizontal=True, key="custom_mode_tab2")
             st.write("---")
             
             c1, c2, c3 = st.columns(3)
             with c1:
-                trigger_day = st.selectbox("📆 Trigger Day:", ["All", "Mon", "Tue", "Wed", "Thur", "Fri"], index=0)
+                trigger_day = st.selectbox("📆 Trigger Day:", ["All"] + active_days_cycle, index=0)
                 trigger_num = st.text_input("🔍 ရှာလိုသောဂဏန်း ရိုက်ထည့်ပါ:", value="01", max_chars=7)
             with c2:
                 if trigger_day != "All":
