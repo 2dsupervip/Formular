@@ -8,7 +8,7 @@ from collections import Counter
 # ==========================================
 # PAGE CONFIG & PREMIUM DARK-THEME STYLE
 # ==========================================
-st.set_page_config(page_title="2D AI Master V30 Perfect", layout="wide", page_icon="🤖")
+st.set_page_config(page_title="2D AI Master V31 Final", layout="wide", page_icon="🤖")
 
 st.markdown("""
 <style>
@@ -21,7 +21,7 @@ st.markdown("""
     .card-hp { border-left: 6px solid #2ecc71; background-color: #0D2216; }
     .card-sniper { border-left: 6px solid #9b59b6; background-color: #201135; }
     .card-recovery { border-left: 6px solid #e67e22; background-color: #2D1A0E; margin-bottom: 10px; }
-    .card-intersection { border: 2px dashed #00FFCC; background-color: #0B1C1A; text-align: center; padding: 20px; border-radius: 12px; box-shadow: 0 0 15px rgba(0,255,204,0.1); margin-top: 15px;}
+    .card-intersection { border: 2px dashed #FFD700; background-color: #1A180B; text-align: center; padding: 20px; border-radius: 12px; box-shadow: 0 0 15px rgba(255,215,0,0.15); margin-top: 15px;}
     
     .line-trigger { font-size: 18px; font-weight: bold; color: #E0D5FA; margin-bottom: 6px; display: block; }
     .line-formula { font-size: 22px; font-weight: bold; color: #FFD700; margin-bottom: 6px; display: block; }
@@ -34,12 +34,13 @@ st.markdown("""
     .badge-super { background-color: #FFD700; color: #000; padding: 3px 8px; border-radius: 5px; font-weight: bold; }
     .badge-second { background-color: #C0C0C0; color: #000; padding: 3px 8px; border-radius: 5px; font-weight: bold; }
     
-    .final-digits { font-size: 32px; font-weight: bold; color: #00FFCC; letter-spacing: 4px; display: block; margin-top: 10px; text-shadow: 0 0 8px rgba(0,255,204,0.4); }
+    .final-digits { font-size: 26px; font-weight: bold; color: #FFD700; display: block; margin-top: 15px; line-height: 1.5; }
+    .score-badge { background-color: #333; color: #fff; font-size: 16px; padding: 4px 8px; border-radius: 6px; margin-left: 8px; margin-right: 15px; vertical-align: middle; }
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V30 PRO)</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Hybrid Engine | Matrix Intersection | Recovery Score | Full Mode</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V31 FINAL)</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Hybrid Pre-filter | Weighted Score System | Full Research Lab</div>', unsafe_allow_html=True)
 
 special_groups = {
     "ညီကို": {"01","10","12","21","23","32","34","43","45","54","56","65","67","76","78","87","89","98","90","09"},
@@ -50,7 +51,8 @@ special_groups = {
     "ဆယ်ပြည့်": {"10","01","20","02","30","03","40","04","50","05","60","06","70","07","80","08","90","09"}
 }
 
-mu_keys_list = ["လုံးဘိုင်", "One Change", "key", "အပူးပါခွေ", "ထိပ်စီးစနစ်သစ်", "နောက်ပိတ်စနစ်သစ်", "ဘရိတ်", "စုံ/မ ကပ်", "အုပ်စုတွဲ"]
+# Added Single Group (အုပ်စု သီးသန့်)
+mu_keys_list = ["လုံးဘိုင်", "One Change", "key", "အပူးပါခွေ", "ထိပ်စီးစနစ်သစ်", "နောက်ပိတ်စနစ်သစ်", "ဘရိတ်", "စုံ/မ ကပ်", "အုပ်စု သီးသန့်", "အုပ်စုတွဲ"]
 
 # ==========================================
 # HELPER: NORMALIZE & CHECK FORMULAS
@@ -106,6 +108,8 @@ def check_single_draw_against_formula(d, mu_k, mu_val):
                 rem = d.replace(b1, '', 1)
                 rem_digit = int(rem if rem else b1)
                 return (is_even and rem_digit % 2 == 0) or (not is_even and rem_digit % 2 != 0)
+    elif mu_k == "အုပ်စု သီးသန့်":
+        return d in special_groups.get(mu_val, set())
     elif mu_k == "အုပ်စုတွဲ":
         gps = mu_val.split('+')
         return any(d in special_groups.get(g.strip(), set()) for g in gps)
@@ -153,6 +157,12 @@ def generate_formula_from_pool(analysis_pool):
     o_sc = sum(1 for d in analysis_pool if top_single in d and int(d.replace(top_single,'',1) if d.replace(top_single,'',1) else top_single) % 2 != 0)
     kap_label = f'[{top_single}] "စုံ"ကပ်' if e_sc >= o_sc else f'[{top_single}] "မ"ကပ်'
     
+    best_sgp = "-"
+    max_sgp_c = 0
+    for g_name in special_groups.keys():
+        c = sum(1 for d in analysis_pool if d in special_groups[g_name])
+        if c > max_sgp_c: max_sgp_c = c; best_sgp = g_name
+
     best_gp = "-"
     max_gp_c = 0
     for combo in itertools.combinations(special_groups.keys(), 2):
@@ -166,7 +176,9 @@ def generate_formula_from_pool(analysis_pool):
         "အပူးပါခွေ": f"{top_k4} အပူးပါခွေ" if top_k4 else "-",
         "ထိပ်စီးစနစ်သစ်": head_formula_str, "နောက်ပိတ်စနစ်သစ်": tail_formula_str,
         "ဘရိတ်": f"{brk_label} ဘရိတ်" if brk_label != "-" else "-", 
-        "စုံ/မ ကပ်": kap_label if top_single else "-", "အုပ်စုတွဲ": best_gp
+        "စုံ/မ ကပ်": kap_label if top_single else "-", 
+        "အုပ်စု သီးသန့်": best_sgp,
+        "အုပ်စုတွဲ": best_gp
     }
     return {k: normalize_formula(k, v) for k, v in res.items()}
 
@@ -176,16 +188,17 @@ def generate_formula_from_pool(analysis_pool):
 def get_hybrid_candidates(target_hits, full_draws, max_step):
     candidates = {k: [] for k in mu_keys_list}
     
-    # Exhaustive options for simple robust formulas
     for i in range(10): candidates["လုံးဘိုင်"].append(f"{i} လုံးဘိုင်")
     for b in itertools.combinations([str(x) for x in range(10)], 2): 
         cand = normalize_formula("ဘရိတ်", f"{b[0]}, {b[1]} ဘရိတ်")
         if cand not in candidates["ဘရိတ်"]: candidates["ဘရိတ်"].append(cand)
+    
+    for g in special_groups.keys(): candidates["အုပ်စု သီးသန့်"].append(g)
+    
     for combo in itertools.combinations(special_groups.keys(), 2): 
         cand = normalize_formula("အုပ်စုတွဲ", f"{combo[0]}+{combo[1]}")
         if cand not in candidates["အုပ်စုတွဲ"]: candidates["အုပ်စုတွဲ"].append(cand)
         
-    # Giant pool extraction for heavy combinatorial formulas (Avoids crashing & returns 10 keys)
     analysis_pool = []
     for hit in target_hits:
         h_idx = hit['index']
@@ -204,15 +217,13 @@ def get_hybrid_candidates(target_hits, full_draws, max_step):
 # ==========================================
 # MASTER ROUTINE: INSTANCE WIN-RATE ENGINE
 # ==========================================
-def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=False, sel_session="All", custom_trigger="", strict_day_mode=False, mode="AI Trend"):
+def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=False, sel_session="All", custom_trigger="", strict_day_mode=False, mode="AI Trend", is_research_mode=False):
     step_buckets = {step: {} for step in range(1, requested_max_step + 1)}
     current_latest_idx = len(full_draws) - 1
     total_count = len(target_hits)
     if total_count == 0: return step_buckets, []
 
     recovery_pool = [] 
-    
-    # HYBRID FIX: Always process all 10 keys
     processing_keys = mu_keys_list
     calendar_candidates = get_hybrid_candidates(target_hits, full_draws, requested_max_step) if mode == "Calendar သီးသန့်မူများ (Fixed Pattern)" else {}
 
@@ -279,12 +290,14 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
                     
                     if rem_steps == 0:
                         is_deadline_flag = True
-                    elif elapsed_draws >= max_required_span:
-                        continue 
-                    
-                    if not is_custom_tab and elapsed_draws > 0:
-                        is_hit, _ = is_already_hit(mu_k, last_generated_val, last_hit_global_idx + 1, current_latest_idx, full_draws)
-                        if is_hit: continue
+                        
+                    # RESEARCH MODE BYPASS
+                    if not is_research_mode:
+                        if elapsed_draws >= max_required_span:
+                            continue 
+                        if not is_custom_tab and elapsed_draws > 0:
+                            is_hit, _ = is_already_hit(mu_k, last_generated_val, last_hit_global_idx + 1, current_latest_idx, full_draws)
+                            if is_hit: continue
 
                 sniper_note = ""
                 if actual_hit_combinations:
@@ -304,11 +317,12 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
                     "lbl_prefix": lbl_prefix
                 }
                 
-                if is_deadline_flag:
+                # If research mode is True, add everything found. Else, only add deadlines.
+                if is_research_mode or is_deadline_flag:
                     step_buckets[max_required_span][bucket_key] = card_payload
                 
-                # RECOVERY SCORING (1 or 2 steps remaining)
-                if rem_steps in [1, 2]:
+                # RECOVERY SCORING (Only for non-research mode context)
+                if not is_research_mode and rem_steps in [1, 2]:
                     score = 80 if rem_steps == 1 else 50
                     recovery_pool.append({
                         "key": last_generated_val,
@@ -402,10 +416,11 @@ if uploaded_file:
                     for pool in condition_pools:
                         if not pool['hits']: continue
                         
+                        # Note: is_research_mode is False here for strict deadlines
                         step_res, rec_pool = execute_analysis(
                             pool['hits'], full_draws, live_max_tf, 
                             is_custom_tab=True, sel_session="All", 
-                            custom_trigger=pool['lbl'], mode=live_mode
+                            custom_trigger=pool['lbl'], mode=live_mode, is_research_mode=False
                         )
                         
                         if step_dist in step_res:
@@ -439,14 +454,10 @@ if uploaded_file:
                 st.write("---")
                 st.markdown("#### 🏆 VIP ဆုံးဖြတ်ချက် (Super & Second Overlaps)")
                 
-                vip_formulas_for_matrix = []
-
                 if sorted_scores:
                     for b_val, b_data in sorted_scores:
                         tier = "Super VIP" if b_data['count'] >= 3 else "Second VIP"
                         badge = "badge-super" if tier == "Super VIP" else "badge-second"
-                        
-                        vip_formulas_for_matrix.append((b_data['mu_k'], b_val))
                             
                         with st.expander(f"⭐ {tier}: {b_val} (တူညီမှု: {b_data['count']} ခု)", expanded=False):
                             st.markdown(f"<span class='{badge}'>{tier}</span><div style='color:#00FFCC; font-size:14px; margin-top:10px; margin-bottom:10px;'>💡 ဤမူကို အောက်ပါ ထောက်တိုင်များက ဘုံတူညီစွာ ညွှန်ပြနေပါသည်-</div>", unsafe_allow_html=True)
@@ -459,34 +470,38 @@ if uploaded_file:
                                 </div>
                                 """, unsafe_allow_html=True)
                                 
+                    # 💎 NEW: WEIGHTED SCORING SYSTEM FOR FINAL DIGITS
                     st.write("---")
-                    st.markdown("#### 💎 VIP ဘုံဂဏန်း အနှစ်ချုပ် (Matrix Intersection)")
-                    if len(vip_formulas_for_matrix) >= 2:
-                        top_vips_to_intersect = vip_formulas_for_matrix[:5]
-                        possible_draws = [f"{i:02d}" for i in range(100)]
-                        final_intersected = []
-                        
-                        for d in possible_draws:
-                            passed_all = True
-                            for mu_k, mu_val in top_vips_to_intersect:
-                                if not check_single_draw_against_formula(d, mu_k, mu_val):
-                                    passed_all = False
-                                    break
-                            if passed_all: final_intersected.append(d)
-                        
-                        used_formulas = [f"`{v}`" for k, v in top_vips_to_intersect]
-                        
+                    st.markdown("#### 🎯 အတိကျဆုံး အကြံပြု Final ဂဏန်းများ (Weighted Scoring)")
+                    
+                    final_scores = {f"{i:02d}": 0 for i in range(100)}
+                    
+                    for b_val, b_data in sorted_scores:
+                        weight = b_data['count']
+                        mu_k = b_data['mu_k']
+                        for d in final_scores.keys():
+                            if check_single_draw_against_formula(d, mu_k, b_val):
+                                final_scores[d] += weight
+                                
+                    sorted_final_digits = sorted(final_scores.items(), key=lambda x: x[1], reverse=True)
+                    top_scoring_digits = [k for k, v in sorted_final_digits[:5] if v > 0]
+                    
+                    if top_scoring_digits:
+                        digit_display = ""
+                        for d, s in sorted_final_digits[:5]:
+                            if s > 0:
+                                digit_display += f"<span style='display:inline-block; margin-bottom: 8px;'>{d} <span class='score-badge'>Score: {s}</span></span>"
+                                
                         st.markdown(f"""
                         <div class="card card-intersection">
-                            <span style="color:#A294C7; font-size:14px; margin-bottom:10px; display:block;">
-                                သုံးသပ်သော VIP မူများ: {', '.join(used_formulas)}
+                            <span style="color:#A294C7; font-size:15px; display:block;">
+                                VIP မူများအားလုံးကို အမှတ်ပေး ချိန်ခွင်လျှာညှိပြီး ရွေးချယ်ထားသော (Top 5) အကွက်များ:
                             </span>
-                            <span style="font-size:18px; font-weight:bold; color:#fff;">🎯 Final အကြံပြု အကွက်များ:</span>
-                            <span class="final-digits">{', '.join(final_intersected) if final_intersected else "ဘုံတူညီသော ဂဏန်းမရှိပါ (မူများ အချင်းချင်း ဆန့်ကျင်နေပါသည်)"}</span>
+                            <div class="final-digits">{digit_display}</div>
                         </div>
                         """, unsafe_allow_html=True)
                     else:
-                        st.info("Intersection ထုတ်ရန် အနည်းဆုံး VIP မူ (၂) ခု လိုအပ်ပါသည်။")
+                        st.info("Intersection အမှတ်ပေးစနစ်ဖြင့် ရွေးချယ်ရန် လုံလောက်သော VIP မူ မရှိပါ။")
                         
                 else:
                     st.markdown("<div style='font-size:15px; font-weight:bold; color:#A294C7; padding:10px;'>ခိုင်မာသော VIP တူညီမှု ရလဒ်မရှိပါ (အနည်းဆုံး တိုက်ဆိုင်မှု ၂ ခု လိုအပ်ပါသည်)</div>", unsafe_allow_html=True)
@@ -579,11 +594,12 @@ if uploaded_file:
                     st.write("---")
                     st.markdown(f"#### 📋 အသေးစိတ်အချက်အလက် (Window အလိုက် ခေါက်သိမ်းစနစ် - {custom_mode})")
                     
+                    # is_research_mode=True bypasses the strict deadline filtering
                     master_step_res, _ = execute_analysis(
                         target_hits, full_draws, custom_max_tf, 
                         is_custom_tab=True, sel_session=target_session_custom, 
                         custom_trigger=lbl_prefix_custom, strict_day_mode=(trigger_day != "All"),
-                        mode=custom_mode
+                        mode=custom_mode, is_research_mode=True
                     )
                     
                     has_any_tab2_data = any(master_step_res[sk] for sk in master_step_res if sk <= custom_max_tf)
