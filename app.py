@@ -8,7 +8,7 @@ from collections import Counter
 # ==========================================
 # PAGE CONFIG & PREMIUM DARK-THEME STYLE
 # ==========================================
-st.set_page_config(page_title="2D AI Master V29 Ultimate", layout="wide", page_icon="🤖")
+st.set_page_config(page_title="2D AI Master V30 Perfect", layout="wide", page_icon="🤖")
 
 st.markdown("""
 <style>
@@ -21,7 +21,7 @@ st.markdown("""
     .card-hp { border-left: 6px solid #2ecc71; background-color: #0D2216; }
     .card-sniper { border-left: 6px solid #9b59b6; background-color: #201135; }
     .card-recovery { border-left: 6px solid #e67e22; background-color: #2D1A0E; margin-bottom: 10px; }
-    .card-intersection { border: 2px dashed #00FFCC; background-color: #0B1C1A; text-align: center;}
+    .card-intersection { border: 2px dashed #00FFCC; background-color: #0B1C1A; text-align: center; padding: 20px; border-radius: 12px; box-shadow: 0 0 15px rgba(0,255,204,0.1); margin-top: 15px;}
     
     .line-trigger { font-size: 18px; font-weight: bold; color: #E0D5FA; margin-bottom: 6px; display: block; }
     .line-formula { font-size: 22px; font-weight: bold; color: #FFD700; margin-bottom: 6px; display: block; }
@@ -33,14 +33,13 @@ st.markdown("""
     .badge-inline-hp { background-color: #2ecc71; color: #0D2216; }
     .badge-super { background-color: #FFD700; color: #000; padding: 3px 8px; border-radius: 5px; font-weight: bold; }
     .badge-second { background-color: #C0C0C0; color: #000; padding: 3px 8px; border-radius: 5px; font-weight: bold; }
-    .badge-recovery { background-color: #e67e22; color: #fff; padding: 3px 8px; border-radius: 5px; font-weight: bold; }
     
-    .final-digits { font-size: 30px; font-weight: bold; color: #00FFCC; letter-spacing: 3px; }
+    .final-digits { font-size: 32px; font-weight: bold; color: #00FFCC; letter-spacing: 4px; display: block; margin-top: 10px; text-shadow: 0 0 8px rgba(0,255,204,0.4); }
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V29 PRO)</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Ultimate Matrix Intersection | Recovery Score System | Full Custom Mode</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V30 PRO)</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Hybrid Engine | Matrix Intersection | Recovery Score | Full Mode</div>', unsafe_allow_html=True)
 
 special_groups = {
     "ညီကို": {"01","10","12","21","23","32","34","43","45","54","56","65","67","76","78","87","89","98","90","09"},
@@ -54,7 +53,7 @@ special_groups = {
 mu_keys_list = ["လုံးဘိုင်", "One Change", "key", "အပူးပါခွေ", "ထိပ်စီးစနစ်သစ်", "နောက်ပိတ်စနစ်သစ်", "ဘရိတ်", "စုံ/မ ကပ်", "အုပ်စုတွဲ"]
 
 # ==========================================
-# HELPER: NORMALIZE FORMULA (Sorting Logic)
+# HELPER: NORMALIZE & CHECK FORMULAS
 # ==========================================
 def normalize_formula(mu_k, mu_val):
     if mu_val == "-" or not mu_val: return mu_val
@@ -171,8 +170,13 @@ def generate_formula_from_pool(analysis_pool):
     }
     return {k: normalize_formula(k, v) for k, v in res.items()}
 
-def get_calendar_candidates():
-    candidates = {"လုံးဘိုင်": [], "ဘရိတ်": [], "အုပ်စုတွဲ": []}
+# ==========================================
+# HYBRID PRE-FILTERING (For Calendar Mode)
+# ==========================================
+def get_hybrid_candidates(target_hits, full_draws, max_step):
+    candidates = {k: [] for k in mu_keys_list}
+    
+    # Exhaustive options for simple robust formulas
     for i in range(10): candidates["လုံးဘိုင်"].append(f"{i} လုံးဘိုင်")
     for b in itertools.combinations([str(x) for x in range(10)], 2): 
         cand = normalize_formula("ဘရိတ်", f"{b[0]}, {b[1]} ဘရိတ်")
@@ -180,6 +184,21 @@ def get_calendar_candidates():
     for combo in itertools.combinations(special_groups.keys(), 2): 
         cand = normalize_formula("အုပ်စုတွဲ", f"{combo[0]}+{combo[1]}")
         if cand not in candidates["အုပ်စုတွဲ"]: candidates["အုပ်စုတွဲ"].append(cand)
+        
+    # Giant pool extraction for heavy combinatorial formulas (Avoids crashing & returns 10 keys)
+    analysis_pool = []
+    for hit in target_hits:
+        h_idx = hit['index']
+        for step in range(1, max_step + 1):
+            t_idx = h_idx + step
+            if t_idx < len(full_draws):
+                analysis_pool.append(full_draws[t_idx]['draw'])
+                
+    complex_formulas = generate_formula_from_pool(analysis_pool)
+    for k in ["One Change", "key", "အပူးပါခွေ", "ထိပ်စီးစနစ်သစ်", "နောက်ပိတ်စနစ်သစ်", "စုံ/မ ကပ်"]:
+        if complex_formulas[k] != "-":
+            candidates[k].append(complex_formulas[k])
+            
     return candidates
 
 # ==========================================
@@ -192,8 +211,10 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
     if total_count == 0: return step_buckets, []
 
     recovery_pool = [] 
-    calendar_candidates = get_calendar_candidates() if mode == "Calendar သီးသန့်မူများ (Fixed Pattern)" else {}
-    processing_keys = ["လုံးဘိုင်", "ဘရိတ်", "အုပ်စုတွဲ"] if mode == "Calendar သီးသန့်မူများ (Fixed Pattern)" else mu_keys_list
+    
+    # HYBRID FIX: Always process all 10 keys
+    processing_keys = mu_keys_list
+    calendar_candidates = get_hybrid_candidates(target_hits, full_draws, requested_max_step) if mode == "Calendar သီးသန့်မူများ (Fixed Pattern)" else {}
 
     for mu_k in processing_keys:
         cand_list = calendar_candidates.get(mu_k, []) if mode == "Calendar သီးသန့်မူများ (Fixed Pattern)" else ["DYNAMIC_AI"]
@@ -347,7 +368,7 @@ if uploaded_file:
         tab_live, tab_custom = st.tabs(["⚡ တွက်ချက်မည် (ယခုပွဲစဉ်)", "🔍 2D Formulas (Custom)"])
 
         # ------------------------------------------
-        # TAB 1: LIVE AUTO TRACKER
+        # TAB 1: LIVE AUTO TRACKER (VIP Sniper)
         # ------------------------------------------
         with tab_live:
             input_box_val = st.text_input("⏳ စစ်ဆေးမည့် ပွဲစဉ်အရေအတွက် အတိအကျ (Default: 10):", value="10", key="live_input")
@@ -460,7 +481,7 @@ if uploaded_file:
                             <span style="color:#A294C7; font-size:14px; margin-bottom:10px; display:block;">
                                 သုံးသပ်သော VIP မူများ: {', '.join(used_formulas)}
                             </span>
-                            <span style="font-size:18px; font-weight:bold; color:#fff;">🎯 Final အကြံပြု အကွက်များ:</span><br/>
+                            <span style="font-size:18px; font-weight:bold; color:#fff;">🎯 Final အကြံပြု အကွက်များ:</span>
                             <span class="final-digits">{', '.join(final_intersected) if final_intersected else "ဘုံတူညီသော ဂဏန်းမရှိပါ (မူများ အချင်းချင်း ဆန့်ကျင်နေပါသည်)"}</span>
                         </div>
                         """, unsafe_allow_html=True)
@@ -495,7 +516,7 @@ if uploaded_file:
                     st.info("၁ ပွဲ သို့မဟုတ် ၂ ပွဲ အလိုရှိသော ခိုင်မာသည့် မူကျန်များ မရှိပါ။")
 
         # ------------------------------------------
-        # TAB 2: CUSTOM FORMULAS ENGINE
+        # TAB 2: CUSTOM FORMULAS ENGINE (Research Lab)
         # ------------------------------------------
         with tab_custom:
             st.markdown("##### 🧠 တွက်ချက်မှုစနစ် (Mode) ရွေးချယ်ရန်")
@@ -558,7 +579,6 @@ if uploaded_file:
                     st.write("---")
                     st.markdown(f"#### 📋 အသေးစိတ်အချက်အလက် (Window အလိုက် ခေါက်သိမ်းစနစ် - {custom_mode})")
                     
-                    # Unpacking the tuple correctly for Tab 2
                     master_step_res, _ = execute_analysis(
                         target_hits, full_draws, custom_max_tf, 
                         is_custom_tab=True, sel_session=target_session_custom, 
