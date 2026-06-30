@@ -8,7 +8,7 @@ from collections import Counter
 # ==========================================
 # PAGE CONFIG & PREMIUM DARK-THEME STYLE
 # ==========================================
-st.set_page_config(page_title="2D AI Master V31 Final", layout="wide", page_icon="🤖")
+st.set_page_config(page_title="2D AI Master V31.1 Final", layout="wide", page_icon="🤖")
 
 st.markdown("""
 <style>
@@ -39,8 +39,8 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V31 FINAL)</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Hybrid Pre-filter | Weighted Score System | Full Research Lab</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V31.1 FINAL)</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Strict Live Filter | Weighted Score System | Full Research Lab</div>', unsafe_allow_html=True)
 
 special_groups = {
     "ညီကို": {"01","10","12","21","23","32","34","43","45","54","56","65","67","76","78","87","89","98","90","09"},
@@ -51,7 +51,6 @@ special_groups = {
     "ဆယ်ပြည့်": {"10","01","20","02","30","03","40","04","50","05","60","06","70","07","80","08","90","09"}
 }
 
-# Added Single Group (အုပ်စု သီးသန့်)
 mu_keys_list = ["လုံးဘိုင်", "One Change", "key", "အပူးပါခွေ", "ထိပ်စီးစနစ်သစ်", "နောက်ပိတ်စနစ်သစ်", "ဘရိတ်", "စုံ/မ ကပ်", "အုပ်စု သီးသန့်", "အုပ်စုတွဲ"]
 
 # ==========================================
@@ -291,11 +290,13 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
                     if rem_steps == 0:
                         is_deadline_flag = True
                         
-                    # RESEARCH MODE BYPASS
+                    # STRICT FILTERING: Bypass ONLY if is_research_mode is True
                     if not is_research_mode:
+                        # 1. If it's completely expired
                         if elapsed_draws >= max_required_span:
                             continue 
-                        if not is_custom_tab and elapsed_draws > 0:
+                        # 2. STRICT ALREADY-HIT FILTER (Fixed for Tab 1)
+                        if elapsed_draws > 0:
                             is_hit, _ = is_already_hit(mu_k, last_generated_val, last_hit_global_idx + 1, current_latest_idx, full_draws)
                             if is_hit: continue
 
@@ -317,11 +318,9 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
                     "lbl_prefix": lbl_prefix
                 }
                 
-                # If research mode is True, add everything found. Else, only add deadlines.
                 if is_research_mode or is_deadline_flag:
                     step_buckets[max_required_span][bucket_key] = card_payload
                 
-                # RECOVERY SCORING (Only for non-research mode context)
                 if not is_research_mode and rem_steps in [1, 2]:
                     score = 80 if rem_steps == 1 else 50
                     recovery_pool.append({
@@ -416,7 +415,7 @@ if uploaded_file:
                     for pool in condition_pools:
                         if not pool['hits']: continue
                         
-                        # Note: is_research_mode is False here for strict deadlines
+                        # is_research_mode = False strictly drops already hit formulas
                         step_res, rec_pool = execute_analysis(
                             pool['hits'], full_draws, live_max_tf, 
                             is_custom_tab=True, sel_session="All", 
@@ -470,7 +469,6 @@ if uploaded_file:
                                 </div>
                                 """, unsafe_allow_html=True)
                                 
-                    # 💎 NEW: WEIGHTED SCORING SYSTEM FOR FINAL DIGITS
                     st.write("---")
                     st.markdown("#### 🎯 အတိကျဆုံး အကြံပြု Final ဂဏန်းများ (Weighted Scoring)")
                     
@@ -594,7 +592,6 @@ if uploaded_file:
                     st.write("---")
                     st.markdown(f"#### 📋 အသေးစိတ်အချက်အလက် (Window အလိုက် ခေါက်သိမ်းစနစ် - {custom_mode})")
                     
-                    # is_research_mode=True bypasses the strict deadline filtering
                     master_step_res, _ = execute_analysis(
                         target_hits, full_draws, custom_max_tf, 
                         is_custom_tab=True, sel_session=target_session_custom, 
