@@ -8,7 +8,7 @@ from collections import Counter
 # ==========================================
 # PAGE CONFIG & PREMIUM DARK-THEME STYLE
 # ==========================================
-st.set_page_config(page_title="2D AI Master V33 Auto-R", layout="wide", page_icon="🤖")
+st.set_page_config(page_title="2D AI Master V34.1 Priority", layout="wide", page_icon="🤖")
 
 st.markdown("""
 <style>
@@ -19,6 +19,7 @@ st.markdown("""
     .card { background-color: #170E2B; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); margin-bottom: 15px; border: 1px solid #2D1B4E; }
     .card-live { border-left: 6px solid #3498db; background-color: #0E1A2F; margin-bottom: 15px; }
     .card-hp { border-left: 6px solid #2ecc71; background-color: #0D2216; }
+    .card-deadline { border-left: 6px solid #e74c3c; background-color: #31151A; margin-bottom: 10px; }
     .card-sniper { border-left: 6px solid #9b59b6; background-color: #201135; }
     .card-recovery { border-left: 6px solid #e67e22; background-color: #2D1A0E; margin-bottom: 10px; }
     .card-intersection { border: 2px dashed #FFD700; background-color: #1A180B; text-align: center; padding: 20px; border-radius: 12px; box-shadow: 0 0 15px rgba(255,215,0,0.15); margin-top: 15px;}
@@ -31,6 +32,7 @@ st.markdown("""
     .badge-inline { padding: 2px 10px; border-radius: 6px; font-size: 14px; font-weight: bold; margin-left: 6px; margin-right: 6px; display: inline-block; vertical-align: middle; }
     .badge-inline-sniper { background-color: #9b59b6; color: white; }
     .badge-inline-hp { background-color: #2ecc71; color: #0D2216; }
+    .badge-inline-danger { background-color: #e74c3c; color: white; }
     .badge-super { background-color: #FFD700; color: #000; padding: 3px 8px; border-radius: 5px; font-weight: bold; }
     .badge-second { background-color: #C0C0C0; color: #000; padding: 3px 8px; border-radius: 5px; font-weight: bold; }
     
@@ -39,8 +41,8 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V33)</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Custom Anchor | Auto-R Day System | Deep Scan Horizon</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V34.1)</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Custom Anchor | Auto-R Day System | Deadline Priority Dashboard</div>', unsafe_allow_html=True)
 
 special_groups = {
     "ညီကို": {"01","10","12","21","23","32","34","43","45","54","56","65","67","76","78","87","89","98","90","09"},
@@ -238,6 +240,7 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
                 "pure": last_generated_val, "mu_k": mu_k, "advisor": sniper_note, "rate": rate, "max_span": max_required_span, "lbl_prefix": lbl_prefix
             }
             
+            # Populate step_buckets exclusively for Deadlines (in Tab 1) or All (in Tab 2)
             if is_research_mode or is_deadline_flag:
                 step_buckets[max_required_span][last_generated_val if mode == "Calendar သီးသန့်မူများ (Fixed Pattern)" else mu_k] = card_payload
             
@@ -318,13 +321,11 @@ if uploaded_file:
                             if latest_hit: selected_anchors.append(latest_hit)
                         st.info(f"🎯 ရွေးချယ်ထားသော အမာခံ (နောက်ဆုံးထွက်ခဲ့သည့် အကြိမ်များ): {', '.join([d['draw'] for d in selected_anchors])}")
                 else:
-                    # Slicing Array (Solves off-by-one issue perfectly)
                     selected_anchors = full_draws[-anchor_count:]
                 
                 if not selected_anchors:
                     st.error("⚠️ အမာခံ ဂဏန်းများ ရှာမတွေ့ပါ။")
                 else:
-                    compiled_master_buckets = {step: {} for step in range(1, live_max_tf + 1)}
                     scoring_pool = {}
                     global_recovery = {}
                     
@@ -334,7 +335,6 @@ if uploaded_file:
                         past_time = past_obj['time']
                         past_day = past_obj['day']
                         
-                        # Added Auto-R system for the "[Day] သီးသန့်" condition
                         condition_pools = [
                             {"hits": [d for d in full_draws if d['draw'] == past_val and d['time'] == past_time], "lbl": f"{past_val} {past_time} စစ်စစ်"},
                             {"hits": [d for d in full_draws if d['draw'] == past_val], "lbl": f"{past_val} ပေါင်းချုပ်"},
@@ -350,11 +350,10 @@ if uploaded_file:
                                 custom_trigger=pool['lbl'], mode=live_mode, is_research_mode=False
                             )
                             
+                            # Deadline hits are collected here
                             for step_dist, formulas_dict in step_res.items():
                                 for mk, mv in formulas_dict.items():
                                     f_key = mv['pure']
-                                    compiled_master_buckets[step_dist][f"{pool['lbl']}_{mk}"] = mv
-                                    
                                     if f_key not in scoring_pool:
                                         scoring_pool[f_key] = {'count': 0, 'details': [], 'mu_k': mv['mu_k']}
                                     
@@ -375,13 +374,15 @@ if uploaded_file:
                                     if len(global_recovery[r_key]['details']) >= 2:
                                         global_recovery[r_key]['score'] = global_recovery[r_key]['score'] * 2
 
+                    # Separate Overlaps from Standalone Deadline Hits
                     valid_vips = {k: v for k, v in scoring_pool.items() if v['count'] >= 2}
-                    sorted_scores = sorted(valid_vips.items(), key=lambda x: x[1]['count'], reverse=True)
+                    deadline_singles = {k: v for k, v in scoring_pool.items() if v['count'] == 1}
                     
                     st.write("---")
                     st.markdown("#### 🏆 VIP ဆုံးဖြတ်ချက် (Super & Second Overlaps)")
                     
-                    if sorted_scores:
+                    if valid_vips:
+                        sorted_scores = sorted(valid_vips.items(), key=lambda x: x[1]['count'], reverse=True)
                         for b_val, b_data in sorted_scores:
                             tier = "Super VIP" if b_data['count'] >= 3 else "Second VIP"
                             badge = "badge-super" if tier == "Super VIP" else "badge-second"
@@ -428,13 +429,29 @@ if uploaded_file:
                         st.markdown("<div style='font-size:15px; font-weight:bold; color:#A294C7; padding:10px;'>ခိုင်မာသော VIP တူညီမှု ရလဒ်မရှိပါ (အနည်းဆုံး တိုက်ဆိုင်မှု ၂ ခု လိုအပ်ပါသည်)</div>", unsafe_allow_html=True)
 
                     st.write("---")
+                    st.markdown("#### ⚠️ ရက်ချိန်းပြည့် မူများ (Standalone Deadline Hits)")
+                    if deadline_singles:
+                        for d_key, d_data in deadline_singles.items():
+                            item = d_data['details'][0]
+                            st.markdown(f"""
+                            <div class="card card-deadline" style="padding:12px;">
+                                <span style="font-size:16px; font-weight:bold; color:#fff;">🔴 [{item['lbl_prefix']}] {d_key}</span><br/>
+                                <span style="font-size:14px; color:#e74c3c; margin-top:5px; display:block;">
+                                    ⏳ သမိုင်းစံချိန်အရ ယခုပွဲစဉ် ရက်ချိန်းကွက်တိပြည့်နေပါသည် ({item['max_span']} ပွဲမြောက်)
+                                </span>
+                            </div>
+                            """, unsafe_allow_html=True)
+                    else:
+                        st.info("ယခုပွဲစဉ်အတွက် သီးသန့် ရက်ချိန်းပြည့်နေသော မူများ မရှိပါ။")
+
+                    st.write("---")
                     st.markdown("#### 🛡️ Recovery & စောင့်ကြည့်ရမည့် မူကျန်များ (Top 5)")
                     if global_recovery:
                         sorted_recovery = sorted(global_recovery.items(), key=lambda x: x[1]['score'], reverse=True)[:5]
                         for r_key, r_data in sorted_recovery:
                             rem_txt = "၁ ပွဲသာ လိုတော့သည်" if r_data['rem_steps'] == 1 else "၂ ပွဲ လိုသေးသည်"
                             overlap_txt = f" (ထောက်တိုင် {len(r_data['details'])} ခုငြိနေသည်)" if len(r_data['details']) > 1 else ""
-                            icon = "🔴" if r_data['score'] >= 100 else ("🟠" if r_data['score'] == 80 else "🟡")
+                            icon = "🟠" if r_data['score'] >= 80 else "🟡"
                             
                             display_lbl = r_data['details'][0]['lbl_prefix']
                             
