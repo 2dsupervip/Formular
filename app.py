@@ -8,7 +8,7 @@ from collections import Counter
 # ==========================================
 # PAGE CONFIG & PREMIUM DARK-THEME STYLE
 # ==========================================
-st.set_page_config(page_title="2D AI Master V32 Custom Anchor", layout="wide", page_icon="🤖")
+st.set_page_config(page_title="2D AI Master V33 Auto-R", layout="wide", page_icon="🤖")
 
 st.markdown("""
 <style>
@@ -39,8 +39,8 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V32)</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Custom Anchor System | Deep Scan Horizon | Weighted Scorer</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V33)</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Custom Anchor | Auto-R Day System | Deep Scan Horizon</div>', unsafe_allow_html=True)
 
 special_groups = {
     "ညီကို": {"01","10","12","21","23","32","34","43","45","54","56","65","67","76","78","87","89","98","90","09"},
@@ -287,7 +287,7 @@ if uploaded_file:
         tab_live, tab_custom = st.tabs(["⚡ တွက်ချက်မည် (ယခုပွဲစဉ်)", "🔍 2D Formulas (Custom)"])
 
         # ------------------------------------------
-        # TAB 1: LIVE AUTO TRACKER (3 Inputs System)
+        # TAB 1: LIVE AUTO TRACKER (3 Inputs System + Auto-R)
         # ------------------------------------------
         with tab_live:
             st.markdown("#### ⚙️ VIP ရှာဖွေမှု သတ်မှတ်ချက်များ (Inputs)")
@@ -330,13 +330,15 @@ if uploaded_file:
                     
                     for past_obj in selected_anchors:
                         past_val = past_obj['draw']
+                        past_val_r = past_val[::-1]  # Auto R variable
                         past_time = past_obj['time']
                         past_day = past_obj['day']
                         
+                        # Added Auto-R system for the "[Day] သီးသန့်" condition
                         condition_pools = [
                             {"hits": [d for d in full_draws if d['draw'] == past_val and d['time'] == past_time], "lbl": f"{past_val} {past_time} စစ်စစ်"},
                             {"hits": [d for d in full_draws if d['draw'] == past_val], "lbl": f"{past_val} ပေါင်းချုပ်"},
-                            {"hits": [d for d in full_draws if d['draw'] == past_val and d['day'] == past_day], "lbl": f"{past_val} {past_day} သီးသန့်"}
+                            {"hits": [d for d in full_draws if (d['draw'] == past_val or d['draw'] == past_val_r) and d['day'] == past_day], "lbl": f"{past_val}R {past_day} သီးသန့်"}
                         ]
                         
                         for pool in condition_pools:
