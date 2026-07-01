@@ -8,7 +8,7 @@ from collections import Counter
 # ==========================================
 # PAGE CONFIG & PREMIUM DARK-THEME STYLE
 # ==========================================
-st.set_page_config(page_title="2D AI Master V34.1 Priority", layout="wide", page_icon="🤖")
+st.set_page_config(page_title="2D AI Master V35 Sync", layout="wide", page_icon="🤖")
 
 st.markdown("""
 <style>
@@ -41,8 +41,8 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V34.1)</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Custom Anchor | Auto-R Day System | Deadline Priority Dashboard</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V35)</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Dual Session Filtering | Dynamic Search Space Labels | Master Engine Sync</div>', unsafe_allow_html=True)
 
 special_groups = {
     "ညီကို": {"01","10","12","21","23","32","34","43","45","54","56","65","67","76","78","87","89","98","90","09"},
@@ -167,9 +167,9 @@ def get_hybrid_candidates(target_hits, full_draws, max_step):
     return candidates
 
 # ==========================================
-# MASTER ROUTINE: INSTANCE WIN-RATE ENGINE
+# MASTER ROUTINE: DUAL SESSION WIN-RATE ENGINE
 # ==========================================
-def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=False, sel_session="All", custom_trigger="", strict_day_mode=False, mode="AI Trend", is_research_mode=False):
+def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=False, search_session="AM+PM ပေါင်းချုပ်", custom_trigger="", mode="AI Trend", is_research_mode=False):
     step_buckets = {step: {} for step in range(1, requested_max_step + 1)}
     current_latest_idx = len(full_draws) - 1
     total_count = len(target_hits)
@@ -177,6 +177,14 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
 
     recovery_pool = [] 
     calendar_candidates = get_hybrid_candidates(target_hits, full_draws, requested_max_step) if mode == "Calendar သီးသန့်မူများ (Fixed Pattern)" else {}
+
+    # Define dynamic labels based on Search Space selection (Bro's recommendation)
+    if search_session == "AM သီးသန့်":
+        label_space = "နံနက်ပိုင်း "
+    elif search_session == "PM သီးသန့်":
+        label_space = "ညနေပိုင်း "
+    else:
+        label_space = ""
 
     for mu_k in mu_keys_list:
         cand_list = calendar_candidates.get(mu_k, []) if mode == "Calendar သီးသန့်မူများ (Fixed Pattern)" else ["DYNAMIC_AI"]
@@ -201,9 +209,14 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
                 for step_check in range(1, requested_max_step + 1):
                     t_idx = hit_idx + step_check
                     if t_idx >= len(full_draws): break
+                    
+                    # Apply separate Search Space filtering logic
+                    if "သီးသန့်" in search_session:
+                        req_time_str = "AM" if "AM" in search_session else "PM"
+                        if full_draws[t_idx]['time'] != req_time_str: continue
+
                     is_hit, matched_draw = is_already_hit(mu_k, current_val, t_idx, t_idx, full_draws)
                     if is_hit:
-                        if is_custom_tab and "သီးသန့်" in sel_session and full_draws[t_idx]['time'] != ("AM" if "AM" in sel_session else "PM"): continue 
                         found_hit_step = step_check
                         actual_hit_combinations.append(matched_draw)
                         break
@@ -225,22 +238,37 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
             if target_hits:
                 last_hit_global_idx = target_hits[-1]['index']
                 elapsed_draws = current_latest_idx - last_hit_global_idx
-                rem_steps = max_required_span - elapsed_draws - 1
+                
+                # Dynamic elapsed calculation based on search filter
+                if "သီးသန့်" in search_session:
+                    req_t = "AM" if "AM" in search_session else "PM"
+                    elapsed_filtered = sum(1 for d in full_draws[last_hit_global_idx + 1 : current_latest_idx + 1] if d['time'] == req_t)
+                else:
+                    elapsed_filtered = current_latest_idx - last_hit_global_idx
+                    
+                rem_steps = max_required_span - elapsed_filtered
                 if rem_steps == 0: is_deadline_flag = True
                 
                 if not is_research_mode:
-                    if elapsed_draws >= max_required_span: continue 
-                    if elapsed_draws > 0 and is_already_hit(mu_k, last_generated_val, last_hit_global_idx + 1, current_latest_idx, full_draws)[0]: continue
+                    if elapsed_filtered >= max_required_span: continue 
+                    if elapsed_filtered > 0 and is_already_hit(mu_k, last_generated_val, last_hit_global_idx + 1, current_latest_idx, full_draws)[0]: continue
 
             sniper_note = f"💡 အဖြစ်နိုင်ဆုံး ၃/၄ ကွက်: {', '.join([x[0] for x in Counter(actual_hit_combinations).most_common(4)])}" if actual_hit_combinations else ""
 
             card_payload = {
-                "top": f"🔮 [{lbl_prefix}] ထွက်ပြီးလျှင်", "formula": f"{last_generated_val} {'100%' if rate == 100.0 else f'{rate:.1f}%'}", 
-                "bottom": f"မှန်ကန်မှု: ({total_count} ကြိမ်မှာ {successful_hits} ကြိမ်မှန်)", "is_deadline": is_deadline_flag, 
-                "pure": last_generated_val, "mu_k": mu_k, "advisor": sniper_note, "rate": rate, "max_span": max_required_span, "lbl_prefix": lbl_prefix
+                "top": f"🔮 [{lbl_prefix}] ထွက်ပြီးလျှင်", 
+                "formula": f"{last_generated_val} {'100%' if rate == 100.0 else f'{rate:.1f}%'}", 
+                "bottom": f"မှန်ကန်မှု: ({total_count} ကြိမ်မှာ {successful_hits} ကြိမ်မှန်)", 
+                "is_deadline": is_deadline_flag, 
+                "pure": last_generated_val, 
+                "mu_k": mu_k, 
+                "advisor": sniper_note, 
+                "rate": rate, 
+                "max_span": max_required_span, 
+                "lbl_prefix": lbl_prefix,
+                "label_space": label_space
             }
             
-            # Populate step_buckets exclusively for Deadlines (in Tab 1) or All (in Tab 2)
             if is_research_mode or is_deadline_flag:
                 step_buckets[max_required_span][last_generated_val if mode == "Calendar သီးသန့်မူများ (Fixed Pattern)" else mu_k] = card_payload
             
@@ -268,7 +296,6 @@ if uploaded_file:
         full_days = ["Mon", "Tue", "Wed", "Thur", "Fri"]
         existing_days = set(df['day'].unique())
         off_days = [d for d in full_days if d not in existing_days]
-        if off_days: st.info(f"ℹ️ သတိပြုရန်: ဒေတာထဲတွင် {', '.join(off_days)} ကို ပိတ်ရက်အဖြစ် သတ်မှတ်ထားပါသည်။")
 
         full_draws = []
         for idx, row in df.iterrows():
@@ -287,10 +314,10 @@ if uploaded_file:
         st.success(f"🔮 ဒေတာပွဲစဉ်ပေါင်း {len(full_draws)} ခု ဖတ်ပြီးပါပြီ။ [{target_day_name} {target_time_name}] အတွက် တွက်ချက်မည်ဖြစ်ပါသည်။")
         st.write("---")
 
-        tab_live, tab_custom = st.tabs(["⚡ တွက်ချက်မည် (ယခုပွဲစဉ်)", "🔍 2D Formulas (Custom)"])
+        tab_live, tab_custom = st.tabs(["⚡ တွက်ချက်မည် (ယခုပွဲစဉ်)", "🔍 2D Formulas (Custom သုတေသန)"])
 
         # ------------------------------------------
-        # TAB 1: LIVE AUTO TRACKER (3 Inputs System + Auto-R)
+        # TAB 1: LIVE AUTO TRACKER (Engine Synced Dashboard)
         # ------------------------------------------
         with tab_live:
             st.markdown("#### ⚙️ VIP ရှာဖွေမှု သတ်မှတ်ချက်များ (Inputs)")
@@ -309,17 +336,15 @@ if uploaded_file:
             if st.button("VIP ကို ယခုရှာဖွေမည် ⚡", key="btn_auto"):
                 selected_anchors = []
                 
-                # Auto Clean-up & Fetch Latest Occurrences
                 if custom_anchors_str.strip():
                     raw_nums = [x.strip() for x in custom_anchors_str.split(',') if x.strip().isdigit()]
                     if not raw_nums:
-                        st.warning("⚠️ စိတ်ကြိုက် ဂဏန်းများ မှားယွင်းနေပါသည်။ Auto စနစ်ဖြင့် ဆက်လက်တွက်ချက်ပါမည်။")
                         selected_anchors = full_draws[-anchor_count:]
                     else:
                         for n in raw_nums:
                             latest_hit = next((d for d in reversed(full_draws) if d['draw'] == n), None)
                             if latest_hit: selected_anchors.append(latest_hit)
-                        st.info(f"🎯 ရွေးချယ်ထားသော အမာခံ (နောက်ဆုံးထွက်ခဲ့သည့် အကြိမ်များ): {', '.join([d['draw'] for d in selected_anchors])}")
+                        st.info(f"🎯 ရွေးချယ်ထားသော အမာခံ: {', '.join([d['draw'] for d in selected_anchors])}")
                 else:
                     selected_anchors = full_draws[-anchor_count:]
                 
@@ -331,7 +356,7 @@ if uploaded_file:
                     
                     for past_obj in selected_anchors:
                         past_val = past_obj['draw']
-                        past_val_r = past_val[::-1]  # Auto R variable
+                        past_val_r = past_val[::-1]
                         past_time = past_obj['time']
                         past_day = past_obj['day']
                         
@@ -344,21 +369,20 @@ if uploaded_file:
                         for pool in condition_pools:
                             if not pool['hits']: continue
                             
+                            # Backend Engine Synced: Search Space defaults to 'AM+PM ပေါင်းချုပ်' in Dashboard
                             step_res, rec_pool = execute_analysis(
                                 pool['hits'], full_draws, live_max_tf, 
-                                is_custom_tab=True, sel_session="All", 
+                                is_custom_tab=True, search_session="AM+PM ပေါင်းချုပ်", 
                                 custom_trigger=pool['lbl'], mode=live_mode, is_research_mode=False
                             )
                             
-                            # Deadline hits are collected here
                             for step_dist, formulas_dict in step_res.items():
                                 for mk, mv in formulas_dict.items():
                                     f_key = mv['pure']
                                     if f_key not in scoring_pool:
                                         scoring_pool[f_key] = {'count': 0, 'details': [], 'mu_k': mv['mu_k']}
                                     
-                                    existing_lbls = [d['top'] for d in scoring_pool[f_key]['details']]
-                                    if mv['top'] not in existing_lbls:
+                                    if mv['top'] not in [d['top'] for d in scoring_pool[f_key]['details']]:
                                         scoring_pool[f_key]['details'].append(mv)
                                         scoring_pool[f_key]['count'] += 1
 
@@ -367,14 +391,12 @@ if uploaded_file:
                                 if r_key not in global_recovery:
                                     global_recovery[r_key] = {'score': 0, 'rem_steps': rp['rem_steps'], 'details': []}
                                 
-                                existing_r_lbls = [d['top'] for d in global_recovery[r_key]['details']]
-                                if rp['card']['top'] not in existing_r_lbls:
+                                if rp['card']['top'] not in [d['top'] for d in global_recovery[r_key]['details']]:
                                     global_recovery[r_key]['details'].append(rp['card'])
                                     global_recovery[r_key]['score'] += rp['score']
                                     if len(global_recovery[r_key]['details']) >= 2:
-                                        global_recovery[r_key]['score'] = global_recovery[r_key]['score'] * 2
+                                        global_recovery[r_key]['score'] *= 2
 
-                    # Separate Overlaps from Standalone Deadline Hits
                     valid_vips = {k: v for k, v in scoring_pool.items() if v['count'] >= 2}
                     deadline_singles = {k: v for k, v in scoring_pool.items() if v['count'] == 1}
                     
@@ -394,7 +416,7 @@ if uploaded_file:
                                     st.markdown(f"""
                                     <div class="card card-live" style="padding:10px; margin-bottom:10px;">
                                         <span style="font-size:16px; font-weight:bold; color:#E0D5FA;">{d_detail['top']}</span>
-                                        <span class='badge-inline {span_class}'>{d_detail['max_span']} ပွဲအတွင်း (ယခုပွဲစဉ် ရက်ချိန်းပြည့်)</span>
+                                        <span class='badge-inline {span_class}'>{d_detail['label_space']}{d_detail['max_span']} ပွဲအတွင်း (ယခုပွဲစဉ် ရက်ချိန်းပြည့်)</span>
                                     </div>
                                     """, unsafe_allow_html=True)
                                     
@@ -437,7 +459,7 @@ if uploaded_file:
                             <div class="card card-deadline" style="padding:12px;">
                                 <span style="font-size:16px; font-weight:bold; color:#fff;">🔴 [{item['lbl_prefix']}] {d_key}</span><br/>
                                 <span style="font-size:14px; color:#e74c3c; margin-top:5px; display:block;">
-                                    ⏳ သမိုင်းစံချိန်အရ ယခုပွဲစဉ် ရက်ချိန်းကွက်တိပြည့်နေပါသည် ({item['max_span']} ပွဲမြောက်)
+                                    ⏳ သမိုင်းစံချိန်အရ ယခုပွဲစဉ် ရက်ချိန်းကွက်တိပြည့်နေပါသည် ({item['label_space']}{item['max_span']} ပွဲမြောက်)
                                 </span>
                             </div>
                             """, unsafe_allow_html=True)
@@ -454,35 +476,40 @@ if uploaded_file:
                             icon = "🟠" if r_data['score'] >= 80 else "🟡"
                             
                             display_lbl = r_data['details'][0]['lbl_prefix']
+                            space_lbl = r_data['details'][0]['label_space']
                             
                             st.markdown(f"""
                             <div class="card card-recovery" style="padding:12px;">
                                 <span style="font-size:16px; font-weight:bold; color:#fff;">{icon} Score: {r_data['score']} | [{display_lbl}] {r_key}</span><br/>
-                                <span style="font-size:14px; color:#f39c12; margin-top:5px; display:block;">⏳ {rem_txt} {overlap_txt}</span>
+                                <span style="font-size:14px; color:#f39c12; margin-top:5px; display:block;">⏳ {space_lbl}{rem_txt} {overlap_txt}</span>
                             </div>
                             """, unsafe_allow_html=True)
                     else:
                         st.info("၁ ပွဲ သို့မဟုတ် ၂ ပွဲ အလိုရှိသော ခိုင်မာသည့် မူကျန်များ မရှိပါ။")
 
         # ------------------------------------------
-        # TAB 2: CUSTOM FORMULAS ENGINE (Research Lab)
+        # TAB 2: CUSTOM FORMULAS ENGINE (Dual Dropdowns Architecture)
         # ------------------------------------------
         with tab_custom:
             st.markdown("##### 🧠 တွက်ချက်မှုစနစ် (Mode) ရွေးချယ်ရန်")
             custom_mode = st.radio("", ["AI Trend (ရှေ့သမိုင်း ၅၀ အထိုင်)", "Calendar သီးသန့်မူများ (Fixed Pattern)"], horizontal=True, key="custom_mode_tab2")
             st.write("---")
             
-            c1, c2, c3 = st.columns(3)
+            # Split into 4 specialized inputs (Trigger Day, Trigger Num, Trigger Session, Search Session)
+            c1, c2, c3, c4 = st.columns(4)
             with c1:
                 trigger_day = st.selectbox("📆 Trigger Day:", ["All"] + active_days_cycle, index=0)
-                trigger_num = st.text_input("🔍 ရှာလိုသောဂဏန်း ရိုက်ထည့်ပါ:", value="01", max_chars=7)
+                trigger_num = st.text_input("🔍 အစပြုဂဏန်း ရိုက်ထည့်ပါ:", value="01", max_chars=7)
             with c2:
                 if trigger_day != "All":
-                    st.markdown("<span style='color:#00FFCC; font-size:13px;'>ℹ️ Day စနစ်သုံးထားသဖြင့် အကြိမ်ရေပြည့်မီစေရန် R-စနစ် နှင့် AM+PM ပေါင်းချုပ် စနစ်ကို Backend က Auto Lock ချပေးထားပါသည်။</span>", unsafe_allow_html=True)
-                    target_session_custom = "AM+PM ပေါင်းချုပ်"
+                    st.markdown("<span style='color:#00FFCC; font-size:13px;'>ℹ️ Day စနစ်သုံးထားသဖြင့် အကြိမ်ရေပြည့်မီစေရန် Trigger ကို Auto Lock ချထားပါသည်။</span>", unsafe_allow_html=True)
+                    target_session_trigger = "AM+PM ပေါင်းချုပ်"
                 else:
-                    target_session_custom = st.selectbox("⏱️ Target ပွဲစဉ် အခြေအနေ ရွေးရန်:", ["AM+PM ပေါင်းချုပ်", "AM သီးသန့်", "PM သီးသန့်"], index=2)
+                    target_session_trigger = st.selectbox("🎯 ၁။ အစ (Trigger) ကောက်ယူမည့် အချိန်:", ["AM+PM ပေါင်းချုပ်", "AM သီးသန့်", "PM သီးသန့်"], index=2)
             with c3:
+                # Bro's Dual Filtering Core Input
+                target_session_search = st.selectbox("🔍 ၂။ မူများကို လိုက်ရှာမည့် အချိန် (Search Space):", ["AM+PM ပေါင်းချုပ်", "AM သီးသန့်", "PM သီးသန့်"], index=0)
+            with c4:
                 custom_max_tf = st.number_input("⏳ စစ်ဆေးမည့် ပွဲစဉ်အရေအတွက်", min_value=1, max_value=25, value=16, key="custom_input_tf2")
 
             if st.button("ရှာဖွေမည် 🚀", key="btn_custom_tab2"):
@@ -498,8 +525,8 @@ if uploaded_file:
                             secondary_digit = digits_found[1] if len(digits_found) > 1 else primary_digit[::-1]
                             target_hits = [d for d in full_draws if d['draw'] == primary_digit or d['draw'] == secondary_digit]
                         else:
-                            if target_session_custom != "AM+PM ပေါင်းချုပ်" and "သီးသန့်" in target_session_custom:
-                                req_time_init = "AM" if "AM" in target_session_custom else "PM"
+                            if target_session_trigger != "AM+PM ပေါင်းချုပ်" and "သီးသန့်" in target_session_trigger:
+                                req_time_init = "AM" if "AM" in target_session_trigger else "PM"
                                 target_hits = [d for d in full_draws if d['draw'] == primary_digit and d['time'] == req_time_init]
                             else:
                                 target_hits = [d for d in full_draws if d['draw'] == primary_digit]
@@ -510,13 +537,13 @@ if uploaded_file:
                             if d['row_idx'] in matched_weeks:
                                 target_hits.append(d)
                 
-                if trigger_day == "All" and target_session_custom != "AM+PM ပေါင်းချုပ်" and len(target_hits) > 0:
-                    req_time_filter = "AM" if "AM" in target_session_custom else "PM"
+                if trigger_day == "All" and target_session_trigger != "AM+PM ပေါင်းချုပ်" and len(target_hits) > 0:
+                    req_time_filter = "AM" if "AM" in target_session_trigger else "PM"
                     target_hits = [h for h in target_hits if h['time'] == req_time_filter]
 
                 r_val = "R" if (trigger_day != "All" and "R" not in trigger_num) else ""
                 d_val = trigger_day if trigger_day != "All" else ""
-                t_time_label = "PM" if target_session_custom == "PM သီးသန့်" else "AM" if target_session_custom == "AM သီးသန့်" else ""
+                t_time_label = "PM" if target_session_trigger == "PM သီးသန့်" else "AM" if target_session_trigger == "AM သီးသန့်" else ""
                 lbl_prefix_custom = f"{trigger_num}{r_val} {d_val} {t_time_label}".strip()
 
                 if not target_hits:
@@ -525,9 +552,10 @@ if uploaded_file:
                     st.write("---")
                     st.markdown(f"#### 📋 အသေးစိတ်အချက်အလက် (Window အလိုက် ခေါက်သိမ်းစနစ် - {custom_mode})")
                     
+                    # Call Engine with the explicit separate Search Space session parameter
                     master_step_res, _ = execute_analysis(
                         target_hits, full_draws, custom_max_tf, 
-                        is_custom_tab=True, sel_session=target_session_custom, 
+                        is_custom_tab=True, search_session=target_session_search, 
                         custom_trigger=lbl_prefix_custom, strict_day_mode=(trigger_day != "All"),
                         mode=custom_mode, is_research_mode=True
                     )
@@ -535,7 +563,7 @@ if uploaded_file:
                     has_any_tab2_data = any(master_step_res[sk] for sk in master_step_res if sk <= custom_max_tf)
                     
                     if not has_any_tab2_data:
-                        st.info("သတ်မှတ်ထားသော ၉၀% အထက် ရက်ချိန်းနယ်ကုန် သတ်မှတ်ချက်အတွင်း ကိုက်ညီမည့် မူရင်းမှတ်တမ်း မတွေ့ရှိပါ Bro!")
+                        st.info("သတ်မှတ်ထားသော ရက်ချိန်းနယ်ကုန် သတ်မှတ်ချက်အတွင်း ကိုက်ညီမည့် မူရင်းမှတ်တမ်း မတွေ့ရှိပါ Bro!")
                     else:
                         for step in sorted(master_step_res.keys()):
                             if step > custom_max_tf: continue 
@@ -543,13 +571,22 @@ if uploaded_file:
                             if not formulas_dict: continue
                             
                             is_step_deadline = any(v['is_deadline'] for v in formulas_dict.values())
-                            tab2_header = f"⚠️ {step} ပွဲအတွင်း မူများ [ရက်ချိန်းပြည့်]" if is_step_deadline else f"🔽 {step} ပွဲအတွင်း မူများ"
+                            
+                            # Dynamic headers applying Bro's layout formatting rules
+                            if target_session_search == "AM သီးသန့်":
+                                space_header_txt = "နံနက်ပိုင်း "
+                            elif target_session_search == "PM သီးသန့်":
+                                space_header_txt = "ညနေပိုင်း "
+                            else:
+                                space_header_txt = ""
+                                
+                            tab2_header = f"⚠️ {space_header_txt}{step} ပွဲအတွင်း မူများ [ရက်ချိန်းပြည့်]" if is_step_deadline else f"🔽 {space_header_txt}{step} ပွဲအတွင်း မူများ"
                                 
                             with st.expander(tab2_header, expanded=True):
                                 for mu_name, data in formulas_dict.items():
                                     card_border_class = "card-sniper" if "100%" in data['formula'] else "card-hp"
                                     badge_class = "badge-inline-sniper" if "100%" in data['formula'] else "badge-inline-hp"
-                                    span_tag = f"<span class='badge-inline {badge_class}'>{step} ပွဲအတွင်း</span>"
+                                    span_tag = f"<span class='badge-inline {badge_class}'>{data['label_space']}{step} ပွဲအတွင်း</span>"
                                     
                                     st.markdown(f"""
                                     <div class="card {card_border_class}">
