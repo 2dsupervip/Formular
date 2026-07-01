@@ -8,7 +8,7 @@ from collections import Counter
 # ==========================================
 # PAGE CONFIG & PREMIUM DARK-THEME STYLE
 # ==========================================
-st.set_page_config(page_title="2D AI Master V35.2 Logic Fixed", layout="wide", page_icon="🤖")
+st.set_page_config(page_title="2D AI Master V35.3 All-in-One", layout="wide", page_icon="🤖")
 
 st.markdown("""
 <style>
@@ -38,11 +38,12 @@ st.markdown("""
     
     .final-digits { font-size: 26px; font-weight: bold; color: #FFD700; display: block; margin-top: 15px; line-height: 1.5; }
     .score-badge { background-color: #333; color: #fff; font-size: 16px; padding: 4px 8px; border-radius: 6px; margin-left: 8px; margin-right: 15px; vertical-align: middle; }
+    .section-title { color: #00FFCC; font-size: 22px; border-bottom: 2px solid #3D2B5E; padding-bottom: 8px; margin-top: 20px; margin-bottom: 15px; }
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V35.2)</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Dual Session Filtering | True Deadline Logic | Overdue Drop System</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V35.3)</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">All-in-One Search Expansion | True Deadline Logic | Engine Sync</div>', unsafe_allow_html=True)
 
 special_groups = {
     "ညီကို": {"01","10","12","21","23","32","34","43","45","54","56","65","67","76","78","87","89","98","90","09"},
@@ -239,17 +240,13 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
                 else:
                     elapsed_filtered = current_latest_idx - last_hit_global_idx
                     
-                # CORRECTED DEADLINE LOGIC:
-                # elapsed_filtered = numbers of draws passed. 
-                # e.g., if max_span = 10 and elapsed = 9, the upcoming draw is step 10.
-                # rem_steps = 10 - 9 = 1 (1 step left, which IS the deadline step)
                 rem_steps = max_required_span - elapsed_filtered
                 
                 if rem_steps == 1: 
                     is_deadline_flag = True
                 
                 if not is_research_mode:
-                    if rem_steps < 1: continue # Overdue (နယ်ကျော်) - Drop it!
+                    if rem_steps < 1: continue 
                     if elapsed_filtered > 0 and is_already_hit(mu_k, last_generated_val, last_hit_global_idx + 1, current_latest_idx, full_draws)[0]: 
                         continue
 
@@ -272,7 +269,6 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
             if is_research_mode or is_deadline_flag:
                 step_buckets[max_required_span][last_generated_val if mode == "Calendar သီးသန့်မူများ (Fixed Pattern)" else mu_k] = card_payload
             
-            # Adjusted rem_steps check for Recovery (2 and 3 means 1 or 2 draws remaining BEFORE the deadline draw)
             if not is_research_mode and rem_steps in [2, 3]:
                 recovery_pool.append({
                     "key": last_generated_val, 
@@ -378,7 +374,7 @@ if uploaded_file:
                             
                             step_res, rec_pool = execute_analysis(
                                 pool['hits'], full_draws, live_max_tf, 
-                                is_custom_tab=True, search_session="All", 
+                                is_custom_tab=True, search_session="AM+PM ပေါင်းချုပ်", 
                                 custom_trigger=pool['lbl'], mode=live_mode, is_research_mode=False
                             )
                             
@@ -477,7 +473,6 @@ if uploaded_file:
                     if global_recovery:
                         sorted_recovery = sorted(global_recovery.items(), key=lambda x: x[1]['score'], reverse=True)[:5]
                         for r_key, r_data in sorted_recovery:
-                            # 2 means 1 draw left until deadline. 3 means 2 draws left until deadline.
                             rem_txt = "၁ ပွဲသာ လိုတော့သည်" if r_data['rem_steps'] == 2 else "၂ ပွဲ လိုသေးသည်"
                             overlap_txt = f" (ထောက်တိုင် {len(r_data['details'])} ခုငြိနေသည်)" if len(r_data['details']) > 1 else ""
                             icon = "🟠" if r_data['score'] >= 80 else "🟡"
@@ -495,7 +490,7 @@ if uploaded_file:
                         st.info("၁ ပွဲ သို့မဟုတ် ၂ ပွဲ အလိုရှိသော ခိုင်မာသည့် မူကျန်များ မရှိပါ။")
 
         # ------------------------------------------
-        # TAB 2: CUSTOM FORMULAS ENGINE 
+        # TAB 2: CUSTOM FORMULAS ENGINE (All-in-One Expansion)
         # ------------------------------------------
         with tab_custom:
             st.markdown("##### 🧠 တွက်ချက်မှုစနစ် (Mode) ရွေးချယ်ရန်")
@@ -513,7 +508,6 @@ if uploaded_file:
                 else:
                     target_session_trigger = st.selectbox("🎯 ၁။ အစ (Trigger) ကောက်ယူမည့် အချိန်:", ["AM+PM ပေါင်းချုပ်", "AM သီးသန့်", "PM သီးသန့်"], index=2)
             with c3:
-                # ADDED "All" AS REQUESTED
                 target_session_search = st.selectbox("🔍 ၂။ မူများကို လိုက်ရှာမည့် အချိန် (Search Space):", ["All", "AM+PM ပေါင်းချုပ်", "AM သီးသန့်", "PM သီးသန့်"], index=0)
             with c4:
                 custom_max_tf = st.number_input("⏳ စစ်ဆေးမည့် ပွဲစဉ်အရေအတွက်", min_value=1, max_value=25, value=16, key="custom_input_tf2")
@@ -556,49 +550,57 @@ if uploaded_file:
                     st.error("⚠️ သတ်မှတ်ချက်များနှင့် ကိုက်ညီသော သမိုင်းကြောင်းမှတ်တမ်း မရှိပါ Bro!")
                 else:
                     st.write("---")
-                    st.markdown(f"#### 📋 အသေးစိတ်အချက်အလက် (Window အလိုက် ခေါက်သိမ်းစနစ် - {custom_mode})")
                     
-                    master_step_res, _ = execute_analysis(
-                        target_hits, full_draws, custom_max_tf, 
-                        is_custom_tab=True, search_session=target_session_search, 
-                        custom_trigger=lbl_prefix_custom,
-                        mode=custom_mode, is_research_mode=True
-                    )
-                    
-                    has_any_tab2_data = any(master_step_res[sk] for sk in master_step_res if sk <= custom_max_tf)
-                    
-                    if not has_any_tab2_data:
-                        st.info("သတ်မှတ်ထားသော ရက်ချိန်းနယ်ကုန် သတ်မှတ်ချက်အတွင်း ကိုက်ညီမည့် မူရင်းမှတ်တမ်း မတွေ့ရှိပါ Bro!")
+                    # Logic to run all three if "All" is selected
+                    if target_session_search == "All":
+                        sessions_to_run = ["AM+PM ပေါင်းချုပ်", "AM သီးသန့်", "PM သီးသန့်"]
                     else:
-                        for step in sorted(master_step_res.keys()):
-                            if step > custom_max_tf: continue 
-                            formulas_dict = master_step_res[step]
-                            if not formulas_dict: continue
-                            
-                            is_step_deadline = any(v['is_deadline'] for v in formulas_dict.values())
-                            
-                            if target_session_search == "AM သီးသန့်":
-                                space_header_txt = "နံနက်ပိုင်း "
-                            elif target_session_search == "PM သီးသန့်":
-                                space_header_txt = "ညနေပိုင်း "
-                            else:
-                                space_header_txt = ""
+                        sessions_to_run = [target_session_search]
+                        
+                    for current_session in sessions_to_run:
+                        st.markdown(f"<div class='section-title'>📊 {current_session} အတွက် ရလဒ်များ</div>", unsafe_allow_html=True)
+                        
+                        master_step_res, _ = execute_analysis(
+                            target_hits, full_draws, custom_max_tf, 
+                            is_custom_tab=True, search_session=current_session, 
+                            custom_trigger=lbl_prefix_custom,
+                            mode=custom_mode, is_research_mode=True
+                        )
+                        
+                        has_any_tab2_data = any(master_step_res[sk] for sk in master_step_res if sk <= custom_max_tf)
+                        
+                        if not has_any_tab2_data:
+                            st.info(f"[{current_session}] ဖြင့် ရှာဖွေရာတွင် သတ်မှတ်ထားသော ရက်ချိန်းနယ်ကုန် သတ်မှတ်ချက်အတွင်း ကိုက်ညီမည့် မူရင်းမှတ်တမ်း မတွေ့ရှိပါ Bro!")
+                        else:
+                            for step in sorted(master_step_res.keys()):
+                                if step > custom_max_tf: continue 
+                                formulas_dict = master_step_res[step]
+                                if not formulas_dict: continue
                                 
-                            tab2_header = f"⚠️ {space_header_txt}{step} ပွဲအတွင်း မူများ [ရက်ချိန်းပြည့်]" if is_step_deadline else f"🔽 {space_header_txt}{step} ပွဲအတွင်း မူများ"
+                                is_step_deadline = any(v['is_deadline'] for v in formulas_dict.values())
                                 
-                            with st.expander(tab2_header, expanded=True):
-                                for mu_name, data in formulas_dict.items():
-                                    card_border_class = "card-sniper" if "100%" in data['formula'] else "card-hp"
-                                    badge_class = "badge-inline-sniper" if "100%" in data['formula'] else "badge-inline-hp"
-                                    span_tag = f"<span class='badge-inline {badge_class}'>{data['label_space']}{step} ပွဲအတွင်း</span>"
+                                if current_session == "AM သီးသန့်":
+                                    space_header_txt = "နံနက်ပိုင်း "
+                                elif current_session == "PM သီးသန့်":
+                                    space_header_txt = "ညနေပိုင်း "
+                                else:
+                                    space_header_txt = ""
                                     
-                                    st.markdown(f"""
-                                    <div class="card {card_border_class}">
-                                        <span class="line-trigger">{data['top']} {span_tag}</span>
-                                        <span class="line-formula">{data['formula']}</span>
-                                        <span class="line-history">{data['bottom']}</span>
-                                        <span class="line-advisor">{data['advisor']}</span>
-                                    </div>
-                                    """, unsafe_allow_html=True)
+                                tab2_header = f"⚠️ {space_header_txt}{step} ပွဲအတွင်း မူများ [ရက်ချိန်းပြည့်]" if is_step_deadline else f"🔽 {space_header_txt}{step} ပွဲအတွင်း မူများ"
+                                    
+                                with st.expander(tab2_header, expanded=True):
+                                    for mu_name, data in formulas_dict.items():
+                                        card_border_class = "card-sniper" if "100%" in data['formula'] else "card-hp"
+                                        badge_class = "badge-inline-sniper" if "100%" in data['formula'] else "badge-inline-hp"
+                                        span_tag = f"<span class='badge-inline {badge_class}'>{data['label_space']}{step} ပွဲအတွင်း</span>"
+                                        
+                                        st.markdown(f"""
+                                        <div class="card {card_border_class}">
+                                            <span class="line-trigger">{data['top']} {span_tag}</span>
+                                            <span class="line-formula">{data['formula']}</span>
+                                            <span class="line-history">{data['bottom']}</span>
+                                            <span class="line-advisor">{data['advisor']}</span>
+                                        </div>
+                                        """, unsafe_allow_html=True)
 else:
     st.info("စတင်ရန်အတွက် Bro ရဲ့ 2D CSV သို့မဟုတ် Excel ဒေတာဖိုင်ကို အပေါ်တွင် အရင် တင်ပေးပါဦး။")
