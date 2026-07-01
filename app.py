@@ -8,7 +8,7 @@ from collections import Counter
 # ==========================================
 # PAGE CONFIG & PREMIUM DARK-THEME STYLE
 # ==========================================
-st.set_page_config(page_title="2D AI Master V35.1 Sync", layout="wide", page_icon="🤖")
+st.set_page_config(page_title="2D AI Master V35.2 Logic Fixed", layout="wide", page_icon="🤖")
 
 st.markdown("""
 <style>
@@ -41,8 +41,8 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V35.1)</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Dual Session Filtering | Dynamic Search Space Labels | Master Engine Sync</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V35.2)</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Dual Session Filtering | True Deadline Logic | Overdue Drop System</div>', unsafe_allow_html=True)
 
 special_groups = {
     "ညီကို": {"01","10","12","21","23","32","34","43","45","54","56","65","67","76","78","87","89","98","90","09"},
@@ -169,7 +169,7 @@ def get_hybrid_candidates(target_hits, full_draws, max_step):
 # ==========================================
 # MASTER ROUTINE: DUAL SESSION WIN-RATE ENGINE
 # ==========================================
-def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=False, search_session="AM+PM ပေါင်းချုပ်", custom_trigger="", mode="AI Trend", is_research_mode=False):
+def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=False, search_session="All", custom_trigger="", mode="AI Trend", is_research_mode=False):
     step_buckets = {step: {} for step in range(1, requested_max_step + 1)}
     current_latest_idx = len(full_draws) - 1
     total_count = len(target_hits)
@@ -239,12 +239,19 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
                 else:
                     elapsed_filtered = current_latest_idx - last_hit_global_idx
                     
+                # CORRECTED DEADLINE LOGIC:
+                # elapsed_filtered = numbers of draws passed. 
+                # e.g., if max_span = 10 and elapsed = 9, the upcoming draw is step 10.
+                # rem_steps = 10 - 9 = 1 (1 step left, which IS the deadline step)
                 rem_steps = max_required_span - elapsed_filtered
-                if rem_steps == 0: is_deadline_flag = True
+                
+                if rem_steps == 1: 
+                    is_deadline_flag = True
                 
                 if not is_research_mode:
-                    if elapsed_filtered >= max_required_span: continue 
-                    if elapsed_filtered > 0 and is_already_hit(mu_k, last_generated_val, last_hit_global_idx + 1, current_latest_idx, full_draws)[0]: continue
+                    if rem_steps < 1: continue # Overdue (နယ်ကျော်) - Drop it!
+                    if elapsed_filtered > 0 and is_already_hit(mu_k, last_generated_val, last_hit_global_idx + 1, current_latest_idx, full_draws)[0]: 
+                        continue
 
             sniper_note = f"💡 အဖြစ်နိုင်ဆုံး ၃/၄ ကွက်: {', '.join([x[0] for x in Counter(actual_hit_combinations).most_common(4)])}" if actual_hit_combinations else ""
 
@@ -265,8 +272,15 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
             if is_research_mode or is_deadline_flag:
                 step_buckets[max_required_span][last_generated_val if mode == "Calendar သီးသန့်မူများ (Fixed Pattern)" else mu_k] = card_payload
             
-            if not is_research_mode and rem_steps in [1, 2]:
-                recovery_pool.append({"key": last_generated_val, "lbl_prefix": lbl_prefix, "rem_steps": rem_steps, "score": 80 if rem_steps == 1 else 50, "card": card_payload})
+            # Adjusted rem_steps check for Recovery (2 and 3 means 1 or 2 draws remaining BEFORE the deadline draw)
+            if not is_research_mode and rem_steps in [2, 3]:
+                recovery_pool.append({
+                    "key": last_generated_val, 
+                    "lbl_prefix": lbl_prefix, 
+                    "rem_steps": rem_steps, 
+                    "score": 80 if rem_steps == 2 else 50, 
+                    "card": card_payload
+                })
 
     return step_buckets, recovery_pool
 
@@ -310,7 +324,7 @@ if uploaded_file:
         tab_live, tab_custom = st.tabs(["⚡ တွက်ချက်မည် (ယခုပွဲစဉ်)", "🔍 2D Formulas (Custom သုတေသန)"])
 
         # ------------------------------------------
-        # TAB 1: LIVE AUTO TRACKER (Engine Synced Dashboard)
+        # TAB 1: LIVE AUTO TRACKER
         # ------------------------------------------
         with tab_live:
             st.markdown("#### ⚙️ VIP ရှာဖွေမှု သတ်မှတ်ချက်များ (Inputs)")
@@ -364,7 +378,7 @@ if uploaded_file:
                             
                             step_res, rec_pool = execute_analysis(
                                 pool['hits'], full_draws, live_max_tf, 
-                                is_custom_tab=True, search_session="AM+PM ပေါင်းချုပ်", 
+                                is_custom_tab=True, search_session="All", 
                                 custom_trigger=pool['lbl'], mode=live_mode, is_research_mode=False
                             )
                             
@@ -463,7 +477,8 @@ if uploaded_file:
                     if global_recovery:
                         sorted_recovery = sorted(global_recovery.items(), key=lambda x: x[1]['score'], reverse=True)[:5]
                         for r_key, r_data in sorted_recovery:
-                            rem_txt = "၁ ပွဲသာ လိုတော့သည်" if r_data['rem_steps'] == 1 else "၂ ပွဲ လိုသေးသည်"
+                            # 2 means 1 draw left until deadline. 3 means 2 draws left until deadline.
+                            rem_txt = "၁ ပွဲသာ လိုတော့သည်" if r_data['rem_steps'] == 2 else "၂ ပွဲ လိုသေးသည်"
                             overlap_txt = f" (ထောက်တိုင် {len(r_data['details'])} ခုငြိနေသည်)" if len(r_data['details']) > 1 else ""
                             icon = "🟠" if r_data['score'] >= 80 else "🟡"
                             
@@ -480,7 +495,7 @@ if uploaded_file:
                         st.info("၁ ပွဲ သို့မဟုတ် ၂ ပွဲ အလိုရှိသော ခိုင်မာသည့် မူကျန်များ မရှိပါ။")
 
         # ------------------------------------------
-        # TAB 2: CUSTOM FORMULAS ENGINE (Dual Dropdowns Architecture)
+        # TAB 2: CUSTOM FORMULAS ENGINE 
         # ------------------------------------------
         with tab_custom:
             st.markdown("##### 🧠 တွက်ချက်မှုစနစ် (Mode) ရွေးချယ်ရန်")
@@ -498,7 +513,8 @@ if uploaded_file:
                 else:
                     target_session_trigger = st.selectbox("🎯 ၁။ အစ (Trigger) ကောက်ယူမည့် အချိန်:", ["AM+PM ပေါင်းချုပ်", "AM သီးသန့်", "PM သီးသန့်"], index=2)
             with c3:
-                target_session_search = st.selectbox("🔍 ၂။ မူများကို လိုက်ရှာမည့် အချိန် (Search Space):", ["AM+PM ပေါင်းချုပ်", "AM သီးသန့်", "PM သီးသန့်"], index=0)
+                # ADDED "All" AS REQUESTED
+                target_session_search = st.selectbox("🔍 ၂။ မူများကို လိုက်ရှာမည့် အချိန် (Search Space):", ["All", "AM+PM ပေါင်းချုပ်", "AM သီးသန့်", "PM သီးသန့်"], index=0)
             with c4:
                 custom_max_tf = st.number_input("⏳ စစ်ဆေးမည့် ပွဲစဉ်အရေအတွက်", min_value=1, max_value=25, value=16, key="custom_input_tf2")
 
@@ -542,7 +558,6 @@ if uploaded_file:
                     st.write("---")
                     st.markdown(f"#### 📋 အသေးစိတ်အချက်အလက် (Window အလိုက် ခေါက်သိမ်းစနစ် - {custom_mode})")
                     
-                    # ERROR FIXED HERE: Removed 'strict_day_mode' keyword argument
                     master_step_res, _ = execute_analysis(
                         target_hits, full_draws, custom_max_tf, 
                         is_custom_tab=True, search_session=target_session_search, 
