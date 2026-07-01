@@ -8,7 +8,7 @@ from collections import Counter
 # ==========================================
 # PAGE CONFIG & PREMIUM DARK-THEME STYLE
 # ==========================================
-st.set_page_config(page_title="2D AI Master V31.1 Final", layout="wide", page_icon="🤖")
+st.set_page_config(page_title="2D AI Master V32 Interactive", layout="wide", page_icon="🤖")
 
 st.markdown("""
 <style>
@@ -39,8 +39,8 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V31.1 FINAL)</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Strict Live Filter | Weighted Score System | Full Research Lab</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V32 PRO)</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Interactive History Grid | Deep Scan Horizon | Weighted Scorer</div>', unsafe_allow_html=True)
 
 special_groups = {
     "ညီကို": {"01","10","12","21","23","32","34","43","45","54","56","65","67","76","78","87","89","98","90","09"},
@@ -182,7 +182,7 @@ def generate_formula_from_pool(analysis_pool):
     return {k: normalize_formula(k, v) for k, v in res.items()}
 
 # ==========================================
-# HYBRID PRE-FILTERING (For Calendar Mode)
+# HYBRID PRE-FILTERING
 # ==========================================
 def get_hybrid_candidates(target_hits, full_draws, max_step):
     candidates = {k: [] for k in mu_keys_list}
@@ -290,12 +290,10 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
                     if rem_steps == 0:
                         is_deadline_flag = True
                         
-                    # STRICT FILTERING: Bypass ONLY if is_research_mode is True
+                    # STRICT ALREADY-HIT FILTER (Bypassed if Research Mode is True)
                     if not is_research_mode:
-                        # 1. If it's completely expired
                         if elapsed_draws >= max_required_span:
                             continue 
-                        # 2. STRICT ALREADY-HIT FILTER (Fixed for Tab 1)
                         if elapsed_draws > 0:
                             is_hit, _ = is_already_hit(mu_k, last_generated_val, last_hit_global_idx + 1, current_latest_idx, full_draws)
                             if is_hit: continue
@@ -384,8 +382,9 @@ if uploaded_file:
         # TAB 1: LIVE AUTO TRACKER (VIP Sniper)
         # ------------------------------------------
         with tab_live:
-            input_box_val = st.text_input("⏳ စစ်ဆေးမည့် ပွဲစဉ်အရေအတွက် အတိအကျ (Default: 10):", value="10", key="live_input")
-            live_max_tf = int(input_box_val.strip()) if input_box_val.strip().isdigit() else 10
+            # Note: Changed default to 20 for Deep Scan Horizon
+            input_box_val = st.text_input("⏳ စစ်ဆေးမည့် ပွဲစဉ်အရေအတွက် အတိအကျ (Default: 20):", value="20", key="live_input")
+            live_max_tf = int(input_box_val.strip()) if input_box_val.strip().isdigit() else 20
             
             c1_mode, _ = st.columns([1, 1])
             with c1_mode:
@@ -415,7 +414,6 @@ if uploaded_file:
                     for pool in condition_pools:
                         if not pool['hits']: continue
                         
-                        # is_research_mode = False strictly drops already hit formulas
                         step_res, rec_pool = execute_analysis(
                             pool['hits'], full_draws, live_max_tf, 
                             is_custom_tab=True, sel_session="All", 
@@ -536,10 +534,37 @@ if uploaded_file:
             custom_mode = st.radio("", ["AI Trend (ရှေ့သမိုင်း ၅၀ အထိုင်)", "Calendar သီးသန့်မူများ (Fixed Pattern)"], horizontal=True, key="custom_mode_tab2")
             st.write("---")
             
+            st.markdown("##### 📅 ၁။ ဇယားမှ တိုက်ရိုက်ရွေးချယ်ရန် (Interactive History Grid)")
+            st.caption("အောက်ပါ နောက်ဆုံး (၇) ရက်စာ မှတ်တမ်းမှ လေ့လာလိုသော ဂဏန်းဘေးရှိ Box ကို အမှန်ခြစ် (Check) လုပ်၍ ရွေးချယ်ပါ။")
+            
+            # Interactive Grid DataFrame Construction
+            recent_records = []
+            for idx, row in df.tail(7).iterrows():
+                am_val = f"{int(row['am1'])}{int(row['am2'])}" if pd.notna(row['am1']) and pd.notna(row['am2']) else ""
+                pm_val = f"{int(row['pm1'])}{int(row['pm2'])}" if pd.notna(row['pm1']) and pd.notna(row['pm2']) else ""
+                recent_records.append({
+                    "နေ့ရက် (Day)": row['day'],
+                    "AM": am_val,
+                    "AM ရွေးရန် (✔)": False,
+                    "PM": pm_val,
+                    "PM ရွေးရန် (✔)": False
+                })
+            
+            df_grid = pd.DataFrame(recent_records)
+            edited_grid = st.data_editor(df_grid, hide_index=True, use_container_width=True)
+            
+            selected_grid_draws = []
+            for _, r in edited_grid.iterrows():
+                if r["AM ရွေးရန် (✔)"] and r["AM"]: selected_grid_draws.append(r["AM"])
+                if r["PM ရွေးရန် (✔)"] and r["PM"]: selected_grid_draws.append(r["PM"])
+                
+            st.write("---")
+            st.markdown("##### ⌨️ ၂။ စာသားဖြင့် ရှာဖွေရန် (Manual Search - ဥပမာ: '01 R', '683 key')")
+            
             c1, c2, c3 = st.columns(3)
             with c1:
                 trigger_day = st.selectbox("📆 Trigger Day:", ["All"] + active_days_cycle, index=0)
-                trigger_num = st.text_input("🔍 ရှာလိုသောဂဏန်း ရိုက်ထည့်ပါ:", value="01", max_chars=7)
+                trigger_num = st.text_input("🔍 ရှာလိုသောဂဏန်း ရိုက်ထည့်ပါ (ဇယားမှ ရွေးထားပါက မလိုပါ):", value="", max_chars=7)
             with c2:
                 if trigger_day != "All":
                     st.markdown("<span style='color:#00FFCC; font-size:13px;'>ℹ️ Day စနစ်သုံးထားသဖြင့် အကြိမ်ရေပြည့်မီစေရန် R-စနစ် နှင့် AM+PM ပေါင်းချုပ် စနစ်ကို Backend က Auto Lock ချပေးထားပါသည်။</span>", unsafe_allow_html=True)
@@ -549,45 +574,53 @@ if uploaded_file:
             with c3:
                 custom_max_tf = st.number_input("⏳ စစ်ဆေးမည့် ပွဲစဉ်အရေအတွက်", min_value=1, max_value=25, value=16, key="custom_input_tf")
 
-            if st.button("ရှာဖွေမည် 🚀", key="btn_custom"):
+            if st.button("ရွေးချယ်ထားသော မူများကို ရှာဖွေမည် 🚀", key="btn_custom"):
                 target_hits = []
-                clean_trigger = trigger_num.strip().upper()
-                is_composite = "+" in clean_trigger or "R" in clean_trigger or (trigger_day != "All")
+                lbl_prefix_custom = ""
                 
-                digits_found = re.findall(r'\d+', clean_trigger)
-                
-                if digits_found:
-                    primary_digit = digits_found[0]
-                    
-                    if trigger_day == "All":
-                        if is_composite:
-                            secondary_digit = digits_found[1] if len(digits_found) > 1 else primary_digit[::-1]
-                            target_hits = [d for d in full_draws if d['draw'] == primary_digit or d['draw'] == secondary_digit]
+                # If grid is used, fetch all matches for selected draws
+                if selected_grid_draws:
+                    for d_val in selected_grid_draws:
+                        if target_session_custom != "AM+PM ပေါင်းချုပ်" and "သီးသန့်" in target_session_custom:
+                            req_time_init = "AM" if "AM" in target_session_custom else "PM"
+                            hits = [d for d in full_draws if d['draw'] == d_val and d['time'] == req_time_init]
                         else:
-                            if target_session_custom != "AM+PM ပေါင်းချုပ်" and "သီးသန့်" in target_session_custom:
-                                req_time_init = "AM" if "AM" in target_session_custom else "PM"
-                                target_hits = [d for d in full_draws if d['draw'] == primary_digit and d['time'] == req_time_init]
+                            hits = [d for d in full_draws if d['draw'] == d_val]
+                        target_hits.extend(hits)
+                    lbl_prefix_custom = f"[{', '.join(selected_grid_draws)}] Grid Selected"
+                
+                # If text box is used (Fallback)
+                elif trigger_num.strip():
+                    clean_trigger = trigger_num.strip().upper()
+                    is_composite = "+" in clean_trigger or "R" in clean_trigger or (trigger_day != "All")
+                    digits_found = re.findall(r'\d+', clean_trigger)
+                    
+                    if digits_found:
+                        primary_digit = digits_found[0]
+                        if trigger_day == "All":
+                            if is_composite:
+                                secondary_digit = digits_found[1] if len(digits_found) > 1 else primary_digit[::-1]
+                                target_hits = [d for d in full_draws if d['draw'] == primary_digit or d['draw'] == secondary_digit]
                             else:
-                                target_hits = [d for d in full_draws if d['draw'] == primary_digit]
-                    else:
-                        secondary_digit = digits_found[1] if len(digits_found) > 1 else primary_digit[::-1]
-                        matched_weeks = {d['row_idx'] for d in full_draws if d['day'] == trigger_day and (d['draw'] == primary_digit or d['draw'] == secondary_digit)}
-                        for d in full_draws:
-                            if d['row_idx'] in matched_weeks:
-                                target_hits.append(d)
-                
-                if trigger_day == "All" and target_session_custom != "AM+PM ပေါင်းချုပ်" and len(target_hits) > 0:
-                    req_time_filter = "AM" if "AM" in target_session_custom else "PM"
-                    target_hits = [h for h in target_hits if h['time'] == req_time_filter]
-
-                r_val = "R" if (trigger_day != "All" and "R" not in trigger_num) else ""
-                d_val = trigger_day if trigger_day != "All" else ""
-                t_time_label = "PM" if target_session_custom == "PM သီးသန့်" else "AM" if target_session_custom == "AM သီးသန့်" else ""
-                
-                lbl_prefix_custom = f"{trigger_num}{r_val} {d_val} {t_time_label}".strip()
+                                if target_session_custom != "AM+PM ပေါင်းချုပ်" and "သီးသန့်" in target_session_custom:
+                                    req_time_init = "AM" if "AM" in target_session_custom else "PM"
+                                    target_hits = [d for d in full_draws if d['draw'] == primary_digit and d['time'] == req_time_init]
+                                else:
+                                    target_hits = [d for d in full_draws if d['draw'] == primary_digit]
+                        else:
+                            secondary_digit = digits_found[1] if len(digits_found) > 1 else primary_digit[::-1]
+                            matched_weeks = {d['row_idx'] for d in full_draws if d['day'] == trigger_day and (d['draw'] == primary_digit or d['draw'] == secondary_digit)}
+                            for d in full_draws:
+                                if d['row_idx'] in matched_weeks:
+                                    target_hits.append(d)
+                    
+                    r_val = "R" if (trigger_day != "All" and "R" not in trigger_num) else ""
+                    d_val = trigger_day if trigger_day != "All" else ""
+                    t_time_label = "PM" if target_session_custom == "PM သီးသန့်" else "AM" if target_session_custom == "AM သီးသန့်" else ""
+                    lbl_prefix_custom = f"{trigger_num}{r_val} {d_val} {t_time_label}".strip()
 
                 if not target_hits:
-                    st.error("⚠️ သတ်မှတ်ချက်များနှင့် ကိုက်ညီသော သမိုင်းကြောင်းမှတ်တမ်း မရှိပါ Bro!")
+                    st.error("⚠️ သတ်မှတ်ချက်များနှင့် ကိုက်ညီသော သမိုင်းကြောင်းမှတ်တမ်း မရှိပါ Bro! (ဇယားမှ အမှန်ခြစ် ရွေးချယ်ရန် သို့မဟုတ် စာသားရိုက်ထည့်ပါ)")
                 else:
                     st.write("---")
                     st.markdown(f"#### 📋 အသေးစိတ်အချက်အလက် (Window အလိုက် ခေါက်သိမ်းစနစ် - {custom_mode})")
