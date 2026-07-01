@@ -8,7 +8,7 @@ from collections import Counter
 # ==========================================
 # PAGE CONFIG & PREMIUM DARK-THEME STYLE
 # ==========================================
-st.set_page_config(page_title="2D AI Master V35 Sync", layout="wide", page_icon="🤖")
+st.set_page_config(page_title="2D AI Master V35.1 Sync", layout="wide", page_icon="🤖")
 
 st.markdown("""
 <style>
@@ -41,7 +41,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V35)</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V35.1)</div>', unsafe_allow_html=True)
 st.markdown('<div class="sub-title">Dual Session Filtering | Dynamic Search Space Labels | Master Engine Sync</div>', unsafe_allow_html=True)
 
 special_groups = {
@@ -178,13 +178,9 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
     recovery_pool = [] 
     calendar_candidates = get_hybrid_candidates(target_hits, full_draws, requested_max_step) if mode == "Calendar သီးသန့်မူများ (Fixed Pattern)" else {}
 
-    # Define dynamic labels based on Search Space selection (Bro's recommendation)
-    if search_session == "AM သီးသန့်":
-        label_space = "နံနက်ပိုင်း "
-    elif search_session == "PM သီးသန့်":
-        label_space = "ညနေပိုင်း "
-    else:
-        label_space = ""
+    if search_session == "AM သီးသန့်": label_space = "နံနက်ပိုင်း "
+    elif search_session == "PM သီးသန့်": label_space = "ညနေပိုင်း "
+    else: label_space = ""
 
     for mu_k in mu_keys_list:
         cand_list = calendar_candidates.get(mu_k, []) if mode == "Calendar သီးသန့်မူများ (Fixed Pattern)" else ["DYNAMIC_AI"]
@@ -210,7 +206,6 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
                     t_idx = hit_idx + step_check
                     if t_idx >= len(full_draws): break
                     
-                    # Apply separate Search Space filtering logic
                     if "သီးသန့်" in search_session:
                         req_time_str = "AM" if "AM" in search_session else "PM"
                         if full_draws[t_idx]['time'] != req_time_str: continue
@@ -237,9 +232,7 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
             rem_steps = 999
             if target_hits:
                 last_hit_global_idx = target_hits[-1]['index']
-                elapsed_draws = current_latest_idx - last_hit_global_idx
                 
-                # Dynamic elapsed calculation based on search filter
                 if "သီးသန့်" in search_session:
                     req_t = "AM" if "AM" in search_session else "PM"
                     elapsed_filtered = sum(1 for d in full_draws[last_hit_global_idx + 1 : current_latest_idx + 1] if d['time'] == req_t)
@@ -369,7 +362,6 @@ if uploaded_file:
                         for pool in condition_pools:
                             if not pool['hits']: continue
                             
-                            # Backend Engine Synced: Search Space defaults to 'AM+PM ပေါင်းချုပ်' in Dashboard
                             step_res, rec_pool = execute_analysis(
                                 pool['hits'], full_draws, live_max_tf, 
                                 is_custom_tab=True, search_session="AM+PM ပေါင်းချုပ်", 
@@ -495,7 +487,6 @@ if uploaded_file:
             custom_mode = st.radio("", ["AI Trend (ရှေ့သမိုင်း ၅၀ အထိုင်)", "Calendar သီးသန့်မူများ (Fixed Pattern)"], horizontal=True, key="custom_mode_tab2")
             st.write("---")
             
-            # Split into 4 specialized inputs (Trigger Day, Trigger Num, Trigger Session, Search Session)
             c1, c2, c3, c4 = st.columns(4)
             with c1:
                 trigger_day = st.selectbox("📆 Trigger Day:", ["All"] + active_days_cycle, index=0)
@@ -507,7 +498,6 @@ if uploaded_file:
                 else:
                     target_session_trigger = st.selectbox("🎯 ၁။ အစ (Trigger) ကောက်ယူမည့် အချိန်:", ["AM+PM ပေါင်းချုပ်", "AM သီးသန့်", "PM သီးသန့်"], index=2)
             with c3:
-                # Bro's Dual Filtering Core Input
                 target_session_search = st.selectbox("🔍 ၂။ မူများကို လိုက်ရှာမည့် အချိန် (Search Space):", ["AM+PM ပေါင်းချုပ်", "AM သီးသန့်", "PM သီးသန့်"], index=0)
             with c4:
                 custom_max_tf = st.number_input("⏳ စစ်ဆေးမည့် ပွဲစဉ်အရေအတွက်", min_value=1, max_value=25, value=16, key="custom_input_tf2")
@@ -552,11 +542,11 @@ if uploaded_file:
                     st.write("---")
                     st.markdown(f"#### 📋 အသေးစိတ်အချက်အလက် (Window အလိုက် ခေါက်သိမ်းစနစ် - {custom_mode})")
                     
-                    # Call Engine with the explicit separate Search Space session parameter
+                    # ERROR FIXED HERE: Removed 'strict_day_mode' keyword argument
                     master_step_res, _ = execute_analysis(
                         target_hits, full_draws, custom_max_tf, 
                         is_custom_tab=True, search_session=target_session_search, 
-                        custom_trigger=lbl_prefix_custom, strict_day_mode=(trigger_day != "All"),
+                        custom_trigger=lbl_prefix_custom,
                         mode=custom_mode, is_research_mode=True
                     )
                     
@@ -572,7 +562,6 @@ if uploaded_file:
                             
                             is_step_deadline = any(v['is_deadline'] for v in formulas_dict.values())
                             
-                            # Dynamic headers applying Bro's layout formatting rules
                             if target_session_search == "AM သီးသန့်":
                                 space_header_txt = "နံနက်ပိုင်း "
                             elif target_session_search == "PM သီးသန့်":
