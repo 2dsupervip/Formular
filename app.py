@@ -8,7 +8,7 @@ from collections import Counter
 # ==========================================
 # PAGE CONFIG & PREMIUM DARK-THEME STYLE
 # ==========================================
-st.set_page_config(page_title="2D AI Master V32 Interactive", layout="wide", page_icon="🤖")
+st.set_page_config(page_title="2D AI Master V33 Ultimate", layout="wide", page_icon="🤖")
 
 st.markdown("""
 <style>
@@ -39,8 +39,8 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V32 PRO)</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Interactive History Grid | Deep Scan Horizon | Weighted Scorer</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V33)</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">11-Days Anchor Selection | 10x10 Master Grid | Deep Scan Horizon</div>', unsafe_allow_html=True)
 
 special_groups = {
     "ညီကို": {"01","10","12","21","23","32","34","43","45","54","56","65","67","76","78","87","89","98","90","09"},
@@ -186,14 +186,11 @@ def generate_formula_from_pool(analysis_pool):
 # ==========================================
 def get_hybrid_candidates(target_hits, full_draws, max_step):
     candidates = {k: [] for k in mu_keys_list}
-    
     for i in range(10): candidates["လုံးဘိုင်"].append(f"{i} လုံးဘိုင်")
     for b in itertools.combinations([str(x) for x in range(10)], 2): 
         cand = normalize_formula("ဘရိတ်", f"{b[0]}, {b[1]} ဘရိတ်")
         if cand not in candidates["ဘရိတ်"]: candidates["ဘရိတ်"].append(cand)
-    
     for g in special_groups.keys(): candidates["အုပ်စု သီးသန့်"].append(g)
-    
     for combo in itertools.combinations(special_groups.keys(), 2): 
         cand = normalize_formula("အုပ်စုတွဲ", f"{combo[0]}+{combo[1]}")
         if cand not in candidates["အုပ်စုတွဲ"]: candidates["အုပ်စုတွဲ"].append(cand)
@@ -290,7 +287,6 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
                     if rem_steps == 0:
                         is_deadline_flag = True
                         
-                    # STRICT ALREADY-HIT FILTER (Bypassed if Research Mode is True)
                     if not is_research_mode:
                         if elapsed_draws >= max_required_span:
                             continue 
@@ -351,8 +347,6 @@ if uploaded_file:
         full_days = ["Mon", "Tue", "Wed", "Thur", "Fri"]
         existing_days = set(df['day'].unique())
         off_days = [d for d in full_days if d not in existing_days]
-        if off_days:
-            st.info(f"ℹ️ သတိပြုရန်: ဒေတာထဲတွင် {', '.join(off_days)} ကို ပိတ်ရက်အဖြစ် သတ်မှတ်ထားပါသည်။")
 
         full_draws = []
         for idx, row in df.iterrows():
@@ -365,237 +359,250 @@ if uploaded_file:
         last_recorded_draw = full_draws[-1]
         active_days_cycle = [d for d in full_days if d not in off_days]
         
-        if last_recorded_draw['time'] == 'AM':
-            target_day_name = last_recorded_draw['day']
-            target_time_name = "PM"
-        else:
-            curr_idx = active_days_cycle.index(last_recorded_draw['day']) if last_recorded_draw['day'] in active_days_cycle else 0
-            target_day_name = active_days_cycle[(curr_idx + 1) % len(active_days_cycle)]
-            target_time_name = "AM"
-            
-        st.success(f"🔮 ဒေတာပွဲစဉ်ပေါင်း {len(full_draws)} ခု ဖတ်ပြီးပါပြီ။ [{target_day_name} {target_time_name}] အတွက် တွက်ချက်မည်ဖြစ်ပါသည်။")
         st.write("---")
-
         tab_live, tab_custom = st.tabs(["⚡ တွက်ချက်မည် (ယခုပွဲစဉ်)", "🔍 2D Formulas (Custom)"])
 
         # ------------------------------------------
-        # TAB 1: LIVE AUTO TRACKER (VIP Sniper)
+        # TAB 1: LIVE AUTO TRACKER (11-Days Interactive Anchor)
         # ------------------------------------------
         with tab_live:
-            # Note: Changed default to 20 for Deep Scan Horizon
-            input_box_val = st.text_input("⏳ စစ်ဆေးမည့် ပွဲစဉ်အရေအတွက် အတိအကျ (Default: 20):", value="20", key="live_input")
+            st.markdown("#### 🎯 ယခုပွဲစဉ်အတွက် အမာခံ (Anchor) ထောက်တိုင်များ ရွေးချယ်ရန်")
+            st.caption("နောက်ဆုံး (၁၁) ရက်စာ မှတ်တမ်းမှ ယနေ့အတွက် လွှမ်းမိုးမှုရှိမည်ဟု ယူဆသော ဂဏန်းများကို အမှန်ခြစ် (Check) ၍ ရွေးချယ်ပါ။")
+            
+            # 11 Days Interactive UI (2 Columns)
+            last_11_days_df = df.tail(11).copy()
+            
+            col_am, col_pm = st.columns(2)
+            selected_tab1_anchors = []
+            
+            with col_am:
+                st.markdown("**AM (မနက်ပိုင်း)**")
+                for _, r in last_11_days_df.iterrows():
+                    if pd.notna(r['am1']) and pd.notna(r['am2']):
+                        val = f"{int(r['am1'])}{int(r['am2'])}"
+                        if st.checkbox(f"{r['day']} AM : {val}", key=f"t1_am_{_}"):
+                            selected_tab1_anchors.append({'draw': val, 'time': 'AM', 'day': r['day']})
+                            
+            with col_pm:
+                st.markdown("**PM (ညနေပိုင်း)**")
+                for _, r in last_11_days_df.iterrows():
+                    if pd.notna(r['pm1']) and pd.notna(r['pm2']):
+                        val = f"{int(r['pm1'])}{int(r['pm2'])}"
+                        if st.checkbox(f"{r['day']} PM : {val}", key=f"t1_pm_{_}"):
+                            selected_tab1_anchors.append({'draw': val, 'time': 'PM', 'day': r['day']})
+
+            st.write("---")
+            input_box_val = st.text_input("⏳ ရှာဖွေမည့် နယ်ကုန်ရက်ချိန်း (Max Span) ပွဲစဉ်အရေအတွက် (Default: 20):", value="20", key="live_input")
             live_max_tf = int(input_box_val.strip()) if input_box_val.strip().isdigit() else 20
             
             c1_mode, _ = st.columns([1, 1])
             with c1_mode:
                 live_mode = st.radio("🧠 AI တွက်ချက်မှုစနစ် ရွေးချယ်ရန်:", ["AI Trend (ရှေ့သမိုင်း ၅၀ အထိုင်)", "Calendar သီးသန့်မူများ (Fixed Pattern)"], horizontal=True, key="live_mode")
 
-            if st.button("ယခုပွဲအတွက် Auto ရှာဖွေမည် ⚡", key="btn_auto"):
-                current_end_idx = len(full_draws) - 1
-                compiled_master_buckets = {step: {} for step in range(1, live_max_tf + 1)}
-                scoring_pool = {}
-                global_recovery = {}
-                
-                for step_dist in range(1, live_max_tf + 1):
-                    target_past_idx = current_end_idx - step_dist + 1
-                    if target_past_idx < 0: continue
+            if st.button("ရွေးချယ်ထားသော အမာခံများဖြင့် Auto ရှာဖွေမည် ⚡", key="btn_auto"):
+                if not selected_tab1_anchors:
+                    st.warning("⚠️ ကျေးဇူးပြု၍ အထက်ပါဇယားမှ အမာခံ ဂဏန်း အနည်းဆုံး (၁) ခု ရွေးချယ်ပေးပါ Bro!")
+                else:
+                    current_end_idx = len(full_draws) - 1
+                    compiled_master_buckets = {step: {} for step in range(1, live_max_tf + 1)}
+                    scoring_pool = {}
+                    global_recovery = {}
                     
-                    past_obj = full_draws[target_past_idx]
-                    past_val = past_obj['draw']
-                    past_time = past_obj['time']
-                    past_day = past_obj['day']
-                    
-                    condition_pools = [
-                        {"hits": [d for d in full_draws[:target_past_idx+1] if d['draw'] == past_val and d['time'] == past_time], "lbl": f"{past_val} {past_time} စစ်စစ်"},
-                        {"hits": [d for d in full_draws[:target_past_idx+1] if d['draw'] == past_val], "lbl": f"{past_val} ပေါင်းချုပ်"},
-                        {"hits": [d for d in full_draws[:target_past_idx+1] if d['draw'] == past_val and d['day'] == past_day], "lbl": f"{past_val} {past_day} သီးသန့်"}
-                    ]
-                    
-                    for pool in condition_pools:
-                        if not pool['hits']: continue
+                    for past_obj in selected_tab1_anchors:
+                        past_val = past_obj['draw']
+                        past_time = past_obj['time']
+                        past_day = past_obj['day']
                         
-                        step_res, rec_pool = execute_analysis(
-                            pool['hits'], full_draws, live_max_tf, 
-                            is_custom_tab=True, sel_session="All", 
-                            custom_trigger=pool['lbl'], mode=live_mode, is_research_mode=False
-                        )
+                        # Find the actual global indices for these draws to apply Strict Filtering correctly
+                        matched_global_draws = [d for d in full_draws if d['draw'] == past_val and d['time'] == past_time and d['day'] == past_day]
+                        if not matched_global_draws: continue
                         
-                        if step_dist in step_res:
-                            for mk, mv in step_res[step_dist].items():
-                                f_key = mv['pure']
-                                compiled_master_buckets[step_dist][f"{pool['lbl']}_{mk}"] = mv
-                                
-                                if f_key not in scoring_pool:
-                                    scoring_pool[f_key] = {'count': 0, 'details': [], 'mu_k': mv['mu_k']}
-                                
-                                existing_lbls = [d['top'] for d in scoring_pool[f_key]['details']]
-                                if mv['top'] not in existing_lbls:
-                                    scoring_pool[f_key]['details'].append(mv)
-                                    scoring_pool[f_key]['count'] += 1
-
-                        for rp in rec_pool:
-                            r_key = rp['key']
-                            if r_key not in global_recovery:
-                                global_recovery[r_key] = {'score': 0, 'rem_steps': rp['rem_steps'], 'details': []}
+                        condition_pools = [
+                            {"hits": [d for d in full_draws if d['draw'] == past_val and d['time'] == past_time], "lbl": f"{past_val} {past_time} စစ်စစ်"},
+                            {"hits": [d for d in full_draws if d['draw'] == past_val], "lbl": f"{past_val} ပေါင်းချုပ်"},
+                            {"hits": [d for d in full_draws if d['draw'] == past_val and d['day'] == past_day], "lbl": f"{past_val} {past_day} သီးသန့်"}
+                        ]
+                        
+                        for pool in condition_pools:
+                            if not pool['hits']: continue
                             
-                            existing_r_lbls = [d['top'] for d in global_recovery[r_key]['details']]
-                            if rp['card']['top'] not in existing_r_lbls:
-                                global_recovery[r_key]['details'].append(rp['card'])
-                                global_recovery[r_key]['score'] += rp['score']
-                                if len(global_recovery[r_key]['details']) >= 2:
-                                    global_recovery[r_key]['score'] = global_recovery[r_key]['score'] * 2
-
-                valid_vips = {k: v for k, v in scoring_pool.items() if v['count'] >= 2}
-                sorted_scores = sorted(valid_vips.items(), key=lambda x: x[1]['count'], reverse=True)
-                
-                st.write("---")
-                st.markdown("#### 🏆 VIP ဆုံးဖြတ်ချက် (Super & Second Overlaps)")
-                
-                if sorted_scores:
-                    for b_val, b_data in sorted_scores:
-                        tier = "Super VIP" if b_data['count'] >= 3 else "Second VIP"
-                        badge = "badge-super" if tier == "Super VIP" else "badge-second"
+                            step_res, rec_pool = execute_analysis(
+                                pool['hits'], full_draws, live_max_tf, 
+                                is_custom_tab=True, sel_session="All", 
+                                custom_trigger=pool['lbl'], mode=live_mode, is_research_mode=False
+                            )
                             
-                        with st.expander(f"⭐ {tier}: {b_val} (တူညီမှု: {b_data['count']} ခု)", expanded=False):
-                            st.markdown(f"<span class='{badge}'>{tier}</span><div style='color:#00FFCC; font-size:14px; margin-top:10px; margin-bottom:10px;'>💡 ဤမူကို အောက်ပါ ထောက်တိုင်များက ဘုံတူညီစွာ ညွှန်ပြနေပါသည်-</div>", unsafe_allow_html=True)
-                            for d_detail in b_data['details']:
-                                span_class = "badge-inline-sniper" if d_detail['rate'] == 100.0 else "badge-inline-hp"
-                                st.markdown(f"""
-                                <div class="card card-live" style="padding:10px; margin-bottom:10px;">
-                                    <span style="font-size:16px; font-weight:bold; color:#E0D5FA;">{d_detail['top']}</span>
-                                    <span class='badge-inline {span_class}'>{d_detail['max_span']} ပွဲအတွင်း (ယခုပွဲစဉ် ရက်ချိန်းပြည့်)</span>
-                                </div>
-                                """, unsafe_allow_html=True)
+                            for step_dist, formulas_dict in step_res.items():
+                                for mk, mv in formulas_dict.items():
+                                    f_key = mv['pure']
+                                    compiled_master_buckets[step_dist][f"{pool['lbl']}_{mk}"] = mv
+                                    
+                                    if f_key not in scoring_pool:
+                                        scoring_pool[f_key] = {'count': 0, 'details': [], 'mu_k': mv['mu_k']}
+                                    
+                                    existing_lbls = [d['top'] for d in scoring_pool[f_key]['details']]
+                                    if mv['top'] not in existing_lbls:
+                                        scoring_pool[f_key]['details'].append(mv)
+                                        scoring_pool[f_key]['count'] += 1
+
+                            for rp in rec_pool:
+                                r_key = rp['key']
+                                if r_key not in global_recovery:
+                                    global_recovery[r_key] = {'score': 0, 'rem_steps': rp['rem_steps'], 'details': []}
                                 
+                                existing_r_lbls = [d['top'] for d in global_recovery[r_key]['details']]
+                                if rp['card']['top'] not in existing_r_lbls:
+                                    global_recovery[r_key]['details'].append(rp['card'])
+                                    global_recovery[r_key]['score'] += rp['score']
+                                    if len(global_recovery[r_key]['details']) >= 2:
+                                        global_recovery[r_key]['score'] = global_recovery[r_key]['score'] * 2
+
+                    valid_vips = {k: v for k, v in scoring_pool.items() if v['count'] >= 2}
+                    sorted_scores = sorted(valid_vips.items(), key=lambda x: x[1]['count'], reverse=True)
+                    
                     st.write("---")
-                    st.markdown("#### 🎯 အတိကျဆုံး အကြံပြု Final ဂဏန်းများ (Weighted Scoring)")
+                    st.markdown("#### 🏆 VIP ဆုံးဖြတ်ချက် (Super & Second Overlaps)")
                     
-                    final_scores = {f"{i:02d}": 0 for i in range(100)}
-                    
-                    for b_val, b_data in sorted_scores:
-                        weight = b_data['count']
-                        mu_k = b_data['mu_k']
-                        for d in final_scores.keys():
-                            if check_single_draw_against_formula(d, mu_k, b_val):
-                                final_scores[d] += weight
+                    if sorted_scores:
+                        for b_val, b_data in sorted_scores:
+                            tier = "Super VIP" if b_data['count'] >= 3 else "Second VIP"
+                            badge = "badge-super" if tier == "Super VIP" else "badge-second"
                                 
-                    sorted_final_digits = sorted(final_scores.items(), key=lambda x: x[1], reverse=True)
-                    top_scoring_digits = [k for k, v in sorted_final_digits[:5] if v > 0]
-                    
-                    if top_scoring_digits:
-                        digit_display = ""
-                        for d, s in sorted_final_digits[:5]:
-                            if s > 0:
-                                digit_display += f"<span style='display:inline-block; margin-bottom: 8px;'>{d} <span class='score-badge'>Score: {s}</span></span>"
-                                
-                        st.markdown(f"""
-                        <div class="card card-intersection">
-                            <span style="color:#A294C7; font-size:15px; display:block;">
-                                VIP မူများအားလုံးကို အမှတ်ပေး ချိန်ခွင်လျှာညှိပြီး ရွေးချယ်ထားသော (Top 5) အကွက်များ:
-                            </span>
-                            <div class="final-digits">{digit_display}</div>
-                        </div>
-                        """, unsafe_allow_html=True)
+                            with st.expander(f"⭐ {tier}: {b_val} (တူညီမှု: {b_data['count']} ခု)", expanded=False):
+                                st.markdown(f"<span class='{badge}'>{tier}</span><div style='color:#00FFCC; font-size:14px; margin-top:10px; margin-bottom:10px;'>💡 ဤမူကို အောက်ပါ ထောက်တိုင်များက ဘုံတူညီစွာ ညွှန်ပြနေပါသည်-</div>", unsafe_allow_html=True)
+                                for d_detail in b_data['details']:
+                                    span_class = "badge-inline-sniper" if d_detail['rate'] == 100.0 else "badge-inline-hp"
+                                    st.markdown(f"""
+                                    <div class="card card-live" style="padding:10px; margin-bottom:10px;">
+                                        <span style="font-size:16px; font-weight:bold; color:#E0D5FA;">{d_detail['top']}</span>
+                                        <span class='badge-inline {span_class}'>{d_detail['max_span']} ပွဲအတွင်း (ယခုပွဲစဉ် ရက်ချိန်းပြည့်)</span>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+                                    
+                        st.write("---")
+                        st.markdown("#### 🎯 အတိကျဆုံး အကြံပြု Final ဂဏန်းများ (Weighted Scoring)")
+                        final_scores = {f"{i:02d}": 0 for i in range(100)}
+                        for b_val, b_data in sorted_scores:
+                            weight = b_data['count']
+                            mu_k = b_data['mu_k']
+                            for d in final_scores.keys():
+                                if check_single_draw_against_formula(d, mu_k, b_val):
+                                    final_scores[d] += weight
+                                    
+                        sorted_final_digits = sorted(final_scores.items(), key=lambda x: x[1], reverse=True)
+                        top_scoring_digits = [k for k, v in sorted_final_digits[:5] if v > 0]
+                        
+                        if top_scoring_digits:
+                            digit_display = ""
+                            for d, s in sorted_final_digits[:5]:
+                                if s > 0:
+                                    digit_display += f"<span style='display:inline-block; margin-bottom: 8px;'>{d} <span class='score-badge'>Score: {s}</span></span>"
+                            st.markdown(f"""
+                            <div class="card card-intersection">
+                                <span style="color:#A294C7; font-size:15px; display:block;">
+                                    VIP မူများအားလုံးကို အမှတ်ပေး ချိန်ခွင်လျှာညှိပြီး ရွေးချယ်ထားသော (Top 5) အကွက်များ:
+                                </span>
+                                <div class="final-digits">{digit_display}</div>
+                            </div>
+                            """, unsafe_allow_html=True)
+                        else:
+                            st.info("Intersection အမှတ်ပေးစနစ်ဖြင့် ရွေးချယ်ရန် လုံလောက်သော VIP မူ မရှိပါ။")
                     else:
-                        st.info("Intersection အမှတ်ပေးစနစ်ဖြင့် ရွေးချယ်ရန် လုံလောက်သော VIP မူ မရှိပါ။")
-                        
-                else:
-                    st.markdown("<div style='font-size:15px; font-weight:bold; color:#A294C7; padding:10px;'>ခိုင်မာသော VIP တူညီမှု ရလဒ်မရှိပါ (အနည်းဆုံး တိုက်ဆိုင်မှု ၂ ခု လိုအပ်ပါသည်)</div>", unsafe_allow_html=True)
+                        st.markdown("<div style='font-size:15px; font-weight:bold; color:#A294C7; padding:10px;'>ခိုင်မာသော VIP တူညီမှု ရလဒ်မရှိပါ (အနည်းဆုံး တိုက်ဆိုင်မှု ၂ ခု လိုအပ်ပါသည်)</div>", unsafe_allow_html=True)
 
-                st.write("---")
-                st.markdown("#### 🛡️ Recovery & စောင့်ကြည့်ရမည့် မူကျန်များ (Top 5)")
-                if global_recovery:
-                    sorted_recovery = sorted(global_recovery.items(), key=lambda x: x[1]['score'], reverse=True)[:5]
-                    for r_key, r_data in sorted_recovery:
-                        rem_txt = "၁ ပွဲသာ လိုတော့သည်" if r_data['rem_steps'] == 1 else "၂ ပွဲ လိုသေးသည်"
-                        overlap_txt = f" (ထောက်တိုင် {len(r_data['details'])} ခုငြိနေသည်)" if len(r_data['details']) > 1 else ""
-                        icon = "🔴" if r_data['score'] >= 100 else ("🟠" if r_data['score'] == 80 else "🟡")
-                        
-                        display_lbl = r_data['details'][0]['lbl_prefix']
-                        
-                        st.markdown(f"""
-                        <div class="card card-recovery" style="padding:12px;">
-                            <span style="font-size:16px; font-weight:bold; color:#fff;">
-                                {icon} Score: {r_data['score']} | [{display_lbl}] {r_key}
-                            </span><br/>
-                            <span style="font-size:14px; color:#f39c12; margin-top:5px; display:block;">
-                                ⏳ {rem_txt} {overlap_txt}
-                            </span>
-                        </div>
-                        """, unsafe_allow_html=True)
-                else:
-                    st.info("၁ ပွဲ သို့မဟုတ် ၂ ပွဲ အလိုရှိသော ခိုင်မာသည့် မူကျန်များ မရှိပါ။")
+                    st.write("---")
+                    st.markdown("#### 🛡️ Recovery & စောင့်ကြည့်ရမည့် မူကျန်များ (Top 5)")
+                    if global_recovery:
+                        sorted_recovery = sorted(global_recovery.items(), key=lambda x: x[1]['score'], reverse=True)[:5]
+                        for r_key, r_data in sorted_recovery:
+                            rem_txt = "၁ ပွဲသာ လိုတော့သည်" if r_data['rem_steps'] == 1 else "၂ ပွဲ လိုသေးသည်"
+                            overlap_txt = f" (ထောက်တိုင် {len(r_data['details'])} ခုငြိနေသည်)" if len(r_data['details']) > 1 else ""
+                            icon = "🔴" if r_data['score'] >= 100 else ("🟠" if r_data['score'] == 80 else "🟡")
+                            display_lbl = r_data['details'][0]['lbl_prefix']
+                            
+                            st.markdown(f"""
+                            <div class="card card-recovery" style="padding:12px;">
+                                <span style="font-size:16px; font-weight:bold; color:#fff;">
+                                    {icon} Score: {r_data['score']} | [{display_lbl}] {r_key}
+                                </span><br/>
+                                <span style="font-size:14px; color:#f39c12; margin-top:5px; display:block;">
+                                    ⏳ {rem_txt} {overlap_txt}
+                                </span>
+                            </div>
+                            """, unsafe_allow_html=True)
+                    else:
+                        st.info("၁ ပွဲ သို့မဟုတ် ၂ ပွဲ အလိုရှိသော ခိုင်မာသည့် မူကျန်များ မရှိပါ။")
 
         # ------------------------------------------
-        # TAB 2: CUSTOM FORMULAS ENGINE (Research Lab)
+        # TAB 2: CUSTOM FORMULAS ENGINE (10x10 Grid)
         # ------------------------------------------
         with tab_custom:
             st.markdown("##### 🧠 တွက်ချက်မှုစနစ် (Mode) ရွေးချယ်ရန်")
             custom_mode = st.radio("", ["AI Trend (ရှေ့သမိုင်း ၅၀ အထိုင်)", "Calendar သီးသန့်မူများ (Fixed Pattern)"], horizontal=True, key="custom_mode_tab2")
             st.write("---")
             
-            st.markdown("##### 📅 ၁။ ဇယားမှ တိုက်ရိုက်ရွေးချယ်ရန် (Interactive History Grid)")
-            st.caption("အောက်ပါ နောက်ဆုံး (၇) ရက်စာ မှတ်တမ်းမှ လေ့လာလိုသော ဂဏန်းဘေးရှိ Box ကို အမှန်ခြစ် (Check) လုပ်၍ ရွေးချယ်ပါ။")
+            st.markdown("##### 🎛️ ၁။ Master Grid (00 မှ 99 အထိ စိတ်ကြိုက်ရွေးချယ်ရန်)")
+            st.caption("ဂဏန်းတစ်ခု သို့မဟုတ် နှစ်ခုအထက်ကို စိတ်ကြိုက် Click အမှန်ခြစ်၍ ပေါင်းစပ်ရှာဖွေနိုင်ပါသည်။")
             
-            # Interactive Grid DataFrame Construction
-            recent_records = []
-            for idx, row in df.tail(7).iterrows():
-                am_val = f"{int(row['am1'])}{int(row['am2'])}" if pd.notna(row['am1']) and pd.notna(row['am2']) else ""
-                pm_val = f"{int(row['pm1'])}{int(row['pm2'])}" if pd.notna(row['pm1']) and pd.notna(row['pm2']) else ""
-                recent_records.append({
-                    "နေ့ရက် (Day)": row['day'],
-                    "AM": am_val,
-                    "AM ရွေးရန် (✔)": False,
-                    "PM": pm_val,
-                    "PM ရွေးရန် (✔)": False
-                })
+            use_r_checkbox = st.checkbox("✅ အရံ (R) အကွက်များကိုပါ အလိုအလျောက် ထည့်သွင်းတွက်ချက်မည်", value=False)
             
-            df_grid = pd.DataFrame(recent_records)
-            edited_grid = st.data_editor(df_grid, hide_index=True, use_container_width=True)
+            selected_grid_nums = []
             
-            selected_grid_draws = []
-            for _, r in edited_grid.iterrows():
-                if r["AM ရွေးရန် (✔)"] and r["AM"]: selected_grid_draws.append(r["AM"])
-                if r["PM ရွေးရန် (✔)"] and r["PM"]: selected_grid_draws.append(r["PM"])
-                
+            # 10x10 Grid Generation
+            for row in range(10):
+                cols = st.columns(10)
+                for col_idx in range(10):
+                    num_val = f"{row}{col_idx}"
+                    with cols[col_idx]:
+                        if st.checkbox(num_val, key=f"grid_{num_val}"):
+                            selected_grid_nums.append(num_val)
+                            if use_r_checkbox:
+                                r_val = num_val[::-1]
+                                if r_val not in selected_grid_nums:
+                                    selected_grid_nums.append(r_val)
+                                    
             st.write("---")
-            st.markdown("##### ⌨️ ၂။ စာသားဖြင့် ရှာဖွေရန် (Manual Search - ဥပမာ: '01 R', '683 key')")
+            st.markdown("##### ⌨️ ၂။ စာသားဖြင့် ရှာဖွေရန် (Backup Search - ဥပမာ: '683 key', 'ညီကို')")
             
             c1, c2, c3 = st.columns(3)
             with c1:
                 trigger_day = st.selectbox("📆 Trigger Day:", ["All"] + active_days_cycle, index=0)
-                trigger_num = st.text_input("🔍 ရှာလိုသောဂဏန်း ရိုက်ထည့်ပါ (ဇယားမှ ရွေးထားပါက မလိုပါ):", value="", max_chars=7)
+                trigger_num = st.text_input("🔍 ရှာလိုသောဂဏန်း ရိုက်ထည့်ပါ (အပေါ် Grid တွင် ရွေးထားပါက မလိုပါ):", value="", max_chars=15)
             with c2:
                 if trigger_day != "All":
                     st.markdown("<span style='color:#00FFCC; font-size:13px;'>ℹ️ Day စနစ်သုံးထားသဖြင့် အကြိမ်ရေပြည့်မီစေရန် R-စနစ် နှင့် AM+PM ပေါင်းချုပ် စနစ်ကို Backend က Auto Lock ချပေးထားပါသည်။</span>", unsafe_allow_html=True)
                     target_session_custom = "AM+PM ပေါင်းချုပ်"
                 else:
-                    target_session_custom = st.selectbox("⏱️ Target ပွဲစဉ် အခြေအနေ ရွေးရန်:", ["AM+PM ပေါင်းချုပ်", "AM သီးသန့်", "PM သီးသန့်"], index=2)
+                    target_session_custom = st.selectbox("⏱️ Target ပွဲစဉ် အခြေအနေ ရွေးရန်:", ["AM+PM ပေါင်းချုပ်", "AM သီးသန့်", "PM သီးသန့်"], index=0)
             with c3:
-                custom_max_tf = st.number_input("⏳ စစ်ဆေးမည့် ပွဲစဉ်အရေအတွက်", min_value=1, max_value=25, value=16, key="custom_input_tf")
+                custom_max_tf = st.number_input("⏳ စစ်ဆေးမည့် ပွဲစဉ်အရေအတွက်", min_value=1, max_value=25, value=20, key="custom_input_tf2")
 
             if st.button("ရွေးချယ်ထားသော မူများကို ရှာဖွေမည် 🚀", key="btn_custom"):
                 target_hits = []
                 lbl_prefix_custom = ""
                 
-                # If grid is used, fetch all matches for selected draws
-                if selected_grid_draws:
-                    for d_val in selected_grid_draws:
+                # Check grid selection first
+                if selected_grid_nums:
+                    for d_val in selected_grid_nums:
                         if target_session_custom != "AM+PM ပေါင်းချုပ်" and "သီးသန့်" in target_session_custom:
                             req_time_init = "AM" if "AM" in target_session_custom else "PM"
                             hits = [d for d in full_draws if d['draw'] == d_val and d['time'] == req_time_init]
                         else:
                             hits = [d for d in full_draws if d['draw'] == d_val]
                         target_hits.extend(hits)
-                    lbl_prefix_custom = f"[{', '.join(selected_grid_draws)}] Grid Selected"
+                    
+                    display_nums = list(set(selected_grid_nums))
+                    r_text = " (+R)" if use_r_checkbox else ""
+                    time_lbl = "PM" if target_session_custom == "PM သီးသန့်" else "AM" if target_session_custom == "AM သီးသန့်" else ""
+                    lbl_prefix_custom = f"[{','.join(display_nums[:5])}{'...' if len(display_nums)>5 else ''}]{r_text} {time_lbl}".strip()
                 
-                # If text box is used (Fallback)
+                # Fallback to Text Box if Grid is empty
                 elif trigger_num.strip():
                     clean_trigger = trigger_num.strip().upper()
                     is_composite = "+" in clean_trigger or "R" in clean_trigger or (trigger_day != "All")
                     digits_found = re.findall(r'\d+', clean_trigger)
                     
-                    if digits_found:
+                    if digits_found and "KEY" not in clean_trigger:
                         primary_digit = digits_found[0]
                         if trigger_day == "All":
                             if is_composite:
@@ -614,13 +621,18 @@ if uploaded_file:
                                 if d['row_idx'] in matched_weeks:
                                     target_hits.append(d)
                     
+                    # Basic support for custom text groups (e.g. key)
+                    elif "KEY" in clean_trigger and digits_found:
+                        key_digits = list(digits_found[0])
+                        target_hits = [d for d in full_draws if any(k in d['draw'] for k in key_digits)]
+                        
                     r_val = "R" if (trigger_day != "All" and "R" not in trigger_num) else ""
                     d_val = trigger_day if trigger_day != "All" else ""
                     t_time_label = "PM" if target_session_custom == "PM သီးသန့်" else "AM" if target_session_custom == "AM သီးသန့်" else ""
                     lbl_prefix_custom = f"{trigger_num}{r_val} {d_val} {t_time_label}".strip()
 
                 if not target_hits:
-                    st.error("⚠️ သတ်မှတ်ချက်များနှင့် ကိုက်ညီသော သမိုင်းကြောင်းမှတ်တမ်း မရှိပါ Bro! (ဇယားမှ အမှန်ခြစ် ရွေးချယ်ရန် သို့မဟုတ် စာသားရိုက်ထည့်ပါ)")
+                    st.error("⚠️ သတ်မှတ်ချက်များနှင့် ကိုက်ညီသော သမိုင်းကြောင်းမှတ်တမ်း မရှိပါ Bro! (Grid မှ အမှန်ခြစ် ရွေးချယ်ရန် သို့မဟုတ် စာသားရိုက်ထည့်ပါ)")
                 else:
                     st.write("---")
                     st.markdown(f"#### 📋 အသေးစိတ်အချက်အလက် (Window အလိုက် ခေါက်သိမ်းစနစ် - {custom_mode})")
