@@ -8,7 +8,6 @@ from collections import Counter
 # ==========================================
 # PAGE CONFIG & PREMIUM DARK-THEME STYLE
 # ==========================================
-# Mobile အတွက် layout="centered" ပြောင်းလဲထားပါသည်
 st.set_page_config(page_title="2D AI Master V35.3 All-in-One", layout="centered", page_icon="🤖")
 
 st.markdown("""
@@ -19,11 +18,11 @@ st.markdown("""
     
     .card { background-color: #170E2B; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); margin-bottom: 15px; border: 1px solid #2D1B4E; }
     .card-live { border-left: 6px solid #3498db; background-color: #0E1A2F; margin-bottom: 15px; }
-    .card-hp { border-left: 6px solid #2ecc71; background-color: #0D2216; }
+    .card-hp { border-left: 6px solid #2ecc71; background-color: #0D2216; margin-bottom: 15px; }
     .card-deadline { border-left: 6px solid #e74c3c; background-color: #31151A; margin-bottom: 10px; }
-    .card-sniper { border-left: 6px solid #9b59b6; background-color: #201135; }
+    .card-sniper { border-left: 6px solid #9b59b6; background-color: #201135; margin-bottom: 15px; }
     .card-recovery { border-left: 6px solid #e67e22; background-color: #2D1A0E; margin-bottom: 10px; }
-    .card-intersection { border: 2px dashed #FFD700; background-color: #1A180B; text-align: center; padding: 20px; border-radius: 12px; box-shadow: 0 0 15px rgba(255,215,0,0.15); margin-top: 15px;}
+    .card-intersection { border: 2px dashed #FFD700; background-color: #1A180B; padding: 20px; border-radius: 12px; box-shadow: 0 0 15px rgba(255,215,0,0.15); margin-top: 15px;}
     
     .line-trigger { font-size: 16px; font-weight: bold; color: #E0D5FA; margin-bottom: 6px; display: block; }
     .line-formula { font-size: 20px; font-weight: bold; color: #FFD700; margin-bottom: 6px; display: block; }
@@ -33,18 +32,15 @@ st.markdown("""
     .badge-inline { padding: 2px 10px; border-radius: 6px; font-size: 14px; font-weight: bold; margin-left: 6px; margin-right: 6px; display: inline-block; vertical-align: middle; }
     .badge-inline-sniper { background-color: #9b59b6; color: white; }
     .badge-inline-hp { background-color: #2ecc71; color: #0D2216; }
-    .badge-inline-danger { background-color: #e74c3c; color: white; }
     .badge-super { background-color: #FFD700; color: #000; padding: 3px 8px; border-radius: 5px; font-weight: bold; }
     .badge-second { background-color: #C0C0C0; color: #000; padding: 3px 8px; border-radius: 5px; font-weight: bold; }
     
-    .final-digits { font-size: 24px; font-weight: bold; color: #FFD700; display: block; margin-top: 15px; line-height: 1.5; }
-    .score-badge { background-color: #333; color: #fff; font-size: 14px; padding: 4px 8px; border-radius: 6px; margin-left: 8px; margin-right: 15px; vertical-align: middle; }
     .section-title { color: #00FFCC; font-size: 20px; border-bottom: 2px solid #3D2B5E; padding-bottom: 8px; margin-top: 20px; margin-bottom: 15px; }
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V35.3)</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">All-in-One Search Expansion | True Deadline Logic | Engine Sync</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V35.4)</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Advanced Quality-Weighted & Specificity Penalty Logic Included</div>', unsafe_allow_html=True)
 
 special_groups = {
     "ညီကို": {"01","10","12","21","23","32","34","43","45","54","56","65","67","76","78","87","89","98","90","09"},
@@ -73,7 +69,6 @@ def normalize_formula(mu_k, mu_val):
             gps = mu_val.split('+')
             if len(gps) == 2: return f"{sorted([g.strip() for g in gps])[0]}+{sorted([g.strip() for g in gps])[1]}"
     except Exception as e:
-        # Error ဖျောက်မထားဘဲ ဖမ်းယူပြသရန် ပြင်ဆင်ထားသည်
         st.warning(f"Formula Error ({mu_k}): {e}")
     return mu_val
 
@@ -150,9 +145,6 @@ def generate_formula_from_pool(analysis_pool):
     }
     return {k: normalize_formula(k, v) for k, v in res.items()}
 
-# ==========================================
-# HYBRID PRE-FILTERING
-# ==========================================
 def get_hybrid_candidates(target_hits, full_draws, max_step):
     candidates = {k: [] for k in mu_keys_list}
     for i in range(10): candidates["လုံးဘိုင်"].append(f"{i} လုံးဘိုင်")
@@ -259,6 +251,8 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
                 "top": f"🔮 [{lbl_prefix}] ထွက်ပြီးလျှင်", 
                 "formula": f"{last_generated_val} {'100%' if rate == 100.0 else f'{rate:.1f}%'}", 
                 "bottom": f"မှန်ကန်မှု: ({total_count} ကြိမ်မှာ {successful_hits} ကြိမ်မှန်)", 
+                "success_hits": successful_hits, # Added for Quality Scoring
+                "total_hits": total_count,       # Added for Quality Scoring
                 "is_deadline": is_deadline_flag, 
                 "pure": last_generated_val, 
                 "mu_k": mu_k, 
@@ -286,7 +280,6 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
 # ==========================================
 # FILE UPLOAD & DATA PROCESSING (CACHED)
 # ==========================================
-# Data ဖတ်ခြင်းကို ပိုမိုမြန်ဆန်စေရန် cache ထည့်သွင်းထားပါသည်
 @st.cache_data(show_spinner=False)
 def load_and_process_data(file_bytes, file_name):
     try:
@@ -309,7 +302,6 @@ def load_and_process_data(file_bytes, file_name):
         off_days = [d for d in full_days if d not in existing_days]
 
         full_draws = []
-        # iterrows အစား itertuples ကို အသုံးပြုထားပါသည် (Performance Upgrade)
         for row in df.itertuples():
             if pd.notna(row.am1) and pd.notna(row.am2):
                 full_draws.append({'draw': f"{int(row.am1)}{int(row.am2)}", 'time': 'AM', 'day': row.day, 'row_idx': row.Index})
@@ -350,7 +342,7 @@ if uploaded_file:
         tab_live, tab_custom = st.tabs(["⚡ တွက်ချက်မည် (ယခုပွဲစဉ်)", "🔍 2D Formulas (Custom သုတေသန)"])
 
         # ------------------------------------------
-        # TAB 1: LIVE AUTO TRACKER
+        # TAB 1: LIVE AUTO TRACKER (Advanced Scoring)
         # ------------------------------------------
         with tab_live:
             st.markdown("#### ⚙️ VIP ရှာဖွေမှု သတ်မှတ်ချက်များ (Inputs)")
@@ -387,7 +379,7 @@ if uploaded_file:
                     scoring_pool = {}
                     global_recovery = {}
                     
-                    with st.spinner("AI တွက်ချက်နေပါသည်..."):
+                    with st.spinner("AI အရည်အသွေး အမှတ်ပေးစနစ်ဖြင့် တွက်ချက်နေပါသည်..."):
                         for past_obj in selected_anchors:
                             past_val = past_obj['draw']
                             past_val_r = past_val[::-1]
@@ -412,12 +404,24 @@ if uploaded_file:
                                 for step_dist, formulas_dict in step_res.items():
                                     for mk, mv in formulas_dict.items():
                                         f_key = mv['pure']
+                                        mu_k_val = mv['mu_k']
+                                        
                                         if f_key not in scoring_pool:
-                                            scoring_pool[f_key] = {'count': 0, 'details': [], 'mu_k': mv['mu_k']}
+                                            # (၁) ကွက်ရေ အကျဉ်းအကျယ် Coverage ကို Dynamic ရှာဖွေခြင်း
+                                            coverage = sum(1 for i in range(100) if check_single_draw_against_formula(f"{i:02d}", mu_k_val, f_key))
+                                            coverage = max(1, coverage) # Prevent division by zero
+                                            
+                                            scoring_pool[f_key] = {
+                                                'count': 0, 'details': [], 'mu_k': mu_k_val, 
+                                                'quality_score': 0.0, 'coverage': coverage
+                                            }
                                         
                                         if mv['top'] not in [d['top'] for d in scoring_pool[f_key]['details']]:
                                             scoring_pool[f_key]['details'].append(mv)
                                             scoring_pool[f_key]['count'] += 1
+                                            # (၂) Quality Score တွက်ချက်ခြင်း: (Win Rate %) * (မှန်ကန်ခဲ့သော အကြိမ်အရေအတွက်)
+                                            base_q_score = (mv['rate'] / 100.0) * mv['success_hits']
+                                            scoring_pool[f_key]['quality_score'] += base_q_score
 
                                 for rp in rec_pool:
                                     r_key = rp['key']
@@ -434,54 +438,77 @@ if uploaded_file:
                     deadline_singles = {k: v for k, v in scoring_pool.items() if v['count'] == 1}
                     
                     st.write("---")
-                    st.markdown("#### 🏆 VIP ဆုံးဖြတ်ချက် (Super & Second Overlaps)")
+                    st.markdown("#### 🏆 VIP ဆုံးဖြတ်ချက် (Quality & Overlaps)")
                     
                     if valid_vips:
-                        sorted_scores = sorted(valid_vips.items(), key=lambda x: x[1]['count'], reverse=True)
-                        for b_val, b_data in sorted_scores:
-                            tier = "Super VIP" if b_data['count'] >= 3 else "Second VIP"
-                            badge = "badge-super" if tier == "Super VIP" else "badge-second"
+                        # Quality Score ကိုအခြေခံပြီး စီထားခြင်း
+                        sorted_vips = sorted(valid_vips.items(), key=lambda x: x[1]['quality_score'], reverse=True)
+                        
+                        for i, (b_val, b_data) in enumerate(sorted_vips):
+                            # (၃) Quality အမြင့်ဆုံး Top 3 ကိုသာ Super VIP သတ်မှတ်ခြင်း
+                            is_super = i < 3 
+                            tier = "Super VIP" if is_super else "Second VIP"
+                            badge = "badge-super" if is_super else "badge-second"
+                            q_score_str = f"{b_data['quality_score']:.1f}"
+                            cov_str = f"{b_data['coverage']} ကွက်"
                                 
-                            with st.expander(f"⭐ {tier}: {b_val} (တူညီမှု: {b_data['count']} ခု)", expanded=False):
-                                st.markdown(f"<span class='{badge}'>{tier}</span><div style='color:#00FFCC; font-size:14px; margin-top:10px; margin-bottom:10px;'>💡 ဤမူကို အောက်ပါ ထောက်တိုင်များက ဘုံတူညီစွာ ညွှန်ပြနေပါသည်-</div>", unsafe_allow_html=True)
+                            with st.expander(f"⭐ {tier}: {b_val} (Quality Score: {q_score_str} | တူညီမှု: {b_data['count']} ခု)", expanded=is_super):
+                                st.markdown(
+                                    f"<span class='{badge}'>{tier}</span>"
+                                    f"<span style='float:right; background:#201135; color:#00FFCC; padding:3px 8px; border-radius:5px;'>ပါဝင်သော ဂဏန်း: {cov_str}</span>"
+                                    f"<div style='color:#A294C7; font-size:14px; margin-top:10px; margin-bottom:10px;'>💡 ဤမူအား အောက်ပါ ထောက်တိုင်များက ညွှန်ပြနေပါသည်-</div>", 
+                                    unsafe_allow_html=True
+                                )
                                 for d_detail in b_data['details']:
                                     span_class = "badge-inline-sniper" if d_detail['rate'] == 100.0 else "badge-inline-hp"
-                                    
-                                    # HTML Bug ဖြေရှင်းထားပါသည်
                                     html_card_inner = (
                                         '<div class="card card-live" style="padding:10px; margin-bottom:10px;">'
                                         f'<span style="font-size:16px; font-weight:bold; color:#E0D5FA;">{d_detail["top"]}</span>'
                                         f'<span class="badge-inline {span_class}">{d_detail["label_space"]}{d_detail["max_span"]} ပွဲအတွင်း (ယခုပွဲစဉ် ရက်ချိန်းပြည့်)</span>'
+                                        f'<div style="font-size:13px; color:#f39c12; margin-top:5px;">မှန်ကန်မှု - {d_detail["bottom"]}</div>'
                                         '</div>'
                                     )
                                     st.markdown(html_card_inner, unsafe_allow_html=True)
                                     
                         st.write("---")
-                        st.markdown("#### 🎯 အတိကျဆုံး အကြံပြု Final ဂဏန်းများ (Weighted Scoring)")
+                        st.markdown("#### 🎯 အတိကျဆုံး အကြံပြု Final ဂဏန်းများ (Detailed Breakdown)")
                         
-                        final_scores = {f"{i:02d}": 0 for i in range(100)}
-                        for b_val, b_data in sorted_scores:
-                            weight = b_data['count']
+                        # Final ဂဏန်း တွက်ချက်မှု နှင့် သမိုင်းကြောင်း သိမ်းဆည်းရန် Dictionary တည်ဆောက်ခြင်း
+                        final_scores = {f"{i:02d}": {'score': 0.0, 'matched_formulas': []} for i in range(100)}
+                        
+                        for b_val, b_data in sorted_vips:
                             mu_k = b_data['mu_k']
+                            coverage = b_data['coverage']
+                            
+                            # (၄) Specificity Penalty: အရည်အသွေး အမှတ်ကို ကွက်ရေ (Coverage) ဖြင့် ချိန်ထိုးခြင်း
+                            # ကွက်ရေနည်းသော မူ (ဥပမာ One Change) သည် အမှတ် ပိုရမည်။
+                            weight = b_data['quality_score'] * (100.0 / coverage)
+                            
                             for d in final_scores.keys():
                                 if check_single_draw_against_formula(d, mu_k, b_val):
-                                    final_scores[d] += weight
+                                    final_scores[d]['score'] += weight
+                                    final_scores[d]['matched_formulas'].append(f"[{mu_k}] {b_val}")
                                     
-                        sorted_final_digits = sorted(final_scores.items(), key=lambda x: x[1], reverse=True)
-                        top_scoring_digits = [k for k, v in sorted_final_digits[:5] if v > 0]
+                        # အမှတ်အများဆုံး ဂဏန်း ၅ လုံးကို ရွေးထုတ်ခြင်း
+                        sorted_final_digits = sorted(final_scores.items(), key=lambda x: x[1]['score'], reverse=True)
+                        top_scoring_digits = [(k, v) for k, v in sorted_final_digits[:5] if v['score'] > 0]
                         
                         if top_scoring_digits:
-                            digit_display = ""
-                            for d, s in sorted_final_digits[:5]:
-                                if s > 0: digit_display += f"<span style='display:inline-block; margin-bottom: 8px;'>{d} <span class='score-badge'>Score: {s}</span></span>"
+                            st.markdown("<span style='color:#A294C7; font-size:15px; display:block; margin-bottom:15px;'>VIP မူများ၏ အရည်အသွေး နှင့် အကျဉ်းအကျယ် ချိန်ခွင်လျှာညှိပြီးနောက် အခိုင်မာဆုံး Top 5 အကွက်များ:</span>", unsafe_allow_html=True)
+                            
+                            for d, data in top_scoring_digits:
+                                score_fmt = f"{data['score']:.1f}"
+                                matched_details = "".join([f"<div style='font-size:14px; color:#E0D5FA; padding-left:15px; margin-bottom:3px;'>🔹 {m}</div>" for m in data['matched_formulas']])
                                 
-                            html_score_card = (
-                                '<div class="card card-intersection">'
-                                '<span style="color:#A294C7; font-size:15px; display:block;">VIP မူများအားလုံးကို အမှတ်ပေး ချိန်ခွင်လျှာညှိပြီး ရွေးချယ်ထားသော (Top 5) အကွက်များ:</span>'
-                                f'<div class="final-digits">{digit_display}</div>'
-                                '</div>'
-                            )
-                            st.markdown(html_score_card, unsafe_allow_html=True)
+                                html_detailed_score_card = (
+                                    '<div class="card card-live" style="margin-bottom:10px;">'
+                                    f'<div style="font-size:26px; color:#FFD700; font-weight:bold; margin-bottom:10px;">🎯 {d} '
+                                    f'<span style="font-size:16px; color:#fff; float:right; background:#e74c3c; padding:4px 10px; border-radius:6px; margin-top:5px;">Score: {score_fmt}</span></div>'
+                                    '<div style="font-size:14px; color:#00FFCC; margin-bottom:8px;">✅ ငြိစွန်းသော VIP မူများ:</div>'
+                                    f'{matched_details}'
+                                    '</div>'
+                                )
+                                st.markdown(html_detailed_score_card, unsafe_allow_html=True)
                         else:
                             st.info("Intersection အမှတ်ပေးစနစ်ဖြင့် ရွေးချယ်ရန် လုံလောက်သော VIP မူ မရှိပါ။")
                             
