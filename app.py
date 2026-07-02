@@ -8,7 +8,6 @@ from collections import Counter
 # ==========================================
 # PAGE CONFIG & PREMIUM DARK-THEME STYLE
 # ==========================================
-# ဖုန်းနဲ့ ကြည့်ရလွယ်အောင် layout="centered" သို့ ပြောင်းထားပါသည်
 st.set_page_config(page_title="2D AI Master V35.3 All-in-One", layout="centered", page_icon="🤖")
 
 st.markdown("""
@@ -62,7 +61,6 @@ def normalize_formula(mu_k, mu_val):
             gps = mu_val.split('+')
             if len(gps) == 2: return f"{sorted([g.strip() for g in gps])[0]}+{sorted([g.strip() for g in gps])[1]}"
     except Exception as e:
-        # Error တိတ်တဆိတ်ကျော်မသွားစေရန် Warning ပြပေးမည်
         st.warning(f"Error parsing formula for {mu_k}: {e}")
     return mu_val
 
@@ -164,7 +162,6 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
 
     recovery_pool = [] 
     calendar_candidates = get_hybrid_candidates(target_hits, full_draws, requested_max_step) if mode == "Calendar သီးသန့်မူများ (Fixed Pattern)" else {}
-
     label_space = "နံနက်ပိုင်း " if search_session == "AM သီးသန့်" else ("ညနေပိုင်း " if search_session == "PM သီးသန့်" else "")
 
     for mu_k in mu_keys_list:
@@ -285,7 +282,6 @@ if uploaded_file:
         off_days = [d for d in full_days if d not in existing_days]
 
         full_draws = []
-        # iterrows အစား itertuples ပြောင်းသုံးထားသဖြင့် အကြိမ်ပေါင်းများစွာ ပိုမြန်ပါမည်
         for row in df.itertuples():
             if pd.notna(row.am1) and pd.notna(row.am2):
                 full_draws.append({'draw': f"{int(row.am1)}{int(row.am2)}", 'time': 'AM', 'day': row.day, 'row_idx': row.Index})
@@ -313,7 +309,6 @@ if uploaded_file:
             with c1:
                 anchor_count = st.number_input("📌 အနှစ်ချုပ်ကြည့်ရှုလိုသော မူအရေအတွက် (Default: 10):", min_value=1, max_value=50, value=10)
             with c2:
-                # Dynamic ဖြစ်စေရန် live_max_tf ကို ပြောင်းလဲအသုံးပြုနိုင်ပါသည်
                 live_max_tf = st.number_input("⏳ စစ်ဆေးမည့် ပွဲစဉ်အရေအတွက် [Max Span] (Default: 20):", min_value=1, max_value=50, value=20)
                 
             custom_anchors_str = st.text_input("🎯 စိတ်ကြိုက် အမာခံဂဏန်းများ (ဥပမာ - 48, 60, 62) [ရိုက်ထည့်ပါက Auto စနစ်ကို ကျော်လွန်မည်]:", value="")
@@ -322,20 +317,16 @@ if uploaded_file:
             with c1_mode:
                 live_mode = st.radio("🧠 AI တွက်ချက်မှုစနစ် ရွေးချယ်ရန်:", ["AI Trend (ရှေ့သမိုင်း ၅၀ အထိုင်)", "Calendar သီးသန့်မူများ (Fixed Pattern)"], horizontal=True, key="live_mode")
 
-            # --- အောက်ဆုံးတွင် ပြတ်တောက်သွားသော အပိုင်းအား ပြည့်စုံအောင် ရေးသားထားခြင်း ---
             if st.button("VIP ကို ယခုရှာဖွေမည် ⚡", key="btn_auto"):
                 selected_anchors = []
                 
-                # Custom Input ထည့်ထားပါက ယင်းတို့ကိုသာ ရှာဖွေမည်၊ မရှိပါက နောက်ဆုံးထွက်ခဲ့သော ပွဲစဉ်များကိုသာ ယူမည်
                 if custom_anchors_str.strip():
                     raw_nums = [x.strip() for x in custom_anchors_str.split(',') if x.strip().isdigit()]
                     for num in raw_nums:
-                        # ယင်းဂဏန်း ထွက်ခဲ့သော အကြိမ်များကို ရှာမည်
                         hits = [d for d in full_draws if d['draw'] == num]
                         if hits:
                             selected_anchors.append(hits)
                 else:
-                    # နောက်ဆုံးပွဲစဉ် anchor_count ခုကို ဆွဲထုတ်မည်
                     last_draws = full_draws[-anchor_count:]
                     for d in last_draws:
                         hits = [x for x in full_draws if x['draw'] == d['draw']]
@@ -348,7 +339,6 @@ if uploaded_file:
                     with st.spinner("AI Engine တွက်ချက်နေပါသည်..."):
                         all_vip_results = []
                         for target_hits in selected_anchors:
-                            # Dynamic ဖြစ်သော live_max_tf ကို အသုံးပြု၍ execute_analysis ကို ခေါ်မည်
                             step_buckets, recovery_pool = execute_analysis(
                                 target_hits=target_hits, 
                                 full_draws=full_draws, 
@@ -365,21 +355,78 @@ if uploaded_file:
                         if all_vip_results:
                             st.markdown('<div class="section-title">🌟 SUPER VIP ရလဒ်များ (ယခုပွဲစဉ်အတွက်)</div>', unsafe_allow_html=True)
                             
-                            # Overlap ဖြစ်သော (ထပ်နေသော) Formula များကို စစ်ထုတ်ခြင်း
                             formulas_count = Counter([card['formula'] for card in all_vip_results])
                             
                             for card in all_vip_results:
-                                # အကြိမ်ရေများစွာ ထပ်နေပါက SUPER VIP အဖြစ် သတ်မှတ်ပြသမည်
-                                overlap_badge = f'<div class="badge-super">🔥 Super VIP (ထပ်နေသောမူ)</div>' if formulas_count[card['formula']] > 1 else ""
+                                overlap_badge = '<div class="badge-super">🔥 Super VIP (ထပ်နေသောမူ)</div>' if formulas_count[card['formula']] > 1 else ""
                                 
-                                st.markdown(f"""
-                                <div class="card card-deadline">
-                                    {overlap_badge}
-                                    <span class="line-trigger">{card['top']}</span>
-                                    <span class="line-formula">{card['formula']}</span>
-                                    <span class="line-history">{card['bottom']}</span>
-                                    <span class="line-advisor">{card['advisor']}</span>
-                                </div>
-                                """, unsafe_allow_html=True)
+                                # HTML Render ပြဿနာ မဖြစ်စေရန် String Concatenation ဖြင့် သေချာရေးသားထားခြင်း
+                                html_card = (
+                                    '<div class="card card-deadline">'
+                                    f'{overlap_badge}'
+                                    f'<span class="line-trigger">{card["top"]}</span>'
+                                    f'<span class="line-formula">{card["formula"]}</span>'
+                                    f'<span class="line-history">{card["bottom"]}</span>'
+                                    f'<span class="line-advisor">{card["advisor"]}</span>'
+                                    '</div>'
+                                )
+                                st.markdown(html_card, unsafe_allow_html=True)
                         else:
                             st.info("ယခုပွဲစဉ်အတွက် Deadline ရောက်နေသော 90% အထက် VIP ရလဒ်များ မတွေ့ရှိပါ။")
+
+        # ------------------------------------------
+        # TAB 2: CUSTOM SEARCH (သုတေသန)
+        # ------------------------------------------
+        with tab_custom:
+            st.markdown("#### 🔍 စိတ်ကြိုက်မူများ ရှာဖွေရန်")
+            
+            c3, c4 = st.columns(2)
+            with c3:
+                custom_formula_type = st.selectbox("မူအမျိုးအစား ရွေးချယ်ပါ:", ["All (အားလုံး)"] + mu_keys_list, key="custom_mu")
+            with c4:
+                custom_max_tf = st.number_input("⏳ စစ်ဆေးမည့် ပွဲစဉ်အရေအတွက် [Max Span]:", min_value=1, max_value=50, value=20, key="custom_tf")
+                
+            custom_target_draw = st.text_input("🎯 လေ့လာလိုသော ဂဏန်းရိုက်ထည့်ပါ (ဥပမာ - 05):", key="custom_draw")
+            
+            if st.button("စစ်ဆေးမည် 🔍", key="btn_custom"):
+                target_str = custom_target_draw.strip()
+                if not target_str:
+                    st.warning("⚠️ လေ့လာလိုသော ဂဏန်းကို ရိုက်ထည့်ပါ။")
+                else:
+                    hits = [d for d in full_draws if d['draw'] == target_str]
+                    if not hits:
+                        st.warning(f"⚠️ '{target_str}' ထွက်ရှိထားသော မှတ်တမ်း မရှိပါ။")
+                    else:
+                        with st.spinner("AI မှ မှတ်တမ်းများကို သုတေသနပြုလုပ်နေပါသည်..."):
+                            step_buckets, _ = execute_analysis(
+                                target_hits=hits, 
+                                full_draws=full_draws, 
+                                requested_max_step=custom_max_tf, 
+                                mode="AI Trend",
+                                is_custom_tab=True,
+                                custom_trigger=target_str,
+                                is_research_mode=True
+                            )
+                            
+                            st.write("---")
+                            st.markdown(f'<div class="section-title">📊 "{target_str}" ထွက်ပြီးနောက် အကောင်းဆုံး 90%+ မူများ</div>', unsafe_allow_html=True)
+                            
+                            has_results = False
+                            for step, mu_dict in step_buckets.items():
+                                for mu_k, card in mu_dict.items():
+                                    if custom_formula_type != "All (အားလုံး)" and mu_k != custom_formula_type:
+                                        continue
+                                        
+                                    html_card = (
+                                        '<div class="card card-live">'
+                                        f'<span class="line-trigger">{card["top"]} (အကြိမ်အရေအတွက် - Max Span: {card["max_span"]})</span>'
+                                        f'<span class="line-formula">{mu_k}</span>'
+                                        f'<span class="line-history">{card["bottom"]}</span>'
+                                        f'<span class="line-advisor">{card["advisor"]}</span>'
+                                        '</div>'
+                                    )
+                                    st.markdown(html_card, unsafe_allow_html=True)
+                                    has_results = True
+                                    
+                            if not has_results:
+                                st.info("သတ်မှတ်ထားသော အချက်အလက်များဖြင့် 90% အထက် မှန်ကန်သော ရလဒ်များ မတွေ့ရှိပါ။")
