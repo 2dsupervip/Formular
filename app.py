@@ -8,37 +8,27 @@ from collections import Counter
 # ==========================================
 # PAGE CONFIG & PREMIUM DARK-THEME STYLE
 # ==========================================
-st.set_page_config(page_title="2D AI Master V35.3 All-in-One", layout="wide", page_icon="🤖")
+# ဖုန်းနဲ့ ကြည့်ရလွယ်အောင် layout="centered" သို့ ပြောင်းထားပါသည်
+st.set_page_config(page_title="2D AI Master V35.3 All-in-One", layout="centered", page_icon="🤖")
 
 st.markdown("""
 <style>
     .stApp { background-color: #0B031A; color: #E0D5FA; }
-    .main-title { color: #A078FF; font-size: 40px; font-weight: bold; text-align: center; margin-bottom: 5px; text-shadow: 0 0 10px rgba(160,120,255,0.5); }
-    .sub-title { color: #8F72D6; font-size: 16px; text-align: center; margin-bottom: 30px; }
+    .main-title { color: #A078FF; font-size: 32px; font-weight: bold; text-align: center; margin-bottom: 5px; text-shadow: 0 0 10px rgba(160,120,255,0.5); }
+    .sub-title { color: #8F72D6; font-size: 14px; text-align: center; margin-bottom: 30px; }
     
     .card { background-color: #170E2B; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); margin-bottom: 15px; border: 1px solid #2D1B4E; }
     .card-live { border-left: 6px solid #3498db; background-color: #0E1A2F; margin-bottom: 15px; }
     .card-hp { border-left: 6px solid #2ecc71; background-color: #0D2216; }
     .card-deadline { border-left: 6px solid #e74c3c; background-color: #31151A; margin-bottom: 10px; }
-    .card-sniper { border-left: 6px solid #9b59b6; background-color: #201135; }
-    .card-recovery { border-left: 6px solid #e67e22; background-color: #2D1A0E; margin-bottom: 10px; }
-    .card-intersection { border: 2px dashed #FFD700; background-color: #1A180B; text-align: center; padding: 20px; border-radius: 12px; box-shadow: 0 0 15px rgba(255,215,0,0.15); margin-top: 15px;}
     
-    .line-trigger { font-size: 18px; font-weight: bold; color: #E0D5FA; margin-bottom: 6px; display: block; }
-    .line-formula { font-size: 22px; font-weight: bold; color: #FFD700; margin-bottom: 6px; display: block; }
-    .line-history { font-size: 15px; color: #A294C7; display: block; }
-    .line-advisor { font-size: 16px; color: #00FFCC; font-style: italic; margin-top: 10px; display: block; border-top: 1px dashed #3D2B5E; padding-top: 8px; }
+    .line-trigger { font-size: 16px; font-weight: bold; color: #E0D5FA; margin-bottom: 6px; display: block; }
+    .line-formula { font-size: 20px; font-weight: bold; color: #FFD700; margin-bottom: 6px; display: block; }
+    .line-history { font-size: 14px; color: #A294C7; display: block; }
+    .line-advisor { font-size: 14px; color: #00FFCC; font-style: italic; margin-top: 10px; display: block; border-top: 1px dashed #3D2B5E; padding-top: 8px; }
     
-    .badge-inline { padding: 2px 10px; border-radius: 6px; font-size: 14px; font-weight: bold; margin-left: 6px; margin-right: 6px; display: inline-block; vertical-align: middle; }
-    .badge-inline-sniper { background-color: #9b59b6; color: white; }
-    .badge-inline-hp { background-color: #2ecc71; color: #0D2216; }
-    .badge-inline-danger { background-color: #e74c3c; color: white; }
-    .badge-super { background-color: #FFD700; color: #000; padding: 3px 8px; border-radius: 5px; font-weight: bold; }
-    .badge-second { background-color: #C0C0C0; color: #000; padding: 3px 8px; border-radius: 5px; font-weight: bold; }
-    
-    .final-digits { font-size: 26px; font-weight: bold; color: #FFD700; display: block; margin-top: 15px; line-height: 1.5; }
-    .score-badge { background-color: #333; color: #fff; font-size: 16px; padding: 4px 8px; border-radius: 6px; margin-left: 8px; margin-right: 15px; vertical-align: middle; }
-    .section-title { color: #00FFCC; font-size: 22px; border-bottom: 2px solid #3D2B5E; padding-bottom: 8px; margin-top: 20px; margin-bottom: 15px; }
+    .badge-super { background-color: #FFD700; color: #000; padding: 4px 10px; border-radius: 6px; font-weight: bold; font-size: 16px; display: block; text-align: center; margin-bottom: 10px;}
+    .section-title { color: #00FFCC; font-size: 20px; border-bottom: 2px solid #3D2B5E; padding-bottom: 8px; margin-top: 20px; margin-bottom: 15px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -71,7 +61,9 @@ def normalize_formula(mu_k, mu_val):
         elif mu_k == "အုပ်စုတွဲ":
             gps = mu_val.split('+')
             if len(gps) == 2: return f"{sorted([g.strip() for g in gps])[0]}+{sorted([g.strip() for g in gps])[1]}"
-    except: pass
+    except Exception as e:
+        # Error တိတ်တဆိတ်ကျော်မသွားစေရန် Warning ပြပေးမည်
+        st.warning(f"Error parsing formula for {mu_k}: {e}")
     return mu_val
 
 def check_single_draw_against_formula(d, mu_k, mu_val):
@@ -147,9 +139,6 @@ def generate_formula_from_pool(analysis_pool):
     }
     return {k: normalize_formula(k, v) for k, v in res.items()}
 
-# ==========================================
-# HYBRID PRE-FILTERING
-# ==========================================
 def get_hybrid_candidates(target_hits, full_draws, max_step):
     candidates = {k: [] for k in mu_keys_list}
     for i in range(10): candidates["လုံးဘိုင်"].append(f"{i} လုံးဘိုင်")
@@ -167,9 +156,6 @@ def get_hybrid_candidates(target_hits, full_draws, max_step):
         if complex_formulas[k] != "-": candidates[k].append(complex_formulas[k])
     return candidates
 
-# ==========================================
-# MASTER ROUTINE: DUAL SESSION WIN-RATE ENGINE
-# ==========================================
 def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=False, search_session="All", custom_trigger="", mode="AI Trend", is_research_mode=False):
     step_buckets = {step: {} for step in range(1, requested_max_step + 1)}
     current_latest_idx = len(full_draws) - 1
@@ -179,9 +165,7 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
     recovery_pool = [] 
     calendar_candidates = get_hybrid_candidates(target_hits, full_draws, requested_max_step) if mode == "Calendar သီးသန့်မူများ (Fixed Pattern)" else {}
 
-    if search_session == "AM သီးသန့်": label_space = "နံနက်ပိုင်း "
-    elif search_session == "PM သီးသန့်": label_space = "ညနေပိုင်း "
-    else: label_space = ""
+    label_space = "နံနက်ပိုင်း " if search_session == "AM သီးသန့်" else ("ညနေပိုင်း " if search_session == "PM သီးသန့်" else "")
 
     for mu_k in mu_keys_list:
         cand_list = calendar_candidates.get(mu_k, []) if mode == "Calendar သီးသန့်မူများ (Fixed Pattern)" else ["DYNAMIC_AI"]
@@ -290,7 +274,7 @@ if uploaded_file:
     df.columns = df.columns.str.strip().str.lower()
     
     if not all(col in df.columns for col in ['year', 'day', 'am1', 'am2', 'pm1', 'pm2']):
-        st.error("⚠️ Phineထဲတွင် လိုအပ်သော ကော်လံများ (year, day, am1, am2, pm1, pm2) မပြည့်စုံပါ!")
+        st.error("⚠️ ဖိုင်ထဲတွင် လိုအပ်သော ကော်လံများ (year, day, am1, am2, pm1, pm2) မပြည့်စုံပါ!")
     else:
         for col in ['year', 'am1', 'am2', 'pm1', 'pm2']: df[col] = pd.to_numeric(df[col], errors='coerce')
         df = df.dropna(subset=['year', 'day']).reset_index(drop=True)
@@ -301,11 +285,12 @@ if uploaded_file:
         off_days = [d for d in full_days if d not in existing_days]
 
         full_draws = []
-        for idx, row in df.iterrows():
-            if pd.notna(row['am1']) and pd.notna(row['am2']):
-                full_draws.append({'draw': f"{int(row['am1'])}{int(row['am2'])}", 'time': 'AM', 'day': row['day'], 'row_idx': idx})
-            if pd.notna(row['pm1']) and pd.notna(row['pm2']):
-                full_draws.append({'draw': f"{int(row['pm1'])}{int(row['pm2'])}", 'time': 'PM', 'day': row['day'], 'row_idx': idx})
+        # iterrows အစား itertuples ပြောင်းသုံးထားသဖြင့် အကြိမ်ပေါင်းများစွာ ပိုမြန်ပါမည်
+        for row in df.itertuples():
+            if pd.notna(row.am1) and pd.notna(row.am2):
+                full_draws.append({'draw': f"{int(row.am1)}{int(row.am2)}", 'time': 'AM', 'day': row.day, 'row_idx': row.Index})
+            if pd.notna(row.pm1) and pd.notna(row.pm2):
+                full_draws.append({'draw': f"{int(row.pm1)}{int(row.pm2)}", 'time': 'PM', 'day': row.day, 'row_idx': row.Index})
 
         for i, d in enumerate(full_draws): d['index'] = i
         last_recorded_draw = full_draws[-1]
@@ -328,6 +313,7 @@ if uploaded_file:
             with c1:
                 anchor_count = st.number_input("📌 အနှစ်ချုပ်ကြည့်ရှုလိုသော မူအရေအတွက် (Default: 10):", min_value=1, max_value=50, value=10)
             with c2:
+                # Dynamic ဖြစ်စေရန် live_max_tf ကို ပြောင်းလဲအသုံးပြုနိုင်ပါသည်
                 live_max_tf = st.number_input("⏳ စစ်ဆေးမည့် ပွဲစဉ်အရေအတွက် [Max Span] (Default: 20):", min_value=1, max_value=50, value=20)
                 
             custom_anchors_str = st.text_input("🎯 စိတ်ကြိုက် အမာခံဂဏန်းများ (ဥပမာ - 48, 60, 62) [ရိုက်ထည့်ပါက Auto စနစ်ကို ကျော်လွန်မည်]:", value="")
@@ -336,271 +322,64 @@ if uploaded_file:
             with c1_mode:
                 live_mode = st.radio("🧠 AI တွက်ချက်မှုစနစ် ရွေးချယ်ရန်:", ["AI Trend (ရှေ့သမိုင်း ၅၀ အထိုင်)", "Calendar သီးသန့်မူများ (Fixed Pattern)"], horizontal=True, key="live_mode")
 
+            # --- အောက်ဆုံးတွင် ပြတ်တောက်သွားသော အပိုင်းအား ပြည့်စုံအောင် ရေးသားထားခြင်း ---
             if st.button("VIP ကို ယခုရှာဖွေမည် ⚡", key="btn_auto"):
                 selected_anchors = []
                 
+                # Custom Input ထည့်ထားပါက ယင်းတို့ကိုသာ ရှာဖွေမည်၊ မရှိပါက နောက်ဆုံးထွက်ခဲ့သော ပွဲစဉ်များကိုသာ ယူမည်
                 if custom_anchors_str.strip():
                     raw_nums = [x.strip() for x in custom_anchors_str.split(',') if x.strip().isdigit()]
-                    if not raw_nums:
-                        selected_anchors = full_draws[-anchor_count:]
-                    else:
-                        for n in raw_nums:
-                            latest_hit = next((d for d in reversed(full_draws) if d['draw'] == n), None)
-                            if latest_hit: selected_anchors.append(latest_hit)
-                        st.info(f"🎯 ရွေးချယ်ထားသော အမာခံ: {', '.join([d['draw'] for d in selected_anchors])}")
+                    for num in raw_nums:
+                        # ယင်းဂဏန်း ထွက်ခဲ့သော အကြိမ်များကို ရှာမည်
+                        hits = [d for d in full_draws if d['draw'] == num]
+                        if hits:
+                            selected_anchors.append(hits)
                 else:
-                    selected_anchors = full_draws[-anchor_count:]
+                    # နောက်ဆုံးပွဲစဉ် anchor_count ခုကို ဆွဲထုတ်မည်
+                    last_draws = full_draws[-anchor_count:]
+                    for d in last_draws:
+                        hits = [x for x in full_draws if x['draw'] == d['draw']]
+                        if hits:
+                            selected_anchors.append(hits)
                 
                 if not selected_anchors:
-                    st.error("⚠️ အမာခံ ဂဏန်းများ ရှာမတွေ့ပါ။")
+                    st.warning("⚠️ ရှာဖွေရန် အချက်အလက် မရှိပါ။")
                 else:
-                    scoring_pool = {}
-                    global_recovery = {}
-                    
-                    for past_obj in selected_anchors:
-                        past_val = past_obj['draw']
-                        past_val_r = past_val[::-1]
-                        past_time = past_obj['time']
-                        past_day = past_obj['day']
-                        
-                        condition_pools = [
-                            {"hits": [d for d in full_draws if d['draw'] == past_val and d['time'] == past_time], "lbl": f"{past_val} {past_time} စစ်စစ်"},
-                            {"hits": [d for d in full_draws if d['draw'] == past_val], "lbl": f"{past_val} ပေါင်းချုပ်"},
-                            {"hits": [d for d in full_draws if (d['draw'] == past_val or d['draw'] == past_val_r) and d['day'] == past_day], "lbl": f"{past_val}R {past_day} သီးသန့်"}
-                        ]
-                        
-                        for pool in condition_pools:
-                            if not pool['hits']: continue
-                            
-                            step_res, rec_pool = execute_analysis(
-                                pool['hits'], full_draws, live_max_tf, 
-                                is_custom_tab=True, search_session="AM+PM ပေါင်းချုပ်", 
-                                custom_trigger=pool['lbl'], mode=live_mode, is_research_mode=False
+                    with st.spinner("AI Engine တွက်ချက်နေပါသည်..."):
+                        all_vip_results = []
+                        for target_hits in selected_anchors:
+                            # Dynamic ဖြစ်သော live_max_tf ကို အသုံးပြု၍ execute_analysis ကို ခေါ်မည်
+                            step_buckets, recovery_pool = execute_analysis(
+                                target_hits=target_hits, 
+                                full_draws=full_draws, 
+                                requested_max_step=live_max_tf, 
+                                mode=live_mode
                             )
                             
-                            for step_dist, formulas_dict in step_res.items():
-                                for mk, mv in formulas_dict.items():
-                                    f_key = mv['pure']
-                                    if f_key not in scoring_pool:
-                                        scoring_pool[f_key] = {'count': 0, 'details': [], 'mu_k': mv['mu_k']}
-                                    
-                                    if mv['top'] not in [d['top'] for d in scoring_pool[f_key]['details']]:
-                                        scoring_pool[f_key]['details'].append(mv)
-                                        scoring_pool[f_key]['count'] += 1
-
-                            for rp in rec_pool:
-                                r_key = rp['key']
-                                if r_key not in global_recovery:
-                                    global_recovery[r_key] = {'score': 0, 'rem_steps': rp['rem_steps'], 'details': []}
-                                
-                                if rp['card']['top'] not in [d['top'] for d in global_recovery[r_key]['details']]:
-                                    global_recovery[r_key]['details'].append(rp['card'])
-                                    global_recovery[r_key]['score'] += rp['score']
-                                    if len(global_recovery[r_key]['details']) >= 2:
-                                        global_recovery[r_key]['score'] *= 2
-
-                    valid_vips = {k: v for k, v in scoring_pool.items() if v['count'] >= 2}
-                    deadline_singles = {k: v for k, v in scoring_pool.items() if v['count'] == 1}
-                    
-                    st.write("---")
-                    st.markdown("#### 🏆 VIP ဆုံးဖြတ်ချက် (Super & Second Overlaps)")
-                    
-                    if valid_vips:
-                        sorted_scores = sorted(valid_vips.items(), key=lambda x: x[1]['count'], reverse=True)
-                        for b_val, b_data in sorted_scores:
-                            tier = "Super VIP" if b_data['count'] >= 3 else "Second VIP"
-                            badge = "badge-super" if tier == "Super VIP" else "badge-second"
-                                
-                            with st.expander(f"⭐ {tier}: {b_val} (တူညီမှု: {b_data['count']} ခု)", expanded=False):
-                                st.markdown(f"<span class='{badge}'>{tier}</span><div style='color:#00FFCC; font-size:14px; margin-top:10px; margin-bottom:10px;'>💡 ဤမူကို အောက်ပါ ထောက်တိုင်များက ဘုံတူညီစွာ ညွှန်ပြနေပါသည်-</div>", unsafe_allow_html=True)
-                                for d_detail in b_data['details']:
-                                    span_class = "badge-inline-sniper" if d_detail['rate'] == 100.0 else "badge-inline-hp"
-                                    st.markdown(f"""
-                                    <div class="card card-live" style="padding:10px; margin-bottom:10px;">
-                                        <span style="font-size:16px; font-weight:bold; color:#E0D5FA;">{d_detail['top']}</span>
-                                        <span class='badge-inline {span_class}'>{d_detail['label_space']}{d_detail['max_span']} ပွဲအတွင်း (ယခုပွဲစဉ် ရက်ချိန်းပြည့်)</span>
-                                    </div>
-                                    """, unsafe_allow_html=True)
-                                    
+                            for step, mu_dict in step_buckets.items():
+                                for mu_k, card in mu_dict.items():
+                                    if card['is_deadline']:
+                                        all_vip_results.append(card)
+                        
                         st.write("---")
-                        st.markdown("#### 🎯 အတိကျဆုံး အကြံပြု Final ဂဏန်းများ (Weighted Scoring)")
-                        
-                        final_scores = {f"{i:02d}": 0 for i in range(100)}
-                        for b_val, b_data in sorted_scores:
-                            weight = b_data['count']
-                            mu_k = b_data['mu_k']
-                            for d in final_scores.keys():
-                                if check_single_draw_against_formula(d, mu_k, b_val):
-                                    final_scores[d] += weight
-                                    
-                        sorted_final_digits = sorted(final_scores.items(), key=lambda x: x[1], reverse=True)
-                        top_scoring_digits = [k for k, v in sorted_final_digits[:5] if v > 0]
-                        
-                        if top_scoring_digits:
-                            digit_display = ""
-                            for d, s in sorted_final_digits[:5]:
-                                if s > 0: digit_display += f"<span style='display:inline-block; margin-bottom: 8px;'>{d} <span class='score-badge'>Score: {s}</span></span>"
-                            st.markdown(f"""
-                            <div class="card card-intersection">
-                                <span style="color:#A294C7; font-size:15px; display:block;">VIP မူများအားလုံးကို အမှတ်ပေး ချိန်ခွင်လျှာညှိပြီး ရွေးချယ်ထားသော (Top 5) အကွက်များ:</span>
-                                <div class="final-digits">{digit_display}</div>
-                            </div>
-                            """, unsafe_allow_html=True)
-                        else:
-                            st.info("Intersection အမှတ်ပေးစနစ်ဖြင့် ရွေးချယ်ရန် လုံလောက်သော VIP မူ မရှိပါ။")
+                        if all_vip_results:
+                            st.markdown('<div class="section-title">🌟 SUPER VIP ရလဒ်များ (ယခုပွဲစဉ်အတွက်)</div>', unsafe_allow_html=True)
                             
-                    else:
-                        st.markdown("<div style='font-size:15px; font-weight:bold; color:#A294C7; padding:10px;'>ခိုင်မာသော VIP တူညီမှု ရလဒ်မရှိပါ (အနည်းဆုံး တိုက်ဆိုင်မှု ၂ ခု လိုအပ်ပါသည်)</div>", unsafe_allow_html=True)
-
-                    st.write("---")
-                    st.markdown("#### ⚠️ ရက်ချိန်းပြည့် မူများ (Standalone Deadline Hits)")
-                    if deadline_singles:
-                        for d_key, d_data in deadline_singles.items():
-                            item = d_data['details'][0]
-                            st.markdown(f"""
-                            <div class="card card-deadline" style="padding:12px;">
-                                <span style="font-size:16px; font-weight:bold; color:#fff;">🔴 [{item['lbl_prefix']}] {d_key}</span><br/>
-                                <span style="font-size:14px; color:#e74c3c; margin-top:5px; display:block;">
-                                    ⏳ သမိုင်းစံချိန်အရ ယခုပွဲစဉ် ရက်ချိန်းကွက်တိပြည့်နေပါသည် ({item['label_space']}{item['max_span']} ပွဲမြောက်)
-                                </span>
-                            </div>
-                            """, unsafe_allow_html=True)
-                    else:
-                        st.info("ယခုပွဲစဉ်အတွက် သီးသန့် ရက်ချိန်းပြည့်နေသော မူများ မရှိပါ။")
-
-                    st.write("---")
-                    st.markdown("#### 🛡️ Recovery & စောင့်ကြည့်ရမည့် မူကျန်များ (Top 5)")
-                    if global_recovery:
-                        sorted_recovery = sorted(global_recovery.items(), key=lambda x: x[1]['score'], reverse=True)[:5]
-                        for r_key, r_data in sorted_recovery:
-                            rem_txt = "၁ ပွဲသာ လိုတော့သည်" if r_data['rem_steps'] == 2 else "၂ ပွဲ လိုသေးသည်"
-                            overlap_txt = f" (ထောက်တိုင် {len(r_data['details'])} ခုငြိနေသည်)" if len(r_data['details']) > 1 else ""
-                            icon = "🟠" if r_data['score'] >= 80 else "🟡"
+                            # Overlap ဖြစ်သော (ထပ်နေသော) Formula များကို စစ်ထုတ်ခြင်း
+                            formulas_count = Counter([card['formula'] for card in all_vip_results])
                             
-                            display_lbl = r_data['details'][0]['lbl_prefix']
-                            space_lbl = r_data['details'][0]['label_space']
-                            
-                            st.markdown(f"""
-                            <div class="card card-recovery" style="padding:12px;">
-                                <span style="font-size:16px; font-weight:bold; color:#fff;">{icon} Score: {r_data['score']} | [{display_lbl}] {r_key}</span><br/>
-                                <span style="font-size:14px; color:#f39c12; margin-top:5px; display:block;">⏳ {space_lbl}{rem_txt} {overlap_txt}</span>
-                            </div>
-                            """, unsafe_allow_html=True)
-                    else:
-                        st.info("၁ ပွဲ သို့မဟုတ် ၂ ပွဲ အလိုရှိသော ခိုင်မာသည့် မူကျန်များ မရှိပါ။")
-
-        # ------------------------------------------
-        # TAB 2: CUSTOM FORMULAS ENGINE (All-in-One Expansion)
-        # ------------------------------------------
-        with tab_custom:
-            st.markdown("##### 🧠 တွက်ချက်မှုစနစ် (Mode) ရွေးချယ်ရန်")
-            custom_mode = st.radio("", ["AI Trend (ရှေ့သမိုင်း ၅၀ အထိုင်)", "Calendar သီးသန့်မူများ (Fixed Pattern)"], horizontal=True, key="custom_mode_tab2")
-            st.write("---")
-            
-            c1, c2, c3, c4 = st.columns(4)
-            with c1:
-                trigger_day = st.selectbox("📆 Trigger Day:", ["All"] + active_days_cycle, index=0)
-                trigger_num = st.text_input("🔍 အစပြုဂဏန်း ရိုက်ထည့်ပါ:", value="01", max_chars=7)
-            with c2:
-                if trigger_day != "All":
-                    st.markdown("<span style='color:#00FFCC; font-size:13px;'>ℹ️ Day စနစ်သုံးထားသဖြင့် အကြိမ်ရေပြည့်မီစေရန် Trigger ကို Auto Lock ချထားပါသည်။</span>", unsafe_allow_html=True)
-                    target_session_trigger = "AM+PM ပေါင်းချုပ်"
-                else:
-                    target_session_trigger = st.selectbox("🎯 ၁။ အစ (Trigger) ကောက်ယူမည့် အချိန်:", ["AM+PM ပေါင်းချုပ်", "AM သီးသန့်", "PM သီးသန့်"], index=2)
-            with c3:
-                target_session_search = st.selectbox("🔍 ၂။ မူများကို လိုက်ရှာမည့် အချိန် (Search Space):", ["All", "AM+PM ပေါင်းချုပ်", "AM သီးသန့်", "PM သီးသန့်"], index=0)
-            with c4:
-                custom_max_tf = st.number_input("⏳ စစ်ဆေးမည့် ပွဲစဉ်အရေအတွက်", min_value=1, max_value=25, value=16, key="custom_input_tf2")
-
-            if st.button("ရှာဖွေမည် 🚀", key="btn_custom_tab2"):
-                target_hits = []
-                clean_trigger = trigger_num.strip().upper()
-                is_composite = "+" in clean_trigger or "R" in clean_trigger or (trigger_day != "All")
-                digits_found = re.findall(r'\d+', clean_trigger)
-                
-                if digits_found:
-                    primary_digit = digits_found[0]
-                    if trigger_day == "All":
-                        if is_composite:
-                            secondary_digit = digits_found[1] if len(digits_found) > 1 else primary_digit[::-1]
-                            target_hits = [d for d in full_draws if d['draw'] == primary_digit or d['draw'] == secondary_digit]
-                        else:
-                            if target_session_trigger != "AM+PM ပေါင်းချုပ်" and "သီးသန့်" in target_session_trigger:
-                                req_time_init = "AM" if "AM" in target_session_trigger else "PM"
-                                target_hits = [d for d in full_draws if d['draw'] == primary_digit and d['time'] == req_time_init]
-                            else:
-                                target_hits = [d for d in full_draws if d['draw'] == primary_digit]
-                    else:
-                        secondary_digit = digits_found[1] if len(digits_found) > 1 else primary_digit[::-1]
-                        matched_weeks = {d['row_idx'] for d in full_draws if d['day'] == trigger_day and (d['draw'] == primary_digit or d['draw'] == secondary_digit)}
-                        for d in full_draws:
-                            if d['row_idx'] in matched_weeks:
-                                target_hits.append(d)
-                
-                if trigger_day == "All" and target_session_trigger != "AM+PM ပေါင်းချုပ်" and len(target_hits) > 0:
-                    req_time_filter = "AM" if "AM" in target_session_trigger else "PM"
-                    target_hits = [h for h in target_hits if h['time'] == req_time_filter]
-
-                r_val = "R" if (trigger_day != "All" and "R" not in trigger_num) else ""
-                d_val = trigger_day if trigger_day != "All" else ""
-                t_time_label = "PM" if target_session_trigger == "PM သီးသန့်" else "AM" if target_session_trigger == "AM သီးသန့်" else ""
-                lbl_prefix_custom = f"{trigger_num}{r_val} {d_val} {t_time_label}".strip()
-
-                if not target_hits:
-                    st.error("⚠️ သတ်မှတ်ချက်များနှင့် ကိုက်ညီသော သမိုင်းကြောင်းမှတ်တမ်း မရှိပါ Bro!")
-                else:
-                    st.write("---")
-                    
-                    # Logic to run all three if "All" is selected
-                    if target_session_search == "All":
-                        sessions_to_run = ["AM+PM ပေါင်းချုပ်", "AM သီးသန့်", "PM သီးသန့်"]
-                    else:
-                        sessions_to_run = [target_session_search]
-                        
-                    for current_session in sessions_to_run:
-                        st.markdown(f"<div class='section-title'>📊 {current_session} အတွက် ရလဒ်များ</div>", unsafe_allow_html=True)
-                        
-                        master_step_res, _ = execute_analysis(
-                            target_hits, full_draws, custom_max_tf, 
-                            is_custom_tab=True, search_session=current_session, 
-                            custom_trigger=lbl_prefix_custom,
-                            mode=custom_mode, is_research_mode=True
-                        )
-                        
-                        has_any_tab2_data = any(master_step_res[sk] for sk in master_step_res if sk <= custom_max_tf)
-                        
-                        if not has_any_tab2_data:
-                            st.info(f"[{current_session}] ဖြင့် ရှာဖွေရာတွင် သတ်မှတ်ထားသော ရက်ချိန်းနယ်ကုန် သတ်မှတ်ချက်အတွင်း ကိုက်ညီမည့် မူရင်းမှတ်တမ်း မတွေ့ရှိပါ Bro!")
-                        else:
-                            for step in sorted(master_step_res.keys()):
-                                if step > custom_max_tf: continue 
-                                formulas_dict = master_step_res[step]
-                                if not formulas_dict: continue
+                            for card in all_vip_results:
+                                # အကြိမ်ရေများစွာ ထပ်နေပါက SUPER VIP အဖြစ် သတ်မှတ်ပြသမည်
+                                overlap_badge = f'<div class="badge-super">🔥 Super VIP (ထပ်နေသောမူ)</div>' if formulas_count[card['formula']] > 1 else ""
                                 
-                                is_step_deadline = any(v['is_deadline'] for v in formulas_dict.values())
-                                
-                                if current_session == "AM သီးသန့်":
-                                    space_header_txt = "နံနက်ပိုင်း "
-                                elif current_session == "PM သီးသန့်":
-                                    space_header_txt = "ညနေပိုင်း "
-                                else:
-                                    space_header_txt = ""
-                                    
-                                tab2_header = f"⚠️ {space_header_txt}{step} ပွဲအတွင်း မူများ [ရက်ချိန်းပြည့်]" if is_step_deadline else f"🔽 {space_header_txt}{step} ပွဲအတွင်း မူများ"
-                                    
-                                with st.expander(tab2_header, expanded=True):
-                                    for mu_name, data in formulas_dict.items():
-                                        card_border_class = "card-sniper" if "100%" in data['formula'] else "card-hp"
-                                        badge_class = "badge-inline-sniper" if "100%" in data['formula'] else "badge-inline-hp"
-                                        span_tag = f"<span class='badge-inline {badge_class}'>{data['label_space']}{step} ပွဲအတွင်း</span>"
-                                        
-                                        st.markdown(f"""
-                                        <div class="card {card_border_class}">
-                                            <span class="line-trigger">{data['top']} {span_tag}</span>
-                                            <span class="line-formula">{data['formula']}</span>
-                                            <span class="line-history">{data['bottom']}</span>
-                                            <span class="line-advisor">{data['advisor']}</span>
-                                        </div>
-                                        """, unsafe_allow_html=True)
-else:
-    st.info("စတင်ရန်အတွက် Bro ရဲ့ 2D CSV သို့မဟုတ် Excel ဒေတာဖိုင်ကို အပေါ်တွင် အရင် တင်ပေးပါဦး။")
+                                st.markdown(f"""
+                                <div class="card card-deadline">
+                                    {overlap_badge}
+                                    <span class="line-trigger">{card['top']}</span>
+                                    <span class="line-formula">{card['formula']}</span>
+                                    <span class="line-history">{card['bottom']}</span>
+                                    <span class="line-advisor">{card['advisor']}</span>
+                                </div>
+                                """, unsafe_allow_html=True)
+                        else:
+                            st.info("ယခုပွဲစဉ်အတွက် Deadline ရောက်နေသော 90% အထက် VIP ရလဒ်များ မတွေ့ရှိပါ။")
