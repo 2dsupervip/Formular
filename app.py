@@ -8,7 +8,7 @@ from collections import Counter
 # ==========================================
 # PAGE CONFIG & PREMIUM DARK-THEME STYLE
 # ==========================================
-st.set_page_config(page_title="2D AI Master V35.3 All-in-One", layout="centered", page_icon="🤖")
+st.set_page_config(page_title="2D AI Master V35.4 All-in-One", layout="centered", page_icon="🤖")
 
 st.markdown("""
 <style>
@@ -32,7 +32,7 @@ st.markdown("""
     .badge-inline { padding: 2px 10px; border-radius: 6px; font-size: 14px; font-weight: bold; margin-left: 6px; margin-right: 6px; display: inline-block; vertical-align: middle; }
     .badge-inline-sniper { background-color: #9b59b6; color: white; }
     .badge-inline-hp { background-color: #2ecc71; color: #0D2216; }
-    .badge-super { background-color: #FFD700; color: #000; padding: 3px 8px; border-radius: 5px; font-weight: bold; }
+    .badge-super { background-color: #FFD700; color: #000; padding: 4px 10px; border-radius: 6px; font-weight: bold; font-size: 16px; display: block; text-align: center; margin-bottom: 10px;}
     .badge-second { background-color: #C0C0C0; color: #000; padding: 3px 8px; border-radius: 5px; font-weight: bold; }
     
     .section-title { color: #00FFCC; font-size: 20px; border-bottom: 2px solid #3D2B5E; padding-bottom: 8px; margin-top: 20px; margin-bottom: 15px; }
@@ -40,7 +40,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V35.4)</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Advanced Quality-Weighted & Specificity Penalty Logic Included</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Data Cap (Max 50) | Dynamic Quality & Specificity Logic Engine</div>', unsafe_allow_html=True)
 
 special_groups = {
     "ညီကို": {"01","10","12","21","23","32","34","43","45","54","56","65","67","76","78","87","89","98","90","09"},
@@ -163,16 +163,28 @@ def get_hybrid_candidates(target_hits, full_draws, max_step):
     return candidates
 
 # ==========================================
-# MASTER ROUTINE: DUAL SESSION WIN-RATE ENGINE
+# MASTER ROUTINE: ADVANCED TREND ENGINE (MAX 50)
 # ==========================================
 def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=False, search_session="All", custom_trigger="", mode="AI Trend", is_research_mode=False):
     step_buckets = {step: {} for step in range(1, requested_max_step + 1)}
     current_latest_idx = len(full_draws) - 1
-    total_count = len(target_hits)
-    if total_count == 0: return step_buckets, []
+    
+    # 📌 [DATA BLOAT CONTROL] အများဆုံး နောက်ဆုံးအကြိမ် ၅၀ ကိုသာ ဖြတ်ယူခြင်း
+    MAX_RECENT_HITS_CAP = 50
+    recent_target_hits = target_hits[-MAX_RECENT_HITS_CAP:] if len(target_hits) > MAX_RECENT_HITS_CAP else target_hits
+    total_recent_count = len(recent_target_hits)
+    
+    if total_recent_count == 0: return step_buckets, []
+
+    # 📌 [DYNAMIC THRESHOLD] 30% of total hits, with an absolute floor of 10
+    min_required_hits = max(10, int(total_recent_count * 0.3))
+    
+    # Optional: If the dataset is so small (e.g. 5) we bypass to allow research, but flag it
+    if total_recent_count < min_required_hits and not is_research_mode:
+        return step_buckets, []
 
     recovery_pool = [] 
-    calendar_candidates = get_hybrid_candidates(target_hits, full_draws, requested_max_step) if mode == "Calendar သီးသန့်မူများ (Fixed Pattern)" else {}
+    calendar_candidates = get_hybrid_candidates(recent_target_hits, full_draws, requested_max_step) if mode == "Calendar သီးသန့်မူများ (Fixed Pattern)" else {}
 
     if search_session == "AM သီးသန့်": label_space = "နံနက်ပိုင်း "
     elif search_session == "PM သီးသန့်": label_space = "ညနေပိုင်း "
@@ -186,7 +198,7 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
             actual_hit_combinations = []
             last_generated_val = cand_val
 
-            for hit in target_hits:
+            for hit in recent_target_hits:
                 hit_idx = hit['index']
                 current_val = cand_val
                 
@@ -218,16 +230,16 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
             
             max_required_span = max(valid_spans)
             successful_hits = sum(1 for s in hit_steps_across_history if s <= max_required_span)
-            rate = (successful_hits / total_count) * 100
+            rate = (successful_hits / total_recent_count) * 100
 
-            if rate < 90.0 or total_count < 10: continue
+            if rate < 90.0: continue
 
-            lbl_prefix = custom_trigger if is_custom_tab else f"{target_hits[-1]['draw']} {target_hits[-1]['time']}"
+            lbl_prefix = custom_trigger if is_custom_tab else f"{recent_target_hits[-1]['draw']} {recent_target_hits[-1]['time']}"
             
             is_deadline_flag = False
             rem_steps = 999
-            if target_hits:
-                last_hit_global_idx = target_hits[-1]['index']
+            if recent_target_hits:
+                last_hit_global_idx = recent_target_hits[-1]['index']
                 
                 if "သီးသန့်" in search_session:
                     req_t = "AM" if "AM" in search_session else "PM"
@@ -250,9 +262,9 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
             card_payload = {
                 "top": f"🔮 [{lbl_prefix}] ထွက်ပြီးလျှင်", 
                 "formula": f"{last_generated_val} {'100%' if rate == 100.0 else f'{rate:.1f}%'}", 
-                "bottom": f"မှန်ကန်မှု: ({total_count} ကြိမ်မှာ {successful_hits} ကြိမ်မှန်)", 
-                "success_hits": successful_hits, # Added for Quality Scoring
-                "total_hits": total_count,       # Added for Quality Scoring
+                "bottom": f"မှန်ကန်မှု: (လတ်တလော {total_recent_count} ကြိမ်မှာ {successful_hits} ကြိမ်မှန်)", 
+                "success_hits": successful_hits, 
+                "total_hits": total_recent_count,
                 "is_deadline": is_deadline_flag, 
                 "pure": last_generated_val, 
                 "mu_k": mu_k, 
@@ -267,11 +279,19 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
                 step_buckets[max_required_span][last_generated_val if mode == "Calendar သီးသန့်မူများ (Fixed Pattern)" else mu_k] = card_payload
             
             if not is_research_mode and rem_steps in [2, 3]:
+                # 📌 [RECOVERY ADVANCED SCORING] Urgency Multiplier & Specificity Penalty
+                coverage_count = sum(1 for i in range(100) if check_single_draw_against_formula(f"{i:02d}", mu_k, last_generated_val))
+                coverage_count = max(1, coverage_count)
+                
+                base_quality_score = (rate / 100.0) * successful_hits
+                urgency_multiplier = 1.5 if rem_steps == 2 else 1.0 # 1.5x boost if 1 step left
+                recovery_score = base_quality_score * urgency_multiplier * (100.0 / coverage_count)
+                
                 recovery_pool.append({
                     "key": last_generated_val, 
                     "lbl_prefix": lbl_prefix, 
                     "rem_steps": rem_steps, 
-                    "score": 80 if rem_steps == 2 else 50, 
+                    "score": round(recovery_score, 1), 
                     "card": card_payload
                 })
 
@@ -407,9 +427,8 @@ if uploaded_file:
                                         mu_k_val = mv['mu_k']
                                         
                                         if f_key not in scoring_pool:
-                                            # (၁) ကွက်ရေ အကျဉ်းအကျယ် Coverage ကို Dynamic ရှာဖွေခြင်း
                                             coverage = sum(1 for i in range(100) if check_single_draw_against_formula(f"{i:02d}", mu_k_val, f_key))
-                                            coverage = max(1, coverage) # Prevent division by zero
+                                            coverage = max(1, coverage) 
                                             
                                             scoring_pool[f_key] = {
                                                 'count': 0, 'details': [], 'mu_k': mu_k_val, 
@@ -419,20 +438,18 @@ if uploaded_file:
                                         if mv['top'] not in [d['top'] for d in scoring_pool[f_key]['details']]:
                                             scoring_pool[f_key]['details'].append(mv)
                                             scoring_pool[f_key]['count'] += 1
-                                            # (၂) Quality Score တွက်ချက်ခြင်း: (Win Rate %) * (မှန်ကန်ခဲ့သော အကြိမ်အရေအတွက်)
                                             base_q_score = (mv['rate'] / 100.0) * mv['success_hits']
                                             scoring_pool[f_key]['quality_score'] += base_q_score
 
                                 for rp in rec_pool:
                                     r_key = rp['key']
                                     if r_key not in global_recovery:
-                                        global_recovery[r_key] = {'score': 0, 'rem_steps': rp['rem_steps'], 'details': []}
+                                        global_recovery[r_key] = {'score': 0.0, 'rem_steps': rp['rem_steps'], 'details': []}
                                     
                                     if rp['card']['top'] not in [d['top'] for d in global_recovery[r_key]['details']]:
                                         global_recovery[r_key]['details'].append(rp['card'])
+                                        # 📌 Accumulate the dynamically calculated recovery scores
                                         global_recovery[r_key]['score'] += rp['score']
-                                        if len(global_recovery[r_key]['details']) >= 2:
-                                            global_recovery[r_key]['score'] *= 2
 
                     valid_vips = {k: v for k, v in scoring_pool.items() if v['count'] >= 2}
                     deadline_singles = {k: v for k, v in scoring_pool.items() if v['count'] == 1}
@@ -441,11 +458,9 @@ if uploaded_file:
                     st.markdown("#### 🏆 VIP ဆုံးဖြတ်ချက် (Quality & Overlaps)")
                     
                     if valid_vips:
-                        # Quality Score ကိုအခြေခံပြီး စီထားခြင်း
                         sorted_vips = sorted(valid_vips.items(), key=lambda x: x[1]['quality_score'], reverse=True)
                         
                         for i, (b_val, b_data) in enumerate(sorted_vips):
-                            # (၃) Quality အမြင့်ဆုံး Top 3 ကိုသာ Super VIP သတ်မှတ်ခြင်း
                             is_super = i < 3 
                             tier = "Super VIP" if is_super else "Second VIP"
                             badge = "badge-super" if is_super else "badge-second"
@@ -473,15 +488,12 @@ if uploaded_file:
                         st.write("---")
                         st.markdown("#### 🎯 အတိကျဆုံး အကြံပြု Final ဂဏန်းများ (Detailed Breakdown)")
                         
-                        # Final ဂဏန်း တွက်ချက်မှု နှင့် သမိုင်းကြောင်း သိမ်းဆည်းရန် Dictionary တည်ဆောက်ခြင်း
                         final_scores = {f"{i:02d}": {'score': 0.0, 'matched_formulas': []} for i in range(100)}
                         
                         for b_val, b_data in sorted_vips:
                             mu_k = b_data['mu_k']
                             coverage = b_data['coverage']
                             
-                            # (၄) Specificity Penalty: အရည်အသွေး အမှတ်ကို ကွက်ရေ (Coverage) ဖြင့် ချိန်ထိုးခြင်း
-                            # ကွက်ရေနည်းသော မူ (ဥပမာ One Change) သည် အမှတ် ပိုရမည်။
                             weight = b_data['quality_score'] * (100.0 / coverage)
                             
                             for d in final_scores.keys():
@@ -489,7 +501,6 @@ if uploaded_file:
                                     final_scores[d]['score'] += weight
                                     final_scores[d]['matched_formulas'].append(f"[{mu_k}] {b_val}")
                                     
-                        # အမှတ်အများဆုံး ဂဏန်း ၅ လုံးကို ရွေးထုတ်ခြင်း
                         sorted_final_digits = sorted(final_scores.items(), key=lambda x: x[1]['score'], reverse=True)
                         top_scoring_digits = [(k, v) for k, v in sorted_final_digits[:5] if v['score'] > 0]
                         
@@ -535,18 +546,20 @@ if uploaded_file:
                     st.write("---")
                     st.markdown("#### 🛡️ Recovery & စောင့်ကြည့်ရမည့် မူကျန်များ (Top 5)")
                     if global_recovery:
+                        # 📌 Sort by the new dynamic recovery score
                         sorted_recovery = sorted(global_recovery.items(), key=lambda x: x[1]['score'], reverse=True)[:5]
                         for r_key, r_data in sorted_recovery:
                             rem_txt = "၁ ပွဲသာ လိုတော့သည်" if r_data['rem_steps'] == 2 else "၂ ပွဲ လိုသေးသည်"
                             overlap_txt = f" (ထောက်တိုင် {len(r_data['details'])} ခုငြိနေသည်)" if len(r_data['details']) > 1 else ""
-                            icon = "🟠" if r_data['score'] >= 80 else "🟡"
+                            # Update icon logic since score scale is larger now
+                            icon = "🔥" if r_data['score'] >= 100 else ("🟠" if r_data['score'] >= 50 else "🟡")
                             
                             display_lbl = r_data['details'][0]['lbl_prefix']
                             space_lbl = r_data['details'][0]['label_space']
                             
                             html_recovery = (
                                 '<div class="card card-recovery" style="padding:12px;">'
-                                f'<span style="font-size:16px; font-weight:bold; color:#fff;">{icon} Score: {r_data["score"]} | [{display_lbl}] {r_key}</span><br/>'
+                                f'<span style="font-size:16px; font-weight:bold; color:#fff;">{icon} Score: {r_data["score"]:.1f} | [{display_lbl}] {r_key}</span><br/>'
                                 f'<span style="font-size:14px; color:#f39c12; margin-top:5px; display:block;">⏳ {space_lbl}{rem_txt} {overlap_txt}</span>'
                                 '</div>'
                             )
