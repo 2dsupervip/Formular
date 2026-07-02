@@ -8,7 +8,7 @@ from collections import Counter
 # ==========================================
 # PAGE CONFIG & PREMIUM DARK-THEME STYLE
 # ==========================================
-st.set_page_config(page_title="2D AI Master V35.4 All-in-One", layout="centered", page_icon="🤖")
+st.set_page_config(page_title="2D AI Master V35.5 All-in-One", layout="centered", page_icon="🤖")
 
 st.markdown("""
 <style>
@@ -27,6 +27,7 @@ st.markdown("""
     .line-trigger { font-size: 16px; font-weight: bold; color: #E0D5FA; margin-bottom: 6px; display: block; }
     .line-formula { font-size: 20px; font-weight: bold; color: #FFD700; margin-bottom: 6px; display: block; }
     .line-history { font-size: 14px; color: #A294C7; display: block; }
+    .line-focus { font-size: 14px; color: #f1c40f; font-weight: bold; display: block; margin-top: 5px; margin-bottom: 5px;}
     .line-advisor { font-size: 14px; color: #00FFCC; font-style: italic; margin-top: 10px; display: block; border-top: 1px dashed #3D2B5E; padding-top: 8px; }
     
     .badge-inline { padding: 2px 10px; border-radius: 6px; font-size: 14px; font-weight: bold; margin-left: 6px; margin-right: 6px; display: inline-block; vertical-align: middle; }
@@ -39,8 +40,8 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V35.4)</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Data Cap (Max 50) | Dynamic Quality & Specificity Logic Engine</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V35.5)</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Max Hits Cap | IQR Focus Range | Dynamic Quality & Specificity Engine</div>', unsafe_allow_html=True)
 
 special_groups = {
     "ညီကို": {"01","10","12","21","23","32","34","43","45","54","56","65","67","76","78","87","89","98","90","09"},
@@ -163,23 +164,22 @@ def get_hybrid_candidates(target_hits, full_draws, max_step):
     return candidates
 
 # ==========================================
-# MASTER ROUTINE: ADVANCED TREND ENGINE (MAX 50)
+# MASTER ROUTINE: V35.5 TREND ENGINE (MAX 50 + IQR FOCUS)
 # ==========================================
 def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=False, search_session="All", custom_trigger="", mode="AI Trend", is_research_mode=False):
     step_buckets = {step: {} for step in range(1, requested_max_step + 1)}
     current_latest_idx = len(full_draws) - 1
     
-    # 📌 [DATA BLOAT CONTROL] အများဆုံး နောက်ဆုံးအကြိမ် ၅၀ ကိုသာ ဖြတ်ယူခြင်း
+    # [DATA BLOAT CONTROL] အများဆုံး နောက်ဆုံးအကြိမ် ၅၀ ကိုသာ ဖြတ်ယူခြင်း
     MAX_RECENT_HITS_CAP = 50
     recent_target_hits = target_hits[-MAX_RECENT_HITS_CAP:] if len(target_hits) > MAX_RECENT_HITS_CAP else target_hits
     total_recent_count = len(recent_target_hits)
     
     if total_recent_count == 0: return step_buckets, []
 
-    # 📌 [DYNAMIC THRESHOLD] 30% of total hits, with an absolute floor of 10
+    # [DYNAMIC THRESHOLD] 30% of total hits, with an absolute floor of 10
     min_required_hits = max(10, int(total_recent_count * 0.3))
     
-    # Optional: If the dataset is so small (e.g. 5) we bypass to allow research, but flag it
     if total_recent_count < min_required_hits and not is_research_mode:
         return step_buckets, []
 
@@ -225,14 +225,28 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
                         break
                 hit_steps_across_history.append(found_hit_step if found_hit_step is not None else 999)
 
-            valid_spans = [s for s in hit_steps_across_history if s <= requested_max_step]
+            valid_spans = sorted([s for s in hit_steps_across_history if s <= requested_max_step])
             if not valid_spans or last_generated_val == "-": continue
             
             max_required_span = max(valid_spans)
-            successful_hits = sum(1 for s in hit_steps_across_history if s <= max_required_span)
+            successful_hits = len(valid_spans)
             rate = (successful_hits / total_recent_count) * 100
 
             if rate < 90.0: continue
+
+            # [FOCUS RANGE CALCULATION (IQR)]
+            if len(valid_spans) > 1:
+                q1_idx = int(len(valid_spans) * 0.25)
+                q3_idx = int(len(valid_spans) * 0.75)
+                if q3_idx >= len(valid_spans): q3_idx = len(valid_spans) - 1
+                focus_start = valid_spans[q1_idx]
+                focus_end = valid_spans[q3_idx]
+                if focus_start == focus_end:
+                    focus_str = f"အများဆုံး {focus_start} ပွဲမြောက်တွင် လာတတ်သည်"
+                else:
+                    focus_str = f"ပျမ်းမျှ 🎯 {focus_start} မှ {focus_end} ပွဲအတွင်း အများဆုံး လာတတ်သည်"
+            else:
+                focus_str = f"အများဆုံး {valid_spans[0]} ပွဲမြောက်တွင် လာတတ်သည်"
 
             lbl_prefix = custom_trigger if is_custom_tab else f"{recent_target_hits[-1]['draw']} {recent_target_hits[-1]['time']}"
             
@@ -262,6 +276,7 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
             card_payload = {
                 "top": f"🔮 [{lbl_prefix}] ထွက်ပြီးလျှင်", 
                 "formula": f"{last_generated_val} {'100%' if rate == 100.0 else f'{rate:.1f}%'}", 
+                "focus_range": focus_str,
                 "bottom": f"မှန်ကန်မှု: (လတ်တလော {total_recent_count} ကြိမ်မှာ {successful_hits} ကြိမ်မှန်)", 
                 "success_hits": successful_hits, 
                 "total_hits": total_recent_count,
@@ -279,12 +294,12 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
                 step_buckets[max_required_span][last_generated_val if mode == "Calendar သီးသန့်မူများ (Fixed Pattern)" else mu_k] = card_payload
             
             if not is_research_mode and rem_steps in [2, 3]:
-                # 📌 [RECOVERY ADVANCED SCORING] Urgency Multiplier & Specificity Penalty
+                # [RECOVERY ADVANCED SCORING] Urgency Multiplier & Specificity Penalty
                 coverage_count = sum(1 for i in range(100) if check_single_draw_against_formula(f"{i:02d}", mu_k, last_generated_val))
                 coverage_count = max(1, coverage_count)
                 
                 base_quality_score = (rate / 100.0) * successful_hits
-                urgency_multiplier = 1.5 if rem_steps == 2 else 1.0 # 1.5x boost if 1 step left
+                urgency_multiplier = 1.5 if rem_steps == 2 else 1.0
                 recovery_score = base_quality_score * urgency_multiplier * (100.0 / coverage_count)
                 
                 recovery_pool.append({
@@ -448,7 +463,6 @@ if uploaded_file:
                                     
                                     if rp['card']['top'] not in [d['top'] for d in global_recovery[r_key]['details']]:
                                         global_recovery[r_key]['details'].append(rp['card'])
-                                        # 📌 Accumulate the dynamically calculated recovery scores
                                         global_recovery[r_key]['score'] += rp['score']
 
                     valid_vips = {k: v for k, v in scoring_pool.items() if v['count'] >= 2}
@@ -480,6 +494,7 @@ if uploaded_file:
                                         '<div class="card card-live" style="padding:10px; margin-bottom:10px;">'
                                         f'<span style="font-size:16px; font-weight:bold; color:#E0D5FA;">{d_detail["top"]}</span>'
                                         f'<span class="badge-inline {span_class}">{d_detail["label_space"]}{d_detail["max_span"]} ပွဲအတွင်း (ယခုပွဲစဉ် ရက်ချိန်းပြည့်)</span>'
+                                        f'<span class="line-focus">{d_detail["focus_range"]}</span>'
                                         f'<div style="font-size:13px; color:#f39c12; margin-top:5px;">မှန်ကန်မှု - {d_detail["bottom"]}</div>'
                                         '</div>'
                                     )
@@ -537,6 +552,7 @@ if uploaded_file:
                                 '<span style="font-size:14px; color:#e74c3c; margin-top:5px; display:block;">'
                                 f'⏳ သမိုင်းစံချိန်အရ ယခုပွဲစဉ် ရက်ချိန်းကွက်တိပြည့်နေပါသည် ({item["label_space"]}{item["max_span"]} ပွဲမြောက်)'
                                 '</span>'
+                                f'<span class="line-focus" style="margin-top:8px;">{item["focus_range"]}</span>'
                                 '</div>'
                             )
                             st.markdown(html_deadline, unsafe_allow_html=True)
@@ -546,21 +562,21 @@ if uploaded_file:
                     st.write("---")
                     st.markdown("#### 🛡️ Recovery & စောင့်ကြည့်ရမည့် မူကျန်များ (Top 5)")
                     if global_recovery:
-                        # 📌 Sort by the new dynamic recovery score
                         sorted_recovery = sorted(global_recovery.items(), key=lambda x: x[1]['score'], reverse=True)[:5]
                         for r_key, r_data in sorted_recovery:
                             rem_txt = "၁ ပွဲသာ လိုတော့သည်" if r_data['rem_steps'] == 2 else "၂ ပွဲ လိုသေးသည်"
                             overlap_txt = f" (ထောက်တိုင် {len(r_data['details'])} ခုငြိနေသည်)" if len(r_data['details']) > 1 else ""
-                            # Update icon logic since score scale is larger now
                             icon = "🔥" if r_data['score'] >= 100 else ("🟠" if r_data['score'] >= 50 else "🟡")
                             
                             display_lbl = r_data['details'][0]['lbl_prefix']
                             space_lbl = r_data['details'][0]['label_space']
+                            focus_rng = r_data['details'][0]['focus_range']
                             
                             html_recovery = (
                                 '<div class="card card-recovery" style="padding:12px;">'
                                 f'<span style="font-size:16px; font-weight:bold; color:#fff;">{icon} Score: {r_data["score"]:.1f} | [{display_lbl}] {r_key}</span><br/>'
                                 f'<span style="font-size:14px; color:#f39c12; margin-top:5px; display:block;">⏳ {space_lbl}{rem_txt} {overlap_txt}</span>'
+                                f'<span class="line-focus" style="margin-top:8px;">{focus_rng}</span>'
                                 '</div>'
                             )
                             st.markdown(html_recovery, unsafe_allow_html=True)
@@ -676,6 +692,7 @@ if uploaded_file:
                                                 f'<div class="card {card_border_class}">'
                                                 f'<span class="line-trigger">{data["top"]} {span_tag}</span>'
                                                 f'<span class="line-formula">{data["formula"]}</span>'
+                                                f'<span class="line-focus">{data["focus_range"]}</span>'
                                                 f'<span class="line-history">{data["bottom"]}</span>'
                                                 f'<span class="line-advisor">{data["advisor"]}</span>'
                                                 '</div>'
