@@ -8,7 +8,7 @@ from collections import Counter
 # ==========================================
 # PAGE CONFIG & PREMIUM DARK-THEME STYLE
 # ==========================================
-st.set_page_config(page_title="2D AI Master V35.7 Master-Lab", layout="centered", page_icon="🤖")
+st.set_page_config(page_title="2D AI Master V35.8 Master-Lab", layout="centered", page_icon="🤖")
 
 st.markdown("""
 <style>
@@ -34,14 +34,13 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V35.7)</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Auto-Suggest Keywords | Restored Legacy Triggers | Pair Engine</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V35.8)</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Lightweight UI Update | Fast Pair Engine | Fail-safe Processing</div>', unsafe_allow_html=True)
 
 # Session State Memory Setup
 if 'full_draws' not in st.session_state: st.session_state.full_draws = None
 if 'active_days' not in st.session_state: st.session_state.active_days = []
 if 'day_pairs' not in st.session_state: st.session_state.day_pairs = {}
-if 'suggestion_list' not in st.session_state: st.session_state.suggestion_list = []
 
 special_groups = {
     "ညီကို": {"01","10","12","21","23","32","34","43","45","54","56","65","67","76","78","87","89","98","90","09"},
@@ -52,19 +51,6 @@ special_groups = {
     "ဆယ်ပြည့်": {"10","01","20","02","30","03","40","04","50","05","60","06","70","07","80","08","90","09"}
 }
 mu_keys_list = ["လုံးဘိုင်", "One Change", "key", "အပူးပါခွေ", "ထိပ်စီးစနစ်သစ်", "နောက်ပိတ်စနစ်သစ်", "ဘရိတ်", "စုံ/မ ကပ်", "အုပ်စု သီးသန့်", "အုပ်စုတွဲ"]
-
-# Generate Autocomplete List ONCE
-if not st.session_state.suggestion_list:
-    sl = []
-    sl.extend([f"{i:02d}" for i in range(100)]) # 00 to 99
-    sl.extend(list(special_groups.keys())) # Groups
-    sl.append("ဘရိတ်တူ")
-    sl.extend([f"{i:02d} အလယ်" for i in range(100)]) # Middle pairs
-    sl.extend([f"{i} ထိပ်" for i in range(10)]) # Heads
-    sl.extend([f"{i} ပိတ်" for i in range(10)]) # Tails
-    sl.extend([f"{i} ဘရိတ်" for i in range(10)]) # Breaks
-    sl.extend([f"{i:03d}" for i in range(1000)]) # 3 Digits for AM/PM daily match
-    st.session_state.suggestion_list = sl
 
 # ==========================================
 # HELPER FUNCTIONS & FAIL-SAFE LOGIC
@@ -172,7 +158,7 @@ def get_hybrid_candidates(target_hits, full_draws, max_step):
     return candidates
 
 # ==========================================
-# MASTER ROUTINE: V35.7 INTERSECTION ENGINE
+# MASTER ROUTINE: V35.8 INTERSECTION ENGINE
 # ==========================================
 def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=False, search_session="All", custom_trigger="", mode="AI Trend", is_research_mode=False, min_rate_threshold=90.0):
     step_buckets = {step: {} for step in range(1, requested_max_step + 1)}
@@ -332,78 +318,79 @@ if st.session_state.full_draws:
             submit_live = st.form_submit_button("VIP ကို ယခုရှာဖွေမည် ⚡")
 
         if submit_live:
-            selected_anchors = []
-            if custom_anchors_str.strip():
-                raw_nums = [x.strip() for x in custom_anchors_str.split(',') if x.strip().isdigit()]
-                for n in raw_nums:
-                    hit = next((d for d in reversed(st.session_state.full_draws) if d['draw'] == n), None)
-                    if hit: selected_anchors.append(hit)
-            else:
-                selected_anchors = st.session_state.full_draws[-anchor_count:]
-            
-            if not selected_anchors:
-                st.error("⚠️ အမာခံဂဏန်းများ ရှာမတွေ့ပါ။")
-            else:
-                scoring_pool, global_recovery = {}, {}
-                for past_obj in selected_anchors:
-                    p_val, p_time, p_day = past_obj['draw'], past_obj['time'], past_obj['day']
-                    condition_pools = [
-                        {"hits": [d for d in st.session_state.full_draws if d['draw'] == p_val and d['time'] == p_time], "lbl": f"{p_val} {p_time} စစ်စစ်"},
-                        {"hits": [d for d in st.session_state.full_draws if d['draw'] == p_val], "lbl": f"{p_val} ပေါင်းချုပ်"},
-                        {"hits": [d for d in st.session_state.full_draws if (d['draw'] == p_val or d['draw'] == p_val[::-1]) and d['day'] == p_day], "lbl": f"{p_val}R {p_day} သီးသန့်"}
-                    ]
-                    for p in condition_pools:
-                        if not p['hits']: continue
-                        step_res, rec_pool = execute_analysis(p['hits'], st.session_state.full_draws, live_max_tf, is_custom_tab=True, search_session="AM+PM ပေါင်းချုပ်", custom_trigger=p['lbl'], mode=live_mode, min_rate_threshold=90.0)
-                        
-                        for step_dist, formulas_dict in step_res.items():
-                            for mk, mv in formulas_dict.items():
-                                f_key = mv['pure']
-                                if f_key not in scoring_pool:
-                                    cov = max(1, sum(1 for i in range(100) if check_single_draw_against_formula(f"{i:02d}", mv['mu_k'], f_key)))
-                                    scoring_pool[f_key] = {'count': 0, 'details': [], 'mu_k': mv['mu_k'], 'quality_score': 0.0, 'coverage': cov}
-                                if mv['top'] not in [d['top'] for d in scoring_pool[f_key]['details']]:
-                                    scoring_pool[f_key]['details'].append(mv)
-                                    scoring_pool[f_key]['count'] += 1
-                                    scoring_pool[f_key]['quality_score'] += (mv['rate'] / 100.0) * mv['success_hits']
-
-                        for rp in rec_pool:
-                            r_key = rp['key']
-                            if r_key not in global_recovery: global_recovery[r_key] = {'score': 0.0, 'rem_steps': rp['rem_steps'], 'details': []}
-                            if rp['card']['top'] not in [d['top'] for d in global_recovery[r_key]['details']]:
-                                global_recovery[r_key]['details'].append(rp['card'])
-                                global_recovery[r_key]['score'] += rp['score']
-
-                valid_vips = {k: v for k, v in scoring_pool.items() if v['count'] >= 2}
-                deadline_singles = {k: v for k, v in scoring_pool.items() if v['count'] == 1}
-                
-                st.markdown("#### 🏆 VIP ဆုံးဖြတ်ချက် (Overlaps Match)")
-                if valid_vips:
-                    for i, (b_val, b_data) in enumerate(sorted(valid_vips.items(), key=lambda x: x[1]['quality_score'], reverse=True)):
-                        is_super = i < 3
-                        badge = "badge-super" if is_super else "badge-second"
-                        with st.expander(f"⭐ {'Super VIP' if is_super else 'Second VIP'}: {b_val} (Score: {b_data['quality_score']:.1f})", expanded=is_super):
-                            st.markdown(f"<span class='{badge}'>{'Super VIP' if is_super else 'Second VIP'}</span> <span style='float:right;'>ကွက်ရေ: {b_data['coverage']} ကွက်</span>", unsafe_allow_html=True)
-                            for d_detail in b_data['details']:
-                                s_class = "badge-inline-sniper" if d_detail['rate'] == 100.0 else "badge-inline-hp"
-                                st.markdown(f'<div class="card card-live" style="padding:10px; margin-bottom:10px;"><b>{d_detail["top"]}</b> <span class="badge-inline {s_class}">{d_detail["label_space"]}{d_detail["max_span"]} ပွဲအတွင်း</span><br/><small style="color:#f39c12;">{d_detail["focus_range"]}</small><br/><small>{d_detail["bottom"]}</small></div>', unsafe_allow_html=True)
+            with st.spinner("⚡ AI အရည်အသွေး အမှတ်ပေးစနစ်ဖြင့် တွက်ချက်နေပါသည်..."):
+                selected_anchors = []
+                if custom_anchors_str.strip():
+                    raw_nums = [x.strip() for x in custom_anchors_str.split(',') if x.strip().isdigit()]
+                    for n in raw_nums:
+                        hit = next((d for d in reversed(st.session_state.full_draws) if d['draw'] == n), None)
+                        if hit: selected_anchors.append(hit)
                 else:
-                    st.info("ခိုင်မာသော VIP တူညီမှုရလဒ် ယခုပွဲစဉ်တွင် မရှိသေးပါ။")
+                    selected_anchors = st.session_state.full_draws[-anchor_count:]
+                
+                if not selected_anchors:
+                    st.error("⚠️ အမာခံဂဏန်းများ ရှာမတွေ့ပါ။")
+                else:
+                    scoring_pool, global_recovery = {}, {}
+                    for past_obj in selected_anchors:
+                        p_val, p_time, p_day = past_obj['draw'], past_obj['time'], past_obj['day']
+                        condition_pools = [
+                            {"hits": [d for d in st.session_state.full_draws if d['draw'] == p_val and d['time'] == p_time], "lbl": f"{p_val} {p_time} စစ်စစ်"},
+                            {"hits": [d for d in st.session_state.full_draws if d['draw'] == p_val], "lbl": f"{p_val} ပေါင်းချုပ်"},
+                            {"hits": [d for d in st.session_state.full_draws if (d['draw'] == p_val or d['draw'] == p_val[::-1]) and d['day'] == p_day], "lbl": f"{p_val}R {p_day} သီးသန့်"}
+                        ]
+                        for p in condition_pools:
+                            if not p['hits']: continue
+                            step_res, rec_pool = execute_analysis(p['hits'], st.session_state.full_draws, live_max_tf, is_custom_tab=True, search_session="AM+PM ပေါင်းချုပ်", custom_trigger=p['lbl'], mode=live_mode, min_rate_threshold=90.0)
+                            
+                            for step_dist, formulas_dict in step_res.items():
+                                for mk, mv in formulas_dict.items():
+                                    f_key = mv['pure']
+                                    if f_key not in scoring_pool:
+                                        cov = max(1, sum(1 for i in range(100) if check_single_draw_against_formula(f"{i:02d}", mv['mu_k'], f_key)))
+                                        scoring_pool[f_key] = {'count': 0, 'details': [], 'mu_k': mv['mu_k'], 'quality_score': 0.0, 'coverage': cov}
+                                    if mv['top'] not in [d['top'] for d in scoring_pool[f_key]['details']]:
+                                        scoring_pool[f_key]['details'].append(mv)
+                                        scoring_pool[f_key]['count'] += 1
+                                        scoring_pool[f_key]['quality_score'] += (mv['rate'] / 100.0) * mv['success_hits']
 
-                if deadline_singles:
-                    st.markdown("#### ⚠️ ရက်ချိန်းပြည့် မူများ (Standalone)")
-                    for d_key, d_data in deadline_singles.items():
-                        item = d_data['details'][0]
-                        st.markdown(f'<div class="card card-deadline">🔴 <b>[{item["lbl_prefix"]}] {d_key}</b><br/><small>⏳ ယခုပွဲစဉ် ရက်ချိန်းကွက်တိပြည့် ({item["label_space"]}{item["max_span"]} ပွဲမြောက်)</small><br/><span class="line-focus">{item["focus_range"]}</span></div>', unsafe_allow_html=True)
+                            for rp in rec_pool:
+                                r_key = rp['key']
+                                if r_key not in global_recovery: global_recovery[r_key] = {'score': 0.0, 'rem_steps': rp['rem_steps'], 'details': []}
+                                if rp['card']['top'] not in [d['top'] for d in global_recovery[r_key]['details']]:
+                                    global_recovery[r_key]['details'].append(rp['card'])
+                                    global_recovery[r_key]['score'] += rp['score']
 
-                if global_recovery:
-                    st.markdown("#### 🛡️ Recovery မူကျန်စောင့်ကြည့်ရန် (Top 3)")
-                    for r_key, r_data in sorted(global_recovery.items(), key=lambda x: x[1]['score'], reverse=True)[:3]:
-                        item = r_data['details'][0]
-                        st.markdown(f'<div class="card card-recovery">🔥 <b>Score: {r_data["score"]:.1f} | [{item["lbl_prefix"]}] {r_key}</b><br/><small>⏳ {item["label_space"]}{"၁ ပွဲသာ လိုတော့သည်" if r_data["rem_steps"]==2 else "၂ ပွဲ လိုသေးသည်"}</small><br/><span class="line-focus">{item["focus_range"]}</span></div>', unsafe_allow_html=True)
+                    valid_vips = {k: v for k, v in scoring_pool.items() if v['count'] >= 2}
+                    deadline_singles = {k: v for k, v in scoring_pool.items() if v['count'] == 1}
+                    
+                    st.markdown("#### 🏆 VIP ဆုံးဖြတ်ချက် (Overlaps Match)")
+                    if valid_vips:
+                        for i, (b_val, b_data) in enumerate(sorted(valid_vips.items(), key=lambda x: x[1]['quality_score'], reverse=True)):
+                            is_super = i < 3
+                            badge = "badge-super" if is_super else "badge-second"
+                            with st.expander(f"⭐ {'Super VIP' if is_super else 'Second VIP'}: {b_val} (Score: {b_data['quality_score']:.1f})", expanded=is_super):
+                                st.markdown(f"<span class='{badge}'>{'Super VIP' if is_super else 'Second VIP'}</span> <span style='float:right;'>ကွက်ရေ: {b_data['coverage']} ကွက်</span>", unsafe_allow_html=True)
+                                for d_detail in b_data['details']:
+                                    s_class = "badge-inline-sniper" if d_detail['rate'] == 100.0 else "badge-inline-hp"
+                                    st.markdown(f'<div class="card card-live" style="padding:10px; margin-bottom:10px;"><b>{d_detail["top"]}</b> <span class="badge-inline {s_class}">{d_detail["label_space"]}{d_detail["max_span"]} ပွဲအတွင်း</span><br/><small style="color:#f39c12;">{d_detail["focus_range"]}</small><br/><small>{d_detail["bottom"]}</small></div>', unsafe_allow_html=True)
+                    else:
+                        st.info("ခိုင်မာသော VIP တူညီမှုရလဒ် ယခုပွဲစဉ်တွင် မရှိသေးပါ။")
+
+                    if deadline_singles:
+                        st.markdown("#### ⚠️ ရက်ချိန်းပြည့် မူများ (Standalone)")
+                        for d_key, d_data in deadline_singles.items():
+                            item = d_data['details'][0]
+                            st.markdown(f'<div class="card card-deadline">🔴 <b>[{item["lbl_prefix"]}] {d_key}</b><br/><small>⏳ ယခုပွဲစဉ် ရက်ချိန်းကွက်တိပြည့် ({item["label_space"]}{item["max_span"]} ပွဲမြောက်)</small><br/><span class="line-focus">{item["focus_range"]}</span></div>', unsafe_allow_html=True)
+
+                    if global_recovery:
+                        st.markdown("#### 🛡️ Recovery မူကျန်စောင့်ကြည့်ရန် (Top 3)")
+                        for r_key, r_data in sorted(global_recovery.items(), key=lambda x: x[1]['score'], reverse=True)[:3]:
+                            item = r_data['details'][0]
+                            st.markdown(f'<div class="card card-recovery">🔥 <b>Score: {r_data["score"]:.1f} | [{item["lbl_prefix"]}] {r_key}</b><br/><small>⏳ {item["label_space"]}{"၁ ပွဲသာ လိုတော့သည်" if r_data["rem_steps"]==2 else "၂ ပွဲ လိုသေးသည်"}</small><br/><span class="line-focus">{item["focus_range"]}</span></div>', unsafe_allow_html=True)
 
     # ------------------------------------------
-    # TAB 2: ADVANCED PAIR-ENGINE LAB (RESTORED V35.5 UI)
+    # TAB 2: ADVANCED PAIR-ENGINE LAB
     # ------------------------------------------
     with tab_custom:
         st.markdown("##### 🧠 Custom Search Advanced Engine")
@@ -411,97 +398,112 @@ if st.session_state.full_draws:
             custom_mode = st.radio("တွက်ချက်မှုမုဒ်:", ["AI Trend (ရှေ့သမိုင်း ၅၀ အထိုင်)", "Calendar သီးသန့်မူများ (Fixed Pattern)"])
             c1, c2 = st.columns(2)
             with c1: trigger_day = st.selectbox("📆 Trigger Day:", ["All"] + st.session_state.active_days)
-            with c2: trigger_num = st.selectbox("🔍 အစပြုဂဏန်း/Keyword (စာရိုက်၍ ရှာဖွေနိုင်သည်):", options=st.session_state.suggestion_list, index=st.session_state.suggestion_list.index("30 အလယ်") if "30 အလယ်" in st.session_state.suggestion_list else 0)
+            
+            # [FIXED] Lightweight Text Input replaced Selectbox
+            with c2: trigger_num = st.text_input("🔍 အစပြုဂဏန်း/Keyword (စာရိုက်ထည့်ပါ):", value="30 အလယ်")
             
             c3, c4 = st.columns(2)
-            # V35.5 Legacy Triggers Restored!
             with c3: target_session_trigger = st.selectbox("🎯 ၁။ အစ (Trigger) ကောက်ယူမည့် အချိန်:", ["AM+PM ပေါင်းချုပ်", "AM သီးသန့်", "PM သီးသန့်"], index=2)
             with c4: search_space = st.selectbox("🔍 ၂။ မူများရှာဖွေမည့် Space:", ["All", "AM+PM ပေါင်းချုပ်", "AM သီးသန့်", "PM သီးသန့်"], index=0)
             
             c5, c6 = st.columns(2)
             with c5: custom_max_tf = st.number_input("⏳ စစ်ဆေးမည့်ပွဲစဉ်:", min_value=1, max_value=40, value=20)
             with c6: min_rate_param = st.number_input("📈 အနည်းဆုံး ကိုက်ညီမှုနှုန်း (n% မှ 100%):", min_value=1, max_value=100, value=90, step=5)
+            
             submit_custom = st.form_submit_button("ရှာဖွေမည် 🚀")
 
+        # [NEW] Beautiful Cheat Sheet Expander
+        with st.expander("💡 အသုံးပြုနိုင်သော Keyword စာရင်း (ဒီမှာနှိပ်ကြည့်ပါ)"):
+            st.markdown("""
+            - **ရိုးရိုးဂဏန်းများ:** `00` မှ `99` ထိ
+            - **အလယ်တွဲများ:** `30 အလယ်`, `05 အလယ်`, `99 အလယ်` စသည်
+            - **ဘရိတ်များ:** `ဘရိတ်တူ`, `5 ဘရိတ်`, `0 ဘရိတ်`
+            - **ထိပ်/ပိတ်များ:** `6 ထိပ်`, `4 ပိတ်`
+            - **အုပ်စုများ:** `အပူး`, `ပါဝါ`, `နက္ခတ်`, `ညီကို`, `ဆယ်ပြည့်`, `ထိုင်းပါဝါ`
+            - **သုံးလုံးတွဲ (တစ်နေ့တာ):** `139`, `058`, `442` စသည်
+            """)
+
         if submit_custom:
-            target_hits = []
-            clean_trigger = trigger_num.strip().upper()
-            
-            # --- ADVANCED PAIR ENGINE OR LEGACY SCAN ---
-            if "အလယ်" in clean_trigger:
-                digits = "".join(re.findall(r'\d+', clean_trigger))
-                if len(digits) == 2:
+            # [FIXED] Added Spinner for UI Feedback
+            with st.spinner("🔍 အချက်အလက်များကို သုတေသန ပြုလုပ်နေပါသည်... ခဏစောင့်ပါ"):
+                target_hits = []
+                clean_trigger = trigger_num.strip().upper()
+                
+                # --- [FIXED] ADVANCED PAIR ENGINE (WITH LENGTH FAIL-SAFES) ---
+                if "အလယ်" in clean_trigger:
+                    digits = "".join(re.findall(r'\d+', clean_trigger))
+                    if len(digits) == 2:
+                        for r, pair in st.session_state.day_pairs.items():
+                            if pair['AM'] and pair['PM'] and len(pair['AM']['draw']) >= 2 and len(pair['PM']['draw']) >= 2:
+                                mid_pair = pair['AM']['draw'][1] + pair['PM']['draw'][0]
+                                if mid_pair == digits or mid_pair == digits[::-1]:
+                                    target_hits.append(pair['PM'])
+                elif "ဘရိတ်တူ" in clean_trigger:
+                    for r, pair in st.session_state.day_pairs.items():
+                        if pair['AM'] and pair['PM'] and len(pair['AM']['draw']) >= 2 and len(pair['PM']['draw']) >= 2:
+                            am_brk = str((int(pair['AM']['draw'][0]) + int(pair['AM']['draw'][1])) % 10)
+                            pm_brk = str((int(pair['PM']['draw'][0]) + int(pair['PM']['draw'][1])) % 10)
+                            if am_brk == pm_brk: target_hits.append(pair['PM'])
+                elif "ထိပ်" in clean_trigger:
+                    d_match = "".join(re.findall(r'\d+', clean_trigger))
+                    if d_match: target_hits = [d for d in st.session_state.full_draws if d['draw'].startswith(d_match)]
+                elif "ပိတ်" in clean_trigger:
+                    d_match = "".join(re.findall(r'\d+', clean_trigger))
+                    if d_match: target_hits = [d for d in st.session_state.full_draws if d['draw'].endswith(d_match)]
+                elif len(clean_trigger) == 3 and clean_trigger.isdigit():
+                    req_set = set(clean_trigger)
                     for r, pair in st.session_state.day_pairs.items():
                         if pair['AM'] and pair['PM']:
-                            mid_pair = pair['AM']['draw'][1] + pair['PM']['draw'][0]
-                            if mid_pair == digits or mid_pair == digits[::-1]:
-                                target_hits.append(pair['PM'])
-            elif "ဘရိတ်တူ" in clean_trigger:
-                for r, pair in st.session_state.day_pairs.items():
-                    if pair['AM'] and pair['PM']:
-                        am_brk = str((int(pair['AM']['draw'][0]) + int(pair['AM']['draw'][1])) % 10)
-                        pm_brk = str((int(pair['PM']['draw'][0]) + int(pair['PM']['draw'][1])) % 10)
-                        if am_brk == pm_brk: target_hits.append(pair['PM'])
-            elif "ထိပ်" in clean_trigger:
-                d_match = "".join(re.findall(r'\d+', clean_trigger))
-                if d_match: target_hits = [d for d in st.session_state.full_draws if d['draw'].startswith(d_match)]
-            elif "ပိတ်" in clean_trigger:
-                d_match = "".join(re.findall(r'\d+', clean_trigger))
-                if d_match: target_hits = [d for d in st.session_state.full_draws if d['draw'].endswith(d_match)]
-            elif len(clean_trigger) == 3 and clean_trigger.isdigit():
-                req_set = set(clean_trigger)
-                for r, pair in st.session_state.day_pairs.items():
-                    if pair['AM'] and pair['PM']:
-                        if req_set.issubset(set(pair['AM']['draw'] + pair['PM']['draw'])): target_hits.append(pair['PM'])
-            elif clean_trigger in special_groups:
-                target_hits = [d for d in st.session_state.full_draws if d['draw'] in special_groups[clean_trigger]]
-            else:
-                digits = "".join(re.findall(r'\d+', clean_trigger))
-                if digits:
-                    if target_session_trigger != "AM+PM ပေါင်းချုပ်" and "သီးသန့်" in target_session_trigger:
-                        req_t = "AM" if "AM" in target_session_trigger else "PM"
-                        target_hits = [d for d in st.session_state.full_draws if (d['draw'] == digits or d['draw'] == digits[::-1]) and d['time'] == req_t]
-                    else:
-                        target_hits = [d for d in st.session_state.full_draws if d['draw'] == digits or d['draw'] == digits[::-1]]
+                            if req_set.issubset(set(pair['AM']['draw'] + pair['PM']['draw'])): target_hits.append(pair['PM'])
+                elif clean_trigger in special_groups:
+                    target_hits = [d for d in st.session_state.full_draws if d['draw'] in special_groups[clean_trigger]]
+                else:
+                    digits = "".join(re.findall(r'\d+', clean_trigger))
+                    if digits:
+                        if target_session_trigger != "AM+PM ပေါင်းချုပ်" and "သီးသန့်" in target_session_trigger:
+                            req_t = "AM" if "AM" in target_session_trigger else "PM"
+                            target_hits = [d for d in st.session_state.full_draws if (d['draw'] == digits or d['draw'] == digits[::-1]) and d['time'] == req_t]
+                        else:
+                            target_hits = [d for d in st.session_state.full_draws if d['draw'] == digits or d['draw'] == digits[::-1]]
 
-            if trigger_day != "All" and target_hits:
-                target_hits = [h for h in target_hits if h['day'] == trigger_day]
+                if trigger_day != "All" and target_hits:
+                    target_hits = [h for h in target_hits if h['day'] == trigger_day]
 
-            if not target_hits:
-                st.error("⚠️ သတ်မှတ်ချက်များနှင့် ကိုက်ညီသော သမိုင်းကြောင်းမှတ်တမ်း မရှိပါ Bro!")
-            else:
-                lbl_custom = f"{trigger_num} ({trigger_day if trigger_day != 'All' else 'ပေါင်းချုပ်'})"
-                sessions_to_run = ["AM+PM ပေါင်းချုပ်", "AM သီးသန့်", "PM သီးသန့်"] if search_space == "All" else [search_space]
-                
-                for current_session in sessions_to_run:
-                    st.markdown(f"<div class='section-title'>📊 {current_session} ရလဒ်များ ({min_rate_param}% - 100%)</div>", unsafe_allow_html=True)
-                    master_step_res, _ = execute_analysis(target_hits, st.session_state.full_draws, custom_max_tf, is_custom_tab=True, search_session=current_session, custom_trigger=lbl_custom, mode=custom_mode, is_research_mode=True, min_rate_threshold=float(min_rate_param))
+                if not target_hits:
+                    st.error("⚠️ သတ်မှတ်ချက်များနှင့် ကိုက်ညီသော သမိုင်းကြောင်းမှတ်တမ်း မရှိပါ Bro!")
+                else:
+                    lbl_custom = f"{trigger_num} ({trigger_day if trigger_day != 'All' else 'ပေါင်းချုပ်'})"
+                    sessions_to_run = ["AM+PM ပေါင်းချုပ်", "AM သီးသန့်", "PM သီးသန့်"] if search_space == "All" else [search_space]
                     
-                    has_data = any(master_step_res[sk] for sk in master_step_res if sk <= custom_max_tf)
-                    if not has_data:
-                        st.info(f"[{current_session}] အတွင်း သတ်မှတ် % ဖြင့် ကိုက်ညီမည့်မူ မတွေ့ပါ။")
-                    else:
-                        for step in sorted(master_step_res.keys()):
-                            if step > custom_max_tf: continue
-                            formulas_dict = master_step_res[step]
-                            if not formulas_dict: continue
-                            
-                            is_step_deadline = any(v['is_deadline'] for v in formulas_dict.values())
-                            h_space = "နံနက်ပိုင်း " if current_session == "AM သီးသန့်" else ("ညနေပိုင်း " if current_session == "PM သီးသန့်" else "")
-                            tab2_header = f"⚠️ {h_space}{step} ပွဲအတွင်း မူများ [ရက်ချိန်းပြည့်]" if is_step_deadline else f"🔽 {h_space}{step} ပွဲအတွင်း မူများ"
-                            
-                            with st.expander(tab2_header, expanded=True):
-                                for mu_name, data in formulas_dict.items():
-                                    card_border = "card-sniper" if "100%" in data['formula'] else "card-hp"
-                                    badge_class = "badge-inline-sniper" if "100%" in data['formula'] else "badge-inline-hp"
-                                    st.markdown(f"""
-                                    <div class="card {card_border}">
-                                        <span class="line-trigger">{data["top"]} <span class='badge-inline {badge_class}'>{data['label_space']}{step} ပွဲအတွင်း</span></span>
-                                        <span class="line-formula">{data["formula"]}</span>
-                                        <span class="line-focus">{data["focus_range"]}</span>
-                                        <span class="line-history">{data["bottom"]}</span>
-                                        <span class="line-advisor">{data["advisor"]}</span>
-                                    </div>
-                                    """, unsafe_allow_html=True)
+                    for current_session in sessions_to_run:
+                        st.markdown(f"<div class='section-title'>📊 {current_session} ရလဒ်များ ({min_rate_param}% - 100%)</div>", unsafe_allow_html=True)
+                        master_step_res, _ = execute_analysis(target_hits, st.session_state.full_draws, custom_max_tf, is_custom_tab=True, search_session=current_session, custom_trigger=lbl_custom, mode=custom_mode, is_research_mode=True, min_rate_threshold=float(min_rate_param))
+                        
+                        has_data = any(master_step_res[sk] for sk in master_step_res if sk <= custom_max_tf)
+                        if not has_data:
+                            st.info(f"[{current_session}] အတွင်း သတ်မှတ် % ဖြင့် ကိုက်ညီမည့်မူ မတွေ့ပါ။")
+                        else:
+                            for step in sorted(master_step_res.keys()):
+                                if step > custom_max_tf: continue
+                                formulas_dict = master_step_res[step]
+                                if not formulas_dict: continue
+                                
+                                is_step_deadline = any(v['is_deadline'] for v in formulas_dict.values())
+                                h_space = "နံနက်ပိုင်း " if current_session == "AM သီးသန့်" else ("ညနေပိုင်း " if current_session == "PM သီးသန့်" else "")
+                                tab2_header = f"⚠️ {h_space}{step} ပွဲအတွင်း မူများ [ရက်ချိန်းပြည့်]" if is_step_deadline else f"🔽 {h_space}{step} ပွဲအတွင်း မူများ"
+                                
+                                with st.expander(tab2_header, expanded=True):
+                                    for mu_name, data in formulas_dict.items():
+                                        card_border = "card-sniper" if "100%" in data['formula'] else "card-hp"
+                                        badge_class = "badge-inline-sniper" if "100%" in data['formula'] else "badge-inline-hp"
+                                        st.markdown(f"""
+                                        <div class="card {card_border}">
+                                            <span class="line-trigger">{data["top"]} <span class='badge-inline {badge_class}'>{data['label_space']}{step} ပွဲအတွင်း</span></span>
+                                            <span class="line-formula">{data["formula"]}</span>
+                                            <span class="line-focus">{data["focus_range"]}</span>
+                                            <span class="line-history">{data["bottom"]}</span>
+                                            <span class="line-advisor">{data["advisor"]}</span>
+                                        </div>
+                                        """, unsafe_allow_html=True)
 else:
     st.info("စတင်ရန်အတွက် Bro ရဲ့ 2D CSV သို့မဟုတ် Excel ဒေတာဖိုင်ကို အပေါ်တွင် တင်ပေးပါ။")
