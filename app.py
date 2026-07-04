@@ -8,7 +8,7 @@ from collections import Counter
 # ==========================================
 # PAGE CONFIG & PREMIUM DARK-THEME STYLE
 # ==========================================
-st.set_page_config(page_title="2D AI Master V35.9 Master-Lab", layout="centered", page_icon="🤖")
+st.set_page_config(page_title="2D AI Master V35.10 Master-Lab", layout="centered", page_icon="🤖")
 
 st.markdown("""
 <style>
@@ -24,7 +24,7 @@ st.markdown("""
     .line-formula { font-size: 20px; font-weight: bold; color: #FFD700; margin-bottom: 6px; display: block; }
     .line-history { font-size: 14px; color: #A294C7; display: block; }
     .line-focus { font-size: 14px; color: #f1c40f; font-weight: bold; display: block; margin-top: 5px; margin-bottom: 5px;}
-    .line-advisor { font-size: 14px; color: #00FFCC; font-style: italic; margin-top: 10px; display: block; border-top: 1px dashed #3D2B5E; padding-top: 8px; }
+    .line-advisor { font-size: 14px; color: #00FFCC; font-style: italic; margin-top: 10px; display: block; border-top: 1px dashed #3D2B5E; padding-top: 8px; margin-bottom: 8px;}
     .badge-inline { padding: 2px 10px; border-radius: 6px; font-size: 14px; font-weight: bold; margin-left: 6px; margin-right: 6px; display: inline-block; vertical-align: middle; }
     .badge-inline-sniper { background-color: #9b59b6; color: white; }
     .badge-inline-hp { background-color: #2ecc71; color: #0D2216; }
@@ -34,8 +34,8 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V35.9)</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Advanced Data Mining Engine | Vertical & Diagonal Break Logic</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V35.10)</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Ultimate Risk-Warning Engine | Smart Pattern Classifier</div>', unsafe_allow_html=True)
 
 # Session State Memory Setup
 if 'full_draws' not in st.session_state: st.session_state.full_draws = None
@@ -163,7 +163,7 @@ def get_brk(draw_dict):
     return None
 
 # ==========================================
-# MASTER ROUTINE: V35.9 INTERSECTION ENGINE
+# MASTER ROUTINE: V35.10 INTERSECTION ENGINE (WITH RISK-NOTE)
 # ==========================================
 def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=False, search_session="All", custom_trigger="", mode="AI Trend", is_research_mode=False, min_rate_threshold=90.0):
     step_buckets = {step: {} for step in range(1, requested_max_step + 1)}
@@ -219,6 +219,24 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
 
             if rate < min_rate_threshold: continue
 
+            # --- [NEW] ALL-TIME MAX SPAN BACKTESTING ---
+            all_time_max_span = max_required_span
+            if len(target_hits) > MAX_RECENT_HITS_CAP:
+                for hit in target_hits:
+                    h_idx = hit['index']
+                    found_step = None
+                    for step_check in range(1, 150): # Safe bound search
+                        t_idx = h_idx + step_check
+                        if t_idx >= len(full_draws): break
+                        if "သီးသန့်" in search_session:
+                            if full_draws[t_idx]['time'] != ("AM" if "AM" in search_session else "PM"): continue
+                        is_h, _ = is_already_hit(mu_k, last_generated_val, t_idx, t_idx, full_draws)
+                        if is_h:
+                            found_step = step_check
+                            break
+                    if found_step is not None and found_step > all_time_max_span:
+                        all_time_max_span = found_step
+
             if len(valid_spans) > 1:
                 q1_idx, q3_idx = int(len(valid_spans) * 0.25), min(int(len(valid_spans) * 0.75), len(valid_spans) - 1)
                 focus_start, focus_end = valid_spans[q1_idx], valid_spans[q3_idx]
@@ -240,13 +258,18 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
                     if elapsed_filtered > 0 and is_already_hit(mu_k, last_generated_val, last_hit_global_idx + 1, current_latest_idx, full_draws)[0]: continue
 
             sniper_note = f"💡 အဖြစ်နိုင်ဆုံး ၃/၄ ကွက်: {', '.join([x[0] for x in Counter(actual_hit_combinations).most_common(4)])}" if actual_hit_combinations else ""
+            
+            risk_note_html = ""
+            if all_time_max_span > max_required_span:
+                risk_note_html = f'<div style="color: #ff4b4b; font-size: 14px; margin-top: 10px; font-weight: bold; background: rgba(255,0,0,0.15); padding: 8px; border-radius: 6px; border-left: 4px solid #ff4b4b;">⚠️ Risk Note: ယခု ({max_required_span}) ပွဲဖြစ်သော်လည်း၊ သမိုင်းတစ်လျှောက် ({all_time_max_span}) ပွဲ ကြာဖူးသည်။</div>'
 
             card_payload = {
                 "top": f"🔮 [{lbl_prefix}] ထွက်ပြီးလျှင်", "formula": f"{last_generated_val} {'100%' if rate == 100.0 else f'{rate:.1f}%'}", 
                 "focus_range": focus_str, "bottom": f"မှန်ကန်မှု: (လတ်တလော {total_recent_count} ကြိမ်မှာ {successful_hits} ကြိမ်မှန်)", 
                 "success_hits": successful_hits, "total_hits": total_recent_count, "is_deadline": is_deadline_flag, 
                 "pure": last_generated_val, "mu_k": mu_k, "advisor": sniper_note, "rate": rate, 
-                "max_span": max_required_span, "lbl_prefix": lbl_prefix, "label_space": label_space
+                "max_span": max_required_span, "lbl_prefix": lbl_prefix, "label_space": label_space,
+                "risk_note": risk_note_html
             }
             
             if is_research_mode or is_deadline_flag: step_buckets[max_required_span][last_generated_val if mode == "Calendar သီးသန့်မူများ (Fixed Pattern)" else mu_k] = card_payload
@@ -378,7 +401,7 @@ if st.session_state.full_draws:
                                 st.markdown(f"<span class='{badge}'>{'Super VIP' if is_super else 'Second VIP'}</span> <span style='float:right;'>ကွက်ရေ: {b_data['coverage']} ကွက်</span>", unsafe_allow_html=True)
                                 for d_detail in b_data['details']:
                                     s_class = "badge-inline-sniper" if d_detail['rate'] == 100.0 else "badge-inline-hp"
-                                    st.markdown(f'<div class="card card-live" style="padding:10px; margin-bottom:10px;"><b>{d_detail["top"]}</b> <span class="badge-inline {s_class}">{d_detail["label_space"]}{d_detail["max_span"]} ပွဲအတွင်း</span><br/><small style="color:#f39c12;">{d_detail["focus_range"]}</small><br/><small>{d_detail["bottom"]}</small></div>', unsafe_allow_html=True)
+                                    st.markdown(f'<div class="card card-live" style="padding:10px; margin-bottom:10px;"><b>{d_detail["top"]}</b> <span class="badge-inline {s_class}">{d_detail["label_space"]}{d_detail["max_span"]} ပွဲအတွင်း</span><br/><span class="line-formula" style="font-size:16px;">{d_detail["formula"]}</span><br/><small style="color:#f39c12;">{d_detail["focus_range"]}</small><br/><small>{d_detail["bottom"]}</small>{d_detail.get("risk_note", "")}</div>', unsafe_allow_html=True)
                     else:
                         st.info("ခိုင်မာသော VIP တူညီမှုရလဒ် ယခုပွဲစဉ်တွင် မရှိသေးပါ။")
 
@@ -386,13 +409,13 @@ if st.session_state.full_draws:
                         st.markdown("#### ⚠️ ရက်ချိန်းပြည့် မူများ (Standalone)")
                         for d_key, d_data in deadline_singles.items():
                             item = d_data['details'][0]
-                            st.markdown(f'<div class="card card-deadline">🔴 <b>[{item["lbl_prefix"]}] {d_key}</b><br/><small>⏳ ယခုပွဲစဉ် ရက်ချိန်းကွက်တိပြည့် ({item["label_space"]}{item["max_span"]} ပွဲမြောက်)</small><br/><span class="line-focus">{item["focus_range"]}</span></div>', unsafe_allow_html=True)
+                            st.markdown(f'<div class="card card-deadline">🔴 <b>[{item["lbl_prefix"]}] {d_key}</b><br/><small>⏳ ယခုပွဲစဉ် ရက်ချိန်းကွက်တိပြည့် ({item["label_space"]}{item["max_span"]} ပွဲမြောက်)</small><br/><span class="line-focus">{item["focus_range"]}</span>{item.get("risk_note", "")}</div>', unsafe_allow_html=True)
 
                     if global_recovery:
                         st.markdown("#### 🛡️ Recovery မူကျန်စောင့်ကြည့်ရန် (Top 3)")
                         for r_key, r_data in sorted(global_recovery.items(), key=lambda x: x[1]['score'], reverse=True)[:3]:
                             item = r_data['details'][0]
-                            st.markdown(f'<div class="card card-recovery">🔥 <b>Score: {r_data["score"]:.1f} | [{item["lbl_prefix"]}] {r_key}</b><br/><small>⏳ {item["label_space"]}{"၁ ပွဲသာ လိုတော့သည်" if r_data["rem_steps"]==2 else "၂ ပွဲ လိုသေးသည်"}</small><br/><span class="line-focus">{item["focus_range"]}</span></div>', unsafe_allow_html=True)
+                            st.markdown(f'<div class="card card-recovery">🔥 <b>Score: {r_data["score"]:.1f} | [{item["lbl_prefix"]}] {r_key}</b><br/><small>⏳ {item["label_space"]}{"၁ ပွဲသာ လိုတော့သည်" if r_data["rem_steps"]==2 else "၂ ပွဲ လိုသေးသည်"}</small><br/><span class="line-focus">{item["focus_range"]}</span>{item.get("risk_note", "")}</div>', unsafe_allow_html=True)
 
     # ------------------------------------------
     # TAB 2: ADVANCED PAIR-ENGINE LAB
@@ -415,20 +438,20 @@ if st.session_state.full_draws:
             
             submit_custom = st.form_submit_button("ရှာဖွေမည် 🚀")
 
-        # 💡 [NEW] BEAUTIFUL KEYWORD CHEAT SHEET TABLE
         with st.expander("💡 အသုံးပြုနိုင်သော Keyword စာရင်းများ (ဒီမှာနှိပ်ကြည့်ပါ)"):
             st.markdown("""
             | အမျိုးအစား | ရိုက်ထည့်ရန် Keyword (ဥပမာ) | ရှင်းလင်းချက် |
             | :--- | :--- | :--- |
             | 🔢 **ရိုးရိုးဂဏန်းများ** | `12 ဒဲ့`, `12 R`, `12` | `ဒဲ့` (တိုက်ရိုက်)၊ `R` (အလှည့်) စနစ်ဖြင့် ရှာဖွေနိုင်သည် |
             | 🔗 **အလယ်တွဲများ** | `37 အလယ်`, `အလယ် ပါဝါ` | (Auto AM+PM ပေါင်းချုပ်) မနက်ပိတ်/ညနေထိပ် တွဲခြင်း |
-            | 🛑 **ဘရိတ်များ** | `5 ဘရိတ်`, `ဘရိတ်တူ`, `ဘရိတ် ပါဝါ` | (Auto AM+PM ပေါင်းချုပ်) ဘရိတ်တူ နှင့် ဘရိတ်အုပ်စုများ |
+            | 🛑 **ဘရိတ်များ** | `5 ဘရိတ်`, `0 ဘရိတ်` | (Manual ရွေးချယ်ရန်) ဂဏန်းအတိအကျပါသော ဘရိတ် |
+            | 📦 **ဘရိတ်အုပ်စု** | `ဘရိတ်တူ`, `ဘရိတ် ပါဝါ` | (Auto AM+PM ပေါင်းချုပ်) ဘရိတ်တူ နှင့် ဘရိတ်အုပ်စုများ |
             | ↗️ **ဘရိတ် ဇောင်းတူ** | `ဘရိတ် ဇောင်းတူ`, `ဘရိတ် ဇောင်း ပါဝါ` | (Auto AM+PM ပေါင်းချုပ်) ရက်ဆက် ဒေါင့်ဖြတ်ဘရိတ်တူခြင်း |
             | ↕️ **ဘရိတ် ထက်အောက်**| `ဘရိတ် ထက်အောက်တူ`, `ဘရိတ် ထက်အောက် ညီကို`| (Manual ရွေးချယ်ရန်) ရက်ဆက် AM/PM အချင်းချင်း ဘရိတ်တူခြင်း |
             | 📐 **ဘရိတ် တြိဂံ** | `ဘရိတ် တြိဂံ` | (Auto AM+PM ပေါင်းချုပ်) ၄ ကြိမ်တွင် ၃ ကြိမ် ဘရိတ်တူညီခြင်း |
             | ⬆️ **ထိပ်/ပိတ်များ** | `6 ထိပ်`, `4 ပိတ်` | (Manual ရွေးချယ်ရန်) ရှေ့ဂဏန်း သို့မဟုတ် နောက်ဂဏန်း သတ်မှတ်ခြင်း |
             | 📦 **အုပ်စုများ** | `အပူး`, `ပါဝါ`, `နက္ခတ်`, `ညီကို` | (Manual ရွေးချယ်ရန်) အုပ်စုဝင် ဂဏန်းများ အားလုံးကို ရှာဖွေခြင်း |
-            | 🧮 **သုံးလုံးတွဲ** | `139`, `058`, `442` | (Manual ရွေးချယ်ရန်) တစ်နေ့တာ ၄ လုံးထဲတွင် ၃ လုံးပါဝင်ခြင်း |
+            | 🧮 **သုံးလုံးတွဲ** | `139`, `058`, `442` | (Auto AM+PM ပေါင်းချုပ်) တစ်နေ့တာ ၄ လုံးထဲတွင် ၃ လုံးပါဝင်ခြင်း |
             """)
 
         if submit_custom:
@@ -509,8 +532,8 @@ if st.session_state.full_draws:
                             if grp_name == "" and pm1 == pm2: target_hits.append(cur['PM'])
                             elif grp_name in special_groups and ((pm1 + pm2) in special_groups[grp_name] or (pm2 + pm1) in special_groups[grp_name]): target_hits.append(cur['PM'])
 
-                # --- 5. BREAK MATCH & BREAK GROUPS ---
-                elif clean_trigger == "ဘရိတ်တူ" or any(clean_trigger == f"ဘရိတ် {g}" for g in special_groups):
+                # --- 5. BREAK GROUPS & SAME BREAK (Auto AM+PM) ---
+                elif clean_trigger.startswith("ဘရိတ်") and not any(char.isdigit() for char in clean_trigger):
                     override_session = "AM+PM ပေါင်းချုပ်"
                     grp_name = clean_trigger.replace("ဘရိတ်", "").replace("တူ", "").strip()
                     for r, pair in st.session_state.day_pairs.items():
@@ -519,7 +542,7 @@ if st.session_state.full_draws:
                             if grp_name == "" and am == pm: target_hits.append(pair['PM'])
                             elif grp_name in special_groups and ((am + pm) in special_groups[grp_name] or (pm + am) in special_groups[grp_name]): target_hits.append(pair['PM'])
                 
-                # --- 6. STANDARD SINGLE BREAK ---
+                # --- 6. STANDARD SINGLE BREAK (Manual Session) ---
                 elif clean_trigger.endswith("ဘရိတ်") and clean_trigger.replace("ဘရိတ်", "").strip().isdigit():
                     b_val = clean_trigger.replace("ဘရိတ်", "").strip()
                     for d in st.session_state.full_draws:
@@ -547,8 +570,9 @@ if st.session_state.full_draws:
                                 elif "AM" in target_session_trigger and d['time'] == "AM": target_hits.append(d)
                                 elif "PM" in target_session_trigger and d['time'] == "PM": target_hits.append(d)
 
-                # --- 8. 3 DIGITS TODAY ---
+                # --- 8. 3 DIGITS TODAY (Auto AM+PM) ---
                 elif len(clean_trigger) == 3 and clean_trigger.isdigit():
+                    override_session = "AM+PM ပေါင်းချုပ်"
                     req_set = set(clean_trigger)
                     for r, pair in st.session_state.day_pairs.items():
                         if pair['AM'] and pair['PM']:
@@ -628,6 +652,7 @@ if st.session_state.full_draws:
                                             <span class="line-focus">{data["focus_range"]}</span>
                                             <span class="line-history">{data["bottom"]}</span>
                                             <span class="line-advisor">{data["advisor"]}</span>
+                                            {data.get('risk_note', '')}
                                         </div>
                                         """, unsafe_allow_html=True)
 else:
