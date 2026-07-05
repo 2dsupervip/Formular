@@ -162,6 +162,21 @@ def get_brk(draw_dict):
         return str((int(draw_dict['draw'][0]) + int(draw_dict['draw'][1])) % 10)
     return None
 
+def get_group_relation(d1, d2):
+    """ဂဏန်း ၂ လုံးကြား ဆက်စပ်မှုကို စစ်ဆေးရန် (ထိပ်တူ, ထိပ်ပါဝါ, ညီကို စသည်)"""
+    if not d1 or not d2: return None
+    try:
+        i1, i2 = int(d1), int(d2)
+        pair_str = f"{i1}{i2}"
+        if i1 == i2: return "တူ"
+        if abs(i1 - i2) == 5: return "ပါဝါ"
+        if abs(i1 - i2) == 1 or abs(i1 - i2) == 9: return "ညီကို"
+        for g_name, g_set in special_groups.items():
+            if pair_str in g_set or pair_str[::-1] in g_set:
+                return g_name
+        return "Others"
+    except: return None
+
 # ==========================================
 # MASTER ROUTINE: V35.10 INTERSECTION ENGINE (WITH RISK-NOTE)
 # ==========================================
@@ -426,7 +441,7 @@ if st.session_state.full_draws:
             custom_mode = st.radio("တွက်ချက်မှုမုဒ်:", ["AI Trend (ရှေ့သမိုင်း ၅၀ အထိုင်)", "Calendar သီးသန့်မူများ (Fixed Pattern)"])
             c1, c2 = st.columns(2)
             with c1: trigger_day = st.selectbox("📆 Trigger Day:", ["All"] + st.session_state.active_days)
-            with c2: trigger_num = st.text_input("🔍 အစပြုဂဏန်း/Keyword (စာရိုက်ထည့်ပါ):", value="30 အလယ်")
+            with c2: trigger_num = st.text_input("🔍 အစပြုဂဏန်း/Keyword (စာရိုက်ထည့်ပါ):", value="မနက်ထိပ်ညနေထိပ်ပါဝါ")
             
             c3, c4 = st.columns(2)
             with c3: target_session_trigger = st.selectbox("🎯 ၁။ အစ (Trigger) ကောက်ယူမည့် အချိန်:", ["AM+PM ပေါင်းချုပ်", "AM သီးသန့်", "PM သီးသန့်"], index=2)
@@ -442,16 +457,13 @@ if st.session_state.full_draws:
             st.markdown("""
             | အမျိုးအစား | ရိုက်ထည့်ရန် Keyword (ဥပမာ) | ရှင်းလင်းချက် |
             | :--- | :--- | :--- |
-            | 🔢 **ရိုးရိုးဂဏန်းများ** | `12 ဒဲ့`, `12 R`, `12` | `ဒဲ့` (တိုက်ရိုက်)၊ `R` (အလှည့်) စနစ်ဖြင့် ရှာဖွေနိုင်သည် |
-            | 🔗 **အလယ်တွဲများ** | `37 အလယ်`, `အလယ် ပါဝါ` | (Auto AM+PM ပေါင်းချုပ်) မနက်ပိတ်/ညနေထိပ် တွဲခြင်း |
-            | 🛑 **ဘရိတ်များ** | `5 ဘရိတ်`, `0 ဘရိတ်` | (Manual ရွေးချယ်ရန်) ဂဏန်းအတိအကျပါသော ဘရိတ် |
-            | 📦 **ဘရိတ်အုပ်စု** | `ဘရိတ်တူ`, `ဘရိတ် ပါဝါ` | (Auto AM+PM ပေါင်းချုပ်) ဘရိတ်တူ နှင့် ဘရိတ်အုပ်စုများ |
-            | ↗️ **ဘရိတ် ဇောင်းတူ** | `ဘရိတ် ဇောင်းတူ`, `ဘရိတ် ဇောင်း ပါဝါ` | (Auto AM+PM ပေါင်းချုပ်) ရက်ဆက် ဒေါင့်ဖြတ်ဘရိတ်တူခြင်း |
-            | ↕️ **ဘရိတ် ထက်အောက်**| `ဘရိတ် ထက်အောက်တူ`, `ဘရိတ် ထက်အောက် ညီကို`| (Manual ရွေးချယ်ရန်) ရက်ဆက် AM/PM အချင်းချင်း ဘရိတ်တူခြင်း |
-            | 📐 **ဘရိတ် တြိဂံ** | `ဘရိတ် တြိဂံ` | (Auto AM+PM ပေါင်းချုပ်) ၄ ကြိမ်တွင် ၃ ကြိမ် ဘရိတ်တူညီခြင်း |
-            | ⬆️ **ထိပ်/ပိတ်များ** | `6 ထိပ်`, `4 ပိတ်` | (Manual ရွေးချယ်ရန်) ရှေ့ဂဏန်း သို့မဟုတ် နောက်ဂဏန်း သတ်မှတ်ခြင်း |
-            | 📦 **အုပ်စုများ** | `အပူး`, `ပါဝါ`, `နက္ခတ်`, `ညီကို` | (Manual ရွေးချယ်ရန်) အုပ်စုဝင် ဂဏန်းများ အားလုံးကို ရှာဖွေခြင်း |
-            | 🧮 **သုံးလုံးတွဲ** | `139`, `058`, `442` | (Auto AM+PM ပေါင်းချုပ်) တစ်နေ့တာ ၄ လုံးထဲတွင် ၃ လုံးပါဝင်ခြင်း |
+            | 🔗 **Same-Day Link** | `မနက်ထိပ် ညနေထိပ် တူ`, `မနက်ပိတ် ညနေထိပ် ပါဝါ` | (Auto AM+PM) တစ်နေ့တည်း ထိပ်/ပိတ် ချိတ်ဆက်မှု |
+            | ⚔️ **Cross Diagonal** | `ထောင့်ဖြတ်တူ`, `ထောင့်ဖြတ်ညီကို`, `ထောင့်ဖြတ်ပါဝါ` | (Auto AM+PM) ယမန်နေ့ညနေနှင့် ယနေ့မနက် အချိတ်အဆက် (X ပုံစံ) |
+            | 📐 **Diagonal (ဇောင်း)** | `ထိပ်ပိတ်ဇောင်းတူ`, `ထိပ်ပိတ်ဇောင်းညီကို` | (Manual Session) ရက်ဆက် ဒေါင့်ဖြတ် ထိပ်-ပိတ် တိုက်ခြင်း |
+            | ↕️ **Vertical Link** | `ထိပ်တူ`, `ထိပ်ပါဝါ`, `ပိတ်ညီကို` | (Manual Session) ရက်ဆက် ဒေါင်လိုက် ထိပ်/ပိတ် အချင်းချင်းတိုက်ခြင်း |
+            | ⬆️ **ထိပ်/ပိတ်များ** | `6 ထိပ်`, `4 ပိတ်` | (Manual ရွေးချယ်ရန်) ရှေ့ဂဏန်း သို့မဟုတ် နောက်ဂဏန်း တိုက်ရိုက်သတ်မှတ်ခြင်း |
+            | 🔗 **အလယ်တွဲများ** | `37 အလယ်`, `အလယ် ပါဝါ` | (Auto AM+PM) မနက်ပိတ်နှင့် ညနေထိပ် တွဲခြင်း |
+            | 🛑 **ဘရိတ်အမျိုးမျိုး** | `5 ဘရိတ်`, `ဘရိတ်တူ`, `ဘရိတ် ထက်အောက်` | ဂဏန်းအတိအကျ သို့မဟုတ် အုပ်စုလိုက် ဘရိတ်ရှာဖွေခြင်း |
             """)
 
         if submit_custom:
@@ -551,7 +563,94 @@ if st.session_state.full_draws:
                             elif "AM" in target_session_trigger and d['time'] == "AM": target_hits.append(d)
                             elif "PM" in target_session_trigger and d['time'] == "PM": target_hits.append(d)
 
-                # --- 7. HEAD / TAIL ---
+                # ==========================================
+                # NEW V35.10 ADVANCED HEAD/TAIL LINK ENGINE
+                # ==========================================
+                
+                # --- 6.1 SAME-DAY LINK (မနက်ထိပ်ညနေထိပ်, မနက်ထိပ်ညနေပိတ် စသည်) ---
+                elif clean_trigger.startswith("မနက်"):
+                    override_session = "AM+PM ပေါင်းချုပ်"
+                    am_part = 'head' if 'မနက်ထိပ်' in clean_trigger else ('tail' if 'မနက်ပိတ်' in clean_trigger else None)
+                    pm_part = 'head' if 'ညနေထိပ်' in clean_trigger else ('tail' if 'ညနေပိတ်' in clean_trigger else None)
+                    rel_name = clean_trigger.replace("မနက်ထိပ်", "").replace("မနက်ပိတ်", "").replace("ညနေထိပ်", "").replace("ညနေပိတ်", "").strip()
+                    
+                    if am_part and pm_part:
+                        for r, pair in st.session_state.day_pairs.items():
+                            if pair['AM'] and pair['PM'] and len(pair['AM']['draw'])>=2 and len(pair['PM']['draw'])>=2:
+                                d1 = pair['AM']['draw'][0] if am_part == 'head' else pair['AM']['draw'][1]
+                                d2 = pair['PM']['draw'][0] if pm_part == 'head' else pair['PM']['draw'][1]
+                                
+                                rel = get_group_relation(d1, d2)
+                                if rel_name == "တူ" and d1 == d2: target_hits.append(pair['PM'])
+                                elif rel_name != "တူ" and d1 != d2 and (rel == rel_name or f"{d1}{d2}" in special_groups.get(rel_name, set()) or f"{d2}{d1}" in special_groups.get(rel_name, set())):
+                                    target_hits.append(pair['PM'])
+
+                # --- 6.2 CROSS DIAGONAL (ထောင့်ဖြတ်တူ, ထောင့်ဖြတ်ညီကို စသည်) ---
+                elif clean_trigger.startswith("ထောင့်ဖြတ်"):
+                    override_session = "AM+PM ပေါင်းချုပ်"
+                    rel_name = clean_trigger.replace("ထောင့်ဖြတ်", "").strip()
+                    sorted_rows = sorted(st.session_state.day_pairs.keys())
+                    for i in range(1, len(sorted_rows)):
+                        prv = st.session_state.day_pairs[sorted_rows[i-1]]
+                        cur = st.session_state.day_pairs[sorted_rows[i]]
+                        if prv['AM'] and prv['PM'] and cur['AM'] and cur['PM']:
+                            pm1_tail = prv['PM']['draw'][1]
+                            am2_head = cur['AM']['draw'][0]
+                            am1_head = prv['AM']['draw'][0]
+                            pm2_tail = cur['PM']['draw'][1]
+                            
+                            hit = False
+                            if rel_name == "တူ":
+                                if pm1_tail == am2_head or am1_head == pm2_tail: hit = True
+                            else:
+                                if pm1_tail != am2_head and get_group_relation(pm1_tail, am2_head) == rel_name: hit = True
+                                if am1_head != pm2_tail and get_group_relation(am1_head, pm2_tail) == rel_name: hit = True
+                            if hit: target_hits.append(cur['PM'])
+
+                # --- 6.3 DIAGONAL (ထိပ်ပိတ်ဇောင်းတူ, ထိပ်ပိတ်ဇောင်းညီကို စသည်) ---
+                elif clean_trigger.startswith("ထိပ်ပိတ်ဇောင်း"):
+                    rel_name = clean_trigger.replace("ထိပ်ပိတ်ဇောင်း", "").strip()
+                    req_am = target_session_trigger in ["AM သီးသန့်", "AM+PM ပေါင်းချုပ်", "All"]
+                    req_pm = target_session_trigger in ["PM သီးသန့်", "AM+PM ပေါင်းချုပ်", "All"]
+                    sorted_rows = sorted(st.session_state.day_pairs.keys())
+                    for i in range(1, len(sorted_rows)):
+                        prv = st.session_state.day_pairs[sorted_rows[i-1]]
+                        cur = st.session_state.day_pairs[sorted_rows[i]]
+                        
+                        if req_am and prv['AM'] and cur['AM']:
+                            d1, d2 = prv['AM']['draw'][1], cur['AM']['draw'][0]
+                            if rel_name == "တူ" and d1 == d2: target_hits.append(cur['AM'])
+                            elif rel_name != "တူ" and d1 != d2 and get_group_relation(d1, d2) == rel_name: target_hits.append(cur['AM'])
+                        
+                        if req_pm and prv['PM'] and cur['PM']:
+                            d1, d2 = prv['PM']['draw'][1], cur['PM']['draw'][0]
+                            if rel_name == "တူ" and d1 == d2: target_hits.append(cur['PM'])
+                            elif rel_name != "တူ" and d1 != d2 and get_group_relation(d1, d2) == rel_name: target_hits.append(cur['PM'])
+
+                # --- 6.4 VERTICAL LINK (ထိပ်တူ, ထိပ်ပါဝါ, ပိတ်ညီကို စသည်) ---
+                elif ("ထိပ်" in clean_trigger or "ပိတ်" in clean_trigger) and not any(char.isdigit() for char in clean_trigger):
+                    is_head = "ထိပ်" in clean_trigger
+                    rel_name = clean_trigger.replace("ထိပ်", "").replace("ပိတ်", "").strip()
+                    req_am = target_session_trigger in ["AM သီးသန့်", "AM+PM ပေါင်းချုပ်", "All"]
+                    req_pm = target_session_trigger in ["PM သီးသန့်", "AM+PM ပေါင်းချုပ်", "All"]
+                    sorted_rows = sorted(st.session_state.day_pairs.keys())
+                    
+                    for i in range(1, len(sorted_rows)):
+                        prv = st.session_state.day_pairs[sorted_rows[i-1]]
+                        cur = st.session_state.day_pairs[sorted_rows[i]]
+                        idx = 0 if is_head else 1
+                        
+                        if req_am and prv['AM'] and cur['AM']:
+                            d1, d2 = prv['AM']['draw'][idx], cur['AM']['draw'][idx]
+                            if rel_name == "တူ" and d1 == d2: target_hits.append(cur['AM'])
+                            elif rel_name != "တူ" and d1 != d2 and get_group_relation(d1, d2) == rel_name: target_hits.append(cur['AM'])
+                        
+                        if req_pm and prv['PM'] and cur['PM']:
+                            d1, d2 = prv['PM']['draw'][idx], cur['PM']['draw'][idx]
+                            if rel_name == "တူ" and d1 == d2: target_hits.append(cur['PM'])
+                            elif rel_name != "တူ" and d1 != d2 and get_group_relation(d1, d2) == rel_name: target_hits.append(cur['PM'])
+
+                # --- 7. HEAD / TAIL (ရိုးရိုး ဂဏန်းနဲ့ ထိပ်/ပိတ် eg. 6 ထိပ်, 4 ပိတ်) ---
                 elif "ထိပ်" in clean_trigger:
                     d_match = "".join(re.findall(r'\d+', clean_trigger))
                     if d_match: 
