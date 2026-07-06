@@ -384,7 +384,7 @@ if st.session_state.full_draws:
                         ]
                         for p in condition_pools:
                             if not p['hits']: continue
-                            step_res, rec_pool = execute_analysis(p['hits'], st.session_state.full_draws, live_max_tf, is_custom_tab=True, search_session="AM+PM ပေါင်းချုပ်", custom_trigger=p['lbl'], mode=live_mode, min_rate_threshold=90.0)
+                            step_res, rec_pool = execute_analysis(p['hits'], st.session_state.full_draws, live_max_tf, is_custom_tab=True, search_session="AM/PM", custom_trigger=p['lbl'], mode=live_mode, min_rate_threshold=90.0)
                             
                             for step_dist, formulas_dict in step_res.items():
                                 for mk, mv in formulas_dict.items():
@@ -441,21 +441,21 @@ if st.session_state.full_draws:
             custom_mode = st.radio("တွက်ချက်မှုမုဒ်:", ["AI Trend (ရှေ့သမိုင်း ၅၀ အထိုင်)", "Calendar သီးသန့်မူများ (Fixed Pattern)"])
             c1, c2 = st.columns(2)
             with c1: trigger_day = st.selectbox("📆 Trigger Day:", ["All"] + st.session_state.active_days)
-            with c2: trigger_num = st.text_input("🔍 အစပြုဂဏန်း/Keyword (စာရိုက်ထည့်ပါ):", value="ထောင့်ဖြတ်ညီကို")
+            with c2: trigger_num = st.text_input("🔍 အစပြုဂဏန်း/Keyword (စာရိုက်ထည့်ပါ):", value="12")
             
             c3, c4 = st.columns(2)
-            with c3: target_session_trigger = st.selectbox("🎯 ၁။ အစ (Trigger) ကောက်ယူမည့် အချိန်:", ["AM+PM ပေါင်းချုပ်", "AM သီးသန့်", "PM သီးသန့်"], index=2)
-            with c4: search_space = st.selectbox("🔍 ၂။ မူများရှာဖွေမည့် Space:", ["All", "AM+PM ပေါင်းချုပ်", "AM သီးသန့်", "PM သီးသန့်"], index=0)
+            with c3: target_session_trigger = st.selectbox("🎯 ၁။ အစ (Trigger) ကောက်ယူမည့် အချိန်:", ["AM/PM", "AM သီးသန့်", "PM သီးသန့်"], index=0)
+            with c4: search_space = st.selectbox("🔍 ၂။ မူများရှာဖွေမည့် Space:", ["All", "AM/PM", "AM သီးသန့်", "PM သီးသန့်"], index=0)
             
             c5, c6 = st.columns(2)
             with c5: custom_max_tf = st.number_input("⏳ စစ်ဆေးမည့်ပွဲစဉ်:", min_value=1, max_value=40, value=20)
-            with c6: min_rate_param = st.number_input("📈 အနည်းဆုံး ကိုက်ညီမှုနှုန်း (n% မှ 100%):", min_value=1, max_value=100, value=90, step=5)
+            with c6: min_rate_param = st.number_input("📈 အနည်းဆုံး ကိုက်ညီမှုနှုန်း (n% မှ 100%):", min_value=1, max_value=100, value=100, step=5)
             
             submit_custom = st.form_submit_button("ရှာဖွေမည် 🚀")
 
         with st.expander("💡 အသုံးပြုနိုင်သော Keyword စာရင်းများ (ဒီမှာနှိပ်ကြည့်ပါ)"):
             st.markdown("""
-            **ရိုးရိုးဂဏန်းများ:** 12 ဒဲ့, 12 R, 12 (ဒဲ့ / R စနစ်ဖြင့် ရှာဖွေနိုင်သည်)  
+            **ရိုးရိုးဂဏန်းများ:** 12, 12R (ဒဲ့ / R စနစ်ဖြင့် ရှာဖွေနိုင်သည်)  
             **အလယ်တွဲများ:** 37 အလယ်, အလယ် ပါဝါ (မနက်ပိတ်/ညနေထိပ် တွဲခြင်း)  
             **ဘရိတ်များ:** 5 ဘရိတ်, 0 ဘရိတ် (ဂဏန်းအတိအကျပါသော ဘရိတ်)  
             **ဘရိတ်အုပ်စု:** ဘရိတ်တူ, ဘရိတ် ပါဝါ (ဘရိတ်တူ နှင့် ဘရိတ်အုပ်စုများ)  
@@ -479,7 +479,7 @@ if st.session_state.full_draws:
 
                 # --- 1. MIDDLE GROUPS & MIDDLE PAIRS ---
                 if "အလယ်" in clean_trigger:
-                    override_session = "AM+PM ပေါင်းချုပ်"
+                    override_session = "AM/PM"
                     grp_name = clean_trigger.replace("အလယ်", "").strip()
                     if grp_name in special_groups:
                         for r, pair in st.session_state.day_pairs.items():
@@ -498,7 +498,7 @@ if st.session_state.full_draws:
 
                 # --- 2. BREAK TRIANGLE ---
                 elif "တြိဂံ" in clean_trigger and "ဘရိတ်" in clean_trigger:
-                    override_session = "AM+PM ပေါင်းချုပ်"
+                    override_session = "AM/PM"
                     sorted_rows = sorted(st.session_state.day_pairs.keys())
                     for i in range(1, len(sorted_rows)):
                         prv = st.session_state.day_pairs[sorted_rows[i-1]]
@@ -511,7 +511,7 @@ if st.session_state.full_draws:
 
                 # --- 3. BREAK DIAGONAL (ဇောင်း) ---
                 elif "ဇောင်း" in clean_trigger and "ဘရိတ်" in clean_trigger:
-                    override_session = "AM+PM ပေါင်းချုပ်"
+                    override_session = "AM/PM"
                     grp_name = clean_trigger.replace("ဘရိတ်", "").replace("ဇောင်း", "").replace("တူ", "").strip()
                     sorted_rows = sorted(st.session_state.day_pairs.keys())
                     for i in range(1, len(sorted_rows)):
@@ -533,8 +533,8 @@ if st.session_state.full_draws:
                 elif "ထက်အောက်" in clean_trigger and "ဘရိတ်" in clean_trigger:
                     grp_name = clean_trigger.replace("ဘရိတ်", "").replace("ထက်အောက်", "").replace("တူ", "").strip()
                     sorted_rows = sorted(st.session_state.day_pairs.keys())
-                    req_am = target_session_trigger in ["AM သီးသန့်", "AM+PM ပေါင်းချုပ်", "All"]
-                    req_pm = target_session_trigger in ["PM သီးသန့်", "AM+PM ပေါင်းချုပ်", "All"]
+                    req_am = target_session_trigger in ["AM သီးသန့်", "AM/PM", "All"]
+                    req_pm = target_session_trigger in ["PM သီးသန့်", "AM/PM", "All"]
                     
                     for i in range(1, len(sorted_rows)):
                         prv = st.session_state.day_pairs[sorted_rows[i-1]]
@@ -549,9 +549,9 @@ if st.session_state.full_draws:
                             if grp_name == "" and pm1 == pm2: target_hits.append(cur['PM'])
                             elif grp_name in special_groups and ((pm1 + pm2) in special_groups[grp_name] or (pm2 + pm1) in special_groups[grp_name]): target_hits.append(cur['PM'])
 
-                # --- 5. BREAK GROUPS & SAME BREAK (Auto AM+PM) ---
+                # --- 5. BREAK GROUPS & SAME BREAK (Auto AM/PM) ---
                 elif clean_trigger.startswith("ဘရိတ်") and not any(char.isdigit() for char in clean_trigger):
-                    override_session = "AM+PM ပေါင်းချုပ်"
+                    override_session = "AM/PM"
                     grp_name = clean_trigger.replace("ဘရိတ်", "").replace("တူ", "").strip()
                     for r, pair in st.session_state.day_pairs.items():
                         am, pm = get_brk(pair['AM']), get_brk(pair['PM'])
@@ -564,7 +564,7 @@ if st.session_state.full_draws:
                     b_val = clean_trigger.replace("ဘရိတ်", "").strip()
                     for d in st.session_state.full_draws:
                         if get_brk({'draw': d['draw']}) == b_val:
-                            if target_session_trigger == "AM+PM ပေါင်းချုပ်" or "All" in target_session_trigger: target_hits.append(d)
+                            if target_session_trigger == "AM/PM" or "All" in target_session_trigger: target_hits.append(d)
                             elif "AM" in target_session_trigger and d['time'] == "AM": target_hits.append(d)
                             elif "PM" in target_session_trigger and d['time'] == "PM": target_hits.append(d)
 
@@ -574,7 +574,7 @@ if st.session_state.full_draws:
                 
                 # --- 6.1 SAME-DAY LINK (မနက်ထိပ်ညနေထိပ်, မနက်ထိပ်ညနေပိတ် စသည်) ---
                 elif clean_trigger.startswith("မနက်"):
-                    override_session = "AM+PM ပေါင်းချုပ်"
+                    override_session = "AM/PM"
                     am_part = 'head' if 'မနက်ထိပ်' in clean_trigger else ('tail' if 'မနက်ပိတ်' in clean_trigger else None)
                     pm_part = 'head' if 'ညနေထိပ်' in clean_trigger else ('tail' if 'ညနေပိတ်' in clean_trigger else None)
                     rel_name = clean_trigger.replace("မနက်ထိပ်", "").replace("မနက်ပိတ်", "").replace("ညနေထိပ်", "").replace("ညနေပိတ်", "").strip()
@@ -592,7 +592,7 @@ if st.session_state.full_draws:
 
                 # --- 6.2 CROSS DIAGONAL (ထောင့်ဖြတ်တူ, ထောင့်ဖြတ်ညီကို စသည်) ---
                 elif clean_trigger.startswith("ထောင့်ဖြတ်"):
-                    override_session = "AM+PM ပေါင်းချုပ်"
+                    override_session = "AM/PM"
                     rel_name = clean_trigger.replace("ထောင့်ဖြတ်", "").strip()
                     sorted_rows = sorted(st.session_state.day_pairs.keys())
                     for i in range(1, len(sorted_rows)):
@@ -615,8 +615,8 @@ if st.session_state.full_draws:
                 # --- 6.3 DIAGONAL (ထိပ်ပိတ်ဇောင်းတူ, ထိပ်ပိတ်ဇောင်းညီကို စသည်) ---
                 elif clean_trigger.startswith("ထိပ်ပိတ်ဇောင်း"):
                     rel_name = clean_trigger.replace("ထိပ်ပိတ်ဇောင်း", "").strip()
-                    req_am = target_session_trigger in ["AM သီးသန့်", "AM+PM ပေါင်းချုပ်", "All"]
-                    req_pm = target_session_trigger in ["PM သီးသန့်", "AM+PM ပေါင်းချုပ်", "All"]
+                    req_am = target_session_trigger in ["AM သီးသန့်", "AM/PM", "All"]
+                    req_pm = target_session_trigger in ["PM သီးသန့်", "AM/PM", "All"]
                     sorted_rows = sorted(st.session_state.day_pairs.keys())
                     for i in range(1, len(sorted_rows)):
                         prv = st.session_state.day_pairs[sorted_rows[i-1]]
@@ -636,8 +636,8 @@ if st.session_state.full_draws:
                 elif ("ထိပ်" in clean_trigger or "ပိတ်" in clean_trigger) and not any(char.isdigit() for char in clean_trigger):
                     is_head = "ထိပ်" in clean_trigger
                     rel_name = clean_trigger.replace("ထိပ်", "").replace("ပိတ်", "").strip()
-                    req_am = target_session_trigger in ["AM သီးသန့်", "AM+PM ပေါင်းချုပ်", "All"]
-                    req_pm = target_session_trigger in ["PM သီးသန့်", "AM+PM ပေါင်းချုပ်", "All"]
+                    req_am = target_session_trigger in ["AM သီးသန့်", "AM/PM", "All"]
+                    req_pm = target_session_trigger in ["PM သီးသန့်", "AM/PM", "All"]
                     sorted_rows = sorted(st.session_state.day_pairs.keys())
                     
                     for i in range(1, len(sorted_rows)):
@@ -661,7 +661,7 @@ if st.session_state.full_draws:
                     if d_match: 
                         for d in st.session_state.full_draws:
                             if d['draw'].startswith(d_match):
-                                if target_session_trigger == "AM+PM ပေါင်းချုပ်" or "All" in target_session_trigger: target_hits.append(d)
+                                if target_session_trigger == "AM/PM" or "All" in target_session_trigger: target_hits.append(d)
                                 elif "AM" in target_session_trigger and d['time'] == "AM": target_hits.append(d)
                                 elif "PM" in target_session_trigger and d['time'] == "PM": target_hits.append(d)
                                 
@@ -670,13 +670,13 @@ if st.session_state.full_draws:
                     if d_match: 
                         for d in st.session_state.full_draws:
                             if d['draw'].endswith(d_match):
-                                if target_session_trigger == "AM+PM ပေါင်းချုပ်" or "All" in target_session_trigger: target_hits.append(d)
+                                if target_session_trigger == "AM/PM" or "All" in target_session_trigger: target_hits.append(d)
                                 elif "AM" in target_session_trigger and d['time'] == "AM": target_hits.append(d)
                                 elif "PM" in target_session_trigger and d['time'] == "PM": target_hits.append(d)
 
-                # --- 8. 3 DIGITS TODAY (Auto AM+PM) ---
+                # --- 8. 3 DIGITS TODAY (Auto AM/PM) ---
                 elif len(clean_trigger) == 3 and clean_trigger.isdigit():
-                    override_session = "AM+PM ပေါင်းချုပ်"
+                    override_session = "AM/PM"
                     req_set = set(clean_trigger)
                     for r, pair in st.session_state.day_pairs.items():
                         if pair['AM'] and pair['PM']:
@@ -686,13 +686,12 @@ if st.session_state.full_draws:
                 elif clean_trigger in special_groups:
                     for d in st.session_state.full_draws:
                         if d['draw'] in special_groups[clean_trigger]:
-                            if target_session_trigger == "AM+PM ပေါင်းချုပ်" or "All" in target_session_trigger: target_hits.append(d)
+                            if target_session_trigger == "AM/PM" or "All" in target_session_trigger: target_hits.append(d)
                             elif "AM" in target_session_trigger and d['time'] == "AM": target_hits.append(d)
                             elif "PM" in target_session_trigger and d['time'] == "PM": target_hits.append(d)
 
-                                # --- 10. EXACT MATCH (eg. 12 သို့မဟုတ် 12R) ---
+                # --- 10. EXACT MATCH (eg. 12 သို့မဟုတ် 12R) ---
                 else:
-                    # 'R' သို့မဟုတ် 'r' ပါ/မပါ စစ်ဆေးမည်
                     is_r = "R" in clean_trigger.upper()
                     digits = "".join(re.findall(r'\d+', clean_trigger))
                     
@@ -700,15 +699,12 @@ if st.session_state.full_draws:
                         for d in st.session_state.full_draws:
                             match = False
                             if is_r:
-                                # 12R ဟုရိုက်လျှင် (ဒဲ့ရော အပတ်ပါ ယူမည်)
                                 if d['draw'] == digits or d['draw'] == digits[::-1]: match = True
                             else:
-                                # 12 ဟုသာရိုက်လျှင် (ဒဲ့ သီးသန့်သာ ယူမည်)
                                 if d['draw'] == digits: match = True
                                 
                             if match:
-                                # 🎯 Target Session Trigger (Drop-down) မှ ရွေးချယ်ထားသည့်အတိုင်း ဖမ်းယူမည်
-                                if target_session_trigger == "AM+PM ပေါင်းချုပ်" or "All" in target_session_trigger: target_hits.append(d)
+                                if target_session_trigger == "AM/PM" or "All" in target_session_trigger: target_hits.append(d)
                                 elif "AM" in target_session_trigger and d['time'] == "AM": target_hits.append(d)
                                 elif "PM" in target_session_trigger and d['time'] == "PM": target_hits.append(d)
 
@@ -722,15 +718,17 @@ if st.session_state.full_draws:
                 if not target_hits:
                     st.error("⚠️ သတ်မှတ်ချက်များနှင့် ကိုက်ညီသော သမိုင်းကြောင်းမှတ်တမ်း မရှိပါ Bro!")
                 else:
-                    lbl_custom = f"{trigger_num} ({trigger_day if trigger_day != 'All' else 'ပေါင်းချုပ်'})"
+                    day_label = f" ({trigger_day})" if trigger_day != "All" else ""
+                    lbl_custom = f"{trigger_num} {target_session_trigger}{day_label}"
                     
                     if override_session:
                         sessions_to_run = [override_session]
                     else:
-                        sessions_to_run = ["AM+PM ပေါင်းချုပ်", "AM သီးသန့်", "PM သီးသန့်"] if search_space == "All" else [search_space]
+                        sessions_to_run = ["AM/PM", "AM သီးသန့်", "PM သီးသန့်"] if search_space == "All" else [search_space]
                     
                     for current_session in sessions_to_run:
-                        st.markdown(f"<div class='section-title'>📊 {current_session} ရလဒ်များ ({min_rate_param}% - 100%)</div>", unsafe_allow_html=True)
+                        rate_display = "(100%)" if int(min_rate_param) == 100 else f"({min_rate_param}% - 100%)"
+                        st.markdown(f"<div class='section-title'>📊 {current_session} ရလဒ်များ {rate_display}</div>", unsafe_allow_html=True)
                         master_step_res, _ = execute_analysis(target_hits, st.session_state.full_draws, custom_max_tf, is_custom_tab=True, search_session=current_session, custom_trigger=lbl_custom, mode=custom_mode, is_research_mode=True, min_rate_threshold=float(min_rate_param))
                         
                         has_data = any(master_step_res[sk] for sk in master_step_res if sk <= custom_max_tf)
