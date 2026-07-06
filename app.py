@@ -588,7 +588,7 @@ if st.session_state.full_draws:
     tab_live, tab_custom = st.tabs(["⚡ VIP Tracker (ယခုပွဲစဉ်)", "🔍 Pair-Engine (Custom သုတေသန)"])
 
     # ------------------------------------------
-    # TAB 1: LIVE AUTO TRACKER (WITH AUTO-PATTERN & RISK PENALTY)
+    # TAB 1: LIVE AUTO TRACKER (WITH UI UPDATES)
     # ------------------------------------------
     with tab_live:
         st.markdown("#### ⚙️ VIP ရှာဖွေမှု ကန့်သတ်ချက်များ")
@@ -621,9 +621,19 @@ if st.session_state.full_draws:
                     # 1. ရိုးရိုးဂဏန်းများ (Exact Hits)
                     for past_obj in selected_anchors:
                         p_val, p_time, p_day = past_obj['draw'], past_obj['time'], past_obj['day']
-                        condition_pools.append({"hits": [d for d in st.session_state.full_draws if d['draw'] == p_val and d['time'] == p_time], "lbl": f"{p_val} {p_time} စစ်စစ်", "session": "AM/PM"})
-                        condition_pools.append({"hits": [d for d in st.session_state.full_draws if d['draw'] == p_val], "lbl": f"{p_val} ပေါင်းချုပ်", "session": "AM/PM"})
-                        condition_pools.append({"hits": [d for d in st.session_state.full_draws if (d['draw'] == p_val or d['draw'] == p_val[::-1]) and d['day'] == p_day], "lbl": f"{p_val}R {p_day} သီးသန့်", "session": "AM/PM"})
+                        
+                        # 🔴 [FIX] အပူးဖြစ်လျှင် R ဖယ်ထုတ်ခြင်း 
+                        is_double = (len(p_val) == 2 and p_val[0] == p_val[1])
+                        r_label = p_val if is_double else f"{p_val}R"
+                        
+                        # Tab 2 နှင့် တစ်ထပ်တည်းဖြစ်စေရန် Label ပြင်ဆင်ခြင်း
+                        lbl_strict = f"{p_val} {p_time} သီးသန့်"
+                        lbl_all = f"{p_val} AM/PM"
+                        lbl_day = f"{r_label} AM/PM ({p_day})"
+                        
+                        condition_pools.append({"hits": [d for d in st.session_state.full_draws if d['draw'] == p_val and d['time'] == p_time], "lbl": lbl_strict, "session": "AM/PM"})
+                        condition_pools.append({"hits": [d for d in st.session_state.full_draws if d['draw'] == p_val], "lbl": lbl_all, "session": "AM/PM"})
+                        condition_pools.append({"hits": [d for d in st.session_state.full_draws if (d['draw'] == p_val or d['draw'] == p_val[::-1]) and d['day'] == p_day], "lbl": lbl_day, "session": "AM/PM"})
                     
                     # 2. Advanced Auto-Pattern (Tab 2 မူများ)
                     if use_adv_patterns:
@@ -650,7 +660,7 @@ if st.session_state.full_draws:
                                     scoring_pool[f_key]['details'].append(mv)
                                     scoring_pool[f_key]['count'] += 1
                                     
-                                    # 🔴 [NEW] RISK PENALTY SYSTEM
+                                    # Risk Penalty System
                                     is_risk = "⚠️ Risk Note" in mv.get("risk_note", "")
                                     penalty_multiplier = 0.5 if is_risk else 1.0 
                                     
@@ -675,8 +685,18 @@ if st.session_state.full_draws:
                             with st.expander(f"⭐ {'Super VIP' if is_super else 'Second VIP'}: {b_val} (Score: {b_data['quality_score']:.1f})", expanded=is_super):
                                 st.markdown(f"<span class='{badge}'>{'Super VIP' if is_super else 'Second VIP'}</span> <span style='float:right;'>ကွက်ရေ: {b_data['coverage']} ကွက်</span>", unsafe_allow_html=True)
                                 for d_detail in b_data['details']:
-                                    s_class = "badge-inline-sniper" if d_detail['rate'] == 100.0 else "badge-inline-hp"
-                                    st.markdown(f'<div class="card card-live" style="padding:10px; margin-bottom:10px;"><b>{d_detail["top"]}</b> <span class="badge-inline {s_class}">{d_detail["label_space"]}{d_detail["max_span"]} ပွဲအတွင်း</span><br/><span class="line-formula" style="font-size:16px;">{d_detail["formula"]}</span><br/><small style="color:#f39c12;">{d_detail["focus_range"]}</small><br/><small>{d_detail["bottom"]}</small>{d_detail.get("risk_note", "")}</div>', unsafe_allow_html=True)
+                                    badge_class = "badge-inline-sniper" if d_detail['rate'] == 100.0 else "badge-inline-hp"
+                                    # 🔴 [FIX] Tab 2 Card UI Format အတိုင်း အတိအကျပြောင်းလဲခြင်း
+                                    st.markdown(f"""
+                                    <div class="card card-live">
+                                        <span class="line-trigger">{d_detail["top"]} <span class='badge-inline {badge_class}'>{d_detail["label_space"]}{d_detail["max_span"]} ပွဲအတွင်း</span></span>
+                                        <span class="line-formula">{d_detail["formula"]}</span>
+                                        <span class="line-focus">{d_detail["focus_range"]}</span>
+                                        <span class="line-history">{d_detail["bottom"]}</span>
+                                        <span class="line-advisor">{d_detail.get("advisor", "")}</span>
+                                        {d_detail.get("risk_note", "")}
+                                    </div>
+                                    """, unsafe_allow_html=True)
                     else:
                         st.info("ခိုင်မာသော VIP တူညီမှုရလဒ် ယခုပွဲစဉ်တွင် မရှိသေးပါ။")
 
@@ -684,13 +704,34 @@ if st.session_state.full_draws:
                         st.markdown("#### ⚠️ ရက်ချိန်းပြည့် မူများ (Standalone)")
                         for d_key, d_data in deadline_singles.items():
                             item = d_data['details'][0]
-                            st.markdown(f'<div class="card card-deadline">🔴 <b>[{item["lbl_prefix"]}] {d_key}</b><br/><small>⏳ ယခုပွဲစဉ် ရက်ချိန်းကွက်တိပြည့် ({item["label_space"]}{item["max_span"]} ပွဲမြောက်)</small><br/><span class="line-focus">{item["focus_range"]}</span>{item.get("risk_note", "")}</div>', unsafe_allow_html=True)
+                            badge_class = "badge-inline-sniper" if item['rate'] == 100.0 else "badge-inline-hp"
+                            st.markdown(f"""
+                            <div class="card card-deadline">
+                                <span class="line-trigger">🔴 [{item["lbl_prefix"]}] ထွက်ပြီးလျှင် <span class='badge-inline {badge_class}'>ယခုပွဲစဉ် {item["label_space"]}{item["max_span"]} ပွဲမြောက်</span></span>
+                                <span class="line-formula">{item["pure"]}</span>
+                                <span class="line-focus">{item["focus_range"]} (ရက်ချိန်းကွက်တိပြည့်)</span>
+                                <span class="line-history">{item["bottom"]}</span>
+                                <span class="line-advisor">{item.get("advisor", "")}</span>
+                                {item.get("risk_note", "")}
+                            </div>
+                            """, unsafe_allow_html=True)
 
                     if global_recovery:
                         st.markdown("#### 🛡️ Recovery မူကျန်စောင့်ကြည့်ရန် (Top 3)")
                         for r_key, r_data in sorted(global_recovery.items(), key=lambda x: x[1]['score'], reverse=True)[:3]:
                             item = r_data['details'][0]
-                            st.markdown(f'<div class="card card-recovery">🔥 <b>Score: {r_data["score"]:.1f} | [{item["lbl_prefix"]}] {r_key}</b><br/><small>⏳ {item["label_space"]}{"၁ ပွဲသာ လိုတော့သည်" if r_data["rem_steps"]==2 else "၂ ပွဲ လိုသေးသည်"}</small><br/><span class="line-focus">{item["focus_range"]}</span>{item.get("risk_note", "")}</div>', unsafe_allow_html=True)
+                            rem_str = "၁ ပွဲသာ လိုတော့သည်" if r_data["rem_steps"]==2 else "၂ ပွဲ လိုသေးသည်"
+                            badge_class = "badge-inline-hp"
+                            st.markdown(f"""
+                            <div class="card card-recovery">
+                                <span class="line-trigger">🔥 Score: {r_data["score"]:.1f} | [{item["lbl_prefix"]}] ထွက်ပြီးလျှင် <span class='badge-inline {badge_class}'>{item["label_space"]}{rem_str}</span></span>
+                                <span class="line-formula">{item["pure"]}</span>
+                                <span class="line-focus">{item["focus_range"]}</span>
+                                <span class="line-history">{item["bottom"]}</span>
+                                <span class="line-advisor">{item.get("advisor", "")}</span>
+                                {item.get("risk_note", "")}
+                            </div>
+                            """, unsafe_allow_html=True)
 
     # ------------------------------------------
     # TAB 2: ADVANCED PAIR-ENGINE LAB
@@ -734,11 +775,8 @@ if st.session_state.full_draws:
         if submit_custom:
             with st.spinner("🔍 အဆင့်မြင့် Data Mining Engine ဖြင့် သုတေသန ပြုလုပ်နေပါသည်..."):
                 clean_trigger = trigger_num.strip()
-                
-                # REFACTORED: Use shared function
                 target_hits, override_session = get_custom_target_hits(clean_trigger, target_session_trigger, st.session_state.full_draws, st.session_state.day_pairs)
 
-                # Post Process Targets for trigger_day
                 final_hits = {}
                 for h in target_hits:
                     if trigger_day == "All" or h['day'] == trigger_day:
