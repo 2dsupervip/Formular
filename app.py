@@ -690,23 +690,24 @@ if st.session_state.full_draws:
                             elif "AM" in target_session_trigger and d['time'] == "AM": target_hits.append(d)
                             elif "PM" in target_session_trigger and d['time'] == "PM": target_hits.append(d)
 
-                # --- 10. EXACT MATCH (ဒဲ့ / R) ---
+                                # --- 10. EXACT MATCH (eg. 12 သို့မဟုတ် 12R) ---
                 else:
-                    is_straight = "ဒဲ့" in clean_trigger
-                    is_r = "R" in clean_trigger or "r" in clean_trigger.lower()
+                    # 'R' သို့မဟုတ် 'r' ပါ/မပါ စစ်ဆေးမည်
+                    is_r = "R" in clean_trigger.upper()
                     digits = "".join(re.findall(r'\d+', clean_trigger))
                     
                     if digits:
                         for d in st.session_state.full_draws:
                             match = False
-                            if is_straight:
-                                if d['draw'] == digits: match = True
-                            elif is_r:
+                            if is_r:
+                                # 12R ဟုရိုက်လျှင် (ဒဲ့ရော အပတ်ပါ ယူမည်)
                                 if d['draw'] == digits or d['draw'] == digits[::-1]: match = True
                             else:
-                                if d['draw'] == digits or d['draw'] == digits[::-1]: match = True
+                                # 12 ဟုသာရိုက်လျှင် (ဒဲ့ သီးသန့်သာ ယူမည်)
+                                if d['draw'] == digits: match = True
                                 
                             if match:
+                                # 🎯 Target Session Trigger (Drop-down) မှ ရွေးချယ်ထားသည့်အတိုင်း ဖမ်းယူမည်
                                 if target_session_trigger == "AM+PM ပေါင်းချုပ်" or "All" in target_session_trigger: target_hits.append(d)
                                 elif "AM" in target_session_trigger and d['time'] == "AM": target_hits.append(d)
                                 elif "PM" in target_session_trigger and d['time'] == "PM": target_hits.append(d)
