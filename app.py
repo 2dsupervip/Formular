@@ -163,7 +163,6 @@ def get_brk(draw_dict):
     return None
 
 def get_group_relation(d1, d2):
-    """ဂဏန်း ၂ လုံးကြား ဆက်စပ်မှုကို စစ်ဆေးရန် (ထိပ်တူ, ထိပ်ပါဝါ, ညီကို စသည်)"""
     if not d1 or not d2: return None
     try:
         i1, i2 = int(d1), int(d2)
@@ -178,7 +177,249 @@ def get_group_relation(d1, d2):
     except: return None
 
 # ==========================================
-# MASTER ROUTINE: V35.10 INTERSECTION ENGINE (WITH RISK-NOTE)
+# REFACTORED: TAB 2 CUSTOM ENGINE (Used by Tab 1 & Tab 2)
+# ==========================================
+def get_custom_target_hits(clean_trigger, target_session_trigger, full_draws, day_pairs):
+    target_hits = []
+    override_session = None
+
+    if "အလယ်" in clean_trigger:
+        override_session = "AM/PM"
+        grp_name = clean_trigger.replace("အလယ်", "").strip()
+        if grp_name in special_groups:
+            for r, pair in day_pairs.items():
+                if pair['AM'] and pair['PM'] and len(pair['AM']['draw']) >= 2 and len(pair['PM']['draw']) >= 2:
+                    mid_pair = pair['AM']['draw'][1] + pair['PM']['draw'][0]
+                    if mid_pair in special_groups[grp_name] or mid_pair[::-1] in special_groups[grp_name]:
+                        target_hits.append(pair['PM'])
+        else:
+            digits = "".join(re.findall(r'\d+', clean_trigger))
+            if len(digits) == 2:
+                for r, pair in day_pairs.items():
+                    if pair['AM'] and pair['PM'] and len(pair['AM']['draw']) >= 2 and len(pair['PM']['draw']) >= 2:
+                        mid_pair = pair['AM']['draw'][1] + pair['PM']['draw'][0]
+                        if mid_pair == digits or mid_pair == digits[::-1]:
+                            target_hits.append(pair['PM'])
+
+    elif "တြိဂံ" in clean_trigger and "ဘရိတ်" in clean_trigger:
+        override_session = "AM/PM"
+        sorted_rows = sorted(day_pairs.keys())
+        for i in range(1, len(sorted_rows)):
+            prv, cur = day_pairs[sorted_rows[i-1]], day_pairs[sorted_rows[i]]
+            b_list = [get_brk(prv['AM']), get_brk(prv['PM']), get_brk(cur['AM']), get_brk(cur['PM'])]
+            valid_b = [b for b in b_list if b is not None]
+            if len(valid_b) >= 3:
+                counts = Counter(valid_b)
+                if counts and max(counts.values()) >= 3: target_hits.append(cur['PM'])
+
+    elif "ဇောင်း" in clean_trigger and "ဘရိတ်" in clean_trigger:
+        override_session = "AM/PM"
+        grp_name = clean_trigger.replace("ဘရိတ်", "").replace("ဇောင်း", "").replace("တူ", "").strip()
+        sorted_rows = sorted(day_pairs.keys())
+        for i in range(1, len(sorted_rows)):
+            prv, cur = day_pairs[sorted_rows[i-1]], day_pairs[sorted_rows[i]]
+            am1, pm1 = get_brk(prv['AM']), get_brk(prv['PM'])
+            am2, pm2 = get_brk(cur['AM']), get_brk(cur['PM'])
+            hit = False
+            if am1 and pm2:
+                if grp_name == "" and am1 == pm2: hit = True
+                elif grp_name in special_groups and ((am1 + pm2) in special_groups[grp_name] or (pm2 + am1) in special_groups[grp_name]): hit = True
+            if pm1 and am2:
+                if grp_name == "" and pm1 == am2: hit = True
+                elif grp_name in special_groups and ((pm1 + am2) in special_groups[grp_name] or (am2 + pm1) in special_groups[grp_name]): hit = True
+            if hit: target_hits.append(cur['PM'])
+
+    elif "ထက်အောက်" in clean_trigger and "ဘရိတ်" in clean_trigger:
+        grp_name = clean_trigger.replace("ဘရိတ်", "").replace("ထက်အောက်", "").replace("တူ", "").strip()
+        sorted_rows = sorted(day_pairs.keys())
+        req_am = target_session_trigger in ["AM သီးသန့်", "AM/PM", "All"]
+        req_pm = target_session_trigger in ["PM သီးသန့်", "AM/PM", "All"]
+        for i in range(1, len(sorted_rows)):
+            prv, cur = day_pairs[sorted_rows[i-1]], day_pairs[sorted_rows[i]]
+            am1, pm1 = get_brk(prv['AM']), get_brk(prv['PM'])
+            am2, pm2 = get_brk(cur['AM']), get_brk(cur['PM'])
+            if req_am and am1 and am2:
+                if grp_name == "" and am1 == am2: target_hits.append(cur['AM'])
+                elif grp_name in special_groups and ((am1 + am2) in special_groups[grp_name] or (am2 + am1) in special_groups[grp_name]): target_hits.append(cur['AM'])
+            if req_pm and pm1 and pm2:
+                if grp_name == "" and pm1 == pm2: target_hits.append(cur['PM'])
+                elif grp_name in special_groups and ((pm1 + pm2) in special_groups[grp_name] or (pm2 + pm1) in special_groups[grp_name]): target_hits.append(cur['PM'])
+
+    elif clean_trigger.startswith("ဘရိတ်") and not any(char.isdigit() for char in clean_trigger):
+        override_session = "AM/PM"
+        grp_name = clean_trigger.replace("ဘရိတ်", "").replace("တူ", "").strip()
+        for r, pair in day_pairs.items():
+            am, pm = get_brk(pair['AM']), get_brk(pair['PM'])
+            if am and pm:
+                if grp_name == "" and am == pm: target_hits.append(pair['PM'])
+                elif grp_name in special_groups and ((am + pm) in special_groups[grp_name] or (pm + am) in special_groups[grp_name]): target_hits.append(pair['PM'])
+    
+    elif clean_trigger.endswith("ဘရိတ်") and clean_trigger.replace("ဘရိတ်", "").strip().isdigit():
+        b_val = clean_trigger.replace("ဘရိတ်", "").strip()
+        for d in full_draws:
+            if get_brk({'draw': d['draw']}) == b_val:
+                if target_session_trigger == "AM/PM" or "All" in target_session_trigger: target_hits.append(d)
+                elif "AM" in target_session_trigger and d['time'] == "AM": target_hits.append(d)
+                elif "PM" in target_session_trigger and d['time'] == "PM": target_hits.append(d)
+
+    elif clean_trigger.startswith("မနက်"):
+        override_session = "AM/PM"
+        am_part = 'head' if 'မနက်ထိပ်' in clean_trigger else ('tail' if 'မနက်ပိတ်' in clean_trigger else None)
+        pm_part = 'head' if 'ညနေထိပ်' in clean_trigger else ('tail' if 'ညနေပိတ်' in clean_trigger else None)
+        rel_name = clean_trigger.replace("မနက်ထိပ်", "").replace("မနက်ပိတ်", "").replace("ညနေထိပ်", "").replace("ညနေပိတ်", "").strip()
+        if am_part and pm_part:
+            for r, pair in day_pairs.items():
+                if pair['AM'] and pair['PM'] and len(pair['AM']['draw'])>=2 and len(pair['PM']['draw'])>=2:
+                    d1 = pair['AM']['draw'][0] if am_part == 'head' else pair['AM']['draw'][1]
+                    d2 = pair['PM']['draw'][0] if pm_part == 'head' else pair['PM']['draw'][1]
+                    rel = get_group_relation(d1, d2)
+                    if rel_name == "တူ" and d1 == d2: target_hits.append(pair['PM'])
+                    elif rel_name != "တူ" and d1 != d2 and (rel == rel_name or f"{d1}{d2}" in special_groups.get(rel_name, set()) or f"{d2}{d1}" in special_groups.get(rel_name, set())): target_hits.append(pair['PM'])
+
+    elif clean_trigger.startswith("ထောင့်ဖြတ်"):
+        override_session = "AM/PM"
+        rel_name = clean_trigger.replace("ထောင့်ဖြတ်", "").strip()
+        sorted_rows = sorted(day_pairs.keys())
+        for i in range(1, len(sorted_rows)):
+            prv, cur = day_pairs[sorted_rows[i-1]], day_pairs[sorted_rows[i]]
+            if prv['AM'] and prv['PM'] and cur['AM'] and cur['PM']:
+                pm1_tail, am2_head = prv['PM']['draw'][1], cur['AM']['draw'][0]
+                am1_head, pm2_tail = prv['AM']['draw'][0], cur['PM']['draw'][1]
+                hit = False
+                if rel_name == "တူ":
+                    if pm1_tail == am2_head or am1_head == pm2_tail: hit = True
+                else:
+                    if pm1_tail != am2_head and get_group_relation(pm1_tail, am2_head) == rel_name: hit = True
+                    if am1_head != pm2_tail and get_group_relation(am1_head, pm2_tail) == rel_name: hit = True
+                if hit: target_hits.append(cur['PM'])
+
+    elif clean_trigger.startswith("ထိပ်ပိတ်ဇောင်း"):
+        rel_name = clean_trigger.replace("ထိပ်ပိတ်ဇောင်း", "").strip()
+        req_am = target_session_trigger in ["AM သီးသန့်", "AM/PM", "All"]
+        req_pm = target_session_trigger in ["PM သီးသန့်", "AM/PM", "All"]
+        sorted_rows = sorted(day_pairs.keys())
+        for i in range(1, len(sorted_rows)):
+            prv, cur = day_pairs[sorted_rows[i-1]], day_pairs[sorted_rows[i]]
+            if req_am and prv['AM'] and cur['AM']:
+                d1, d2 = prv['AM']['draw'][1], cur['AM']['draw'][0]
+                if rel_name == "တူ" and d1 == d2: target_hits.append(cur['AM'])
+                elif rel_name != "တူ" and d1 != d2 and get_group_relation(d1, d2) == rel_name: target_hits.append(cur['AM'])
+            if req_pm and prv['PM'] and cur['PM']:
+                d1, d2 = prv['PM']['draw'][1], cur['PM']['draw'][0]
+                if rel_name == "တူ" and d1 == d2: target_hits.append(cur['PM'])
+                elif rel_name != "တူ" and d1 != d2 and get_group_relation(d1, d2) == rel_name: target_hits.append(cur['PM'])
+
+    elif ("ထိပ်" in clean_trigger or "ပိတ်" in clean_trigger) and not any(char.isdigit() for char in clean_trigger):
+        is_head = "ထိပ်" in clean_trigger
+        rel_name = clean_trigger.replace("ထိပ်", "").replace("ပိတ်", "").strip()
+        req_am = target_session_trigger in ["AM သီးသန့်", "AM/PM", "All"]
+        req_pm = target_session_trigger in ["PM သီးသန့်", "AM/PM", "All"]
+        sorted_rows = sorted(day_pairs.keys())
+        for i in range(1, len(sorted_rows)):
+            prv, cur = day_pairs[sorted_rows[i-1]], day_pairs[sorted_rows[i]]
+            idx = 0 if is_head else 1
+            if req_am and prv['AM'] and cur['AM']:
+                d1, d2 = prv['AM']['draw'][idx], cur['AM']['draw'][idx]
+                if rel_name == "တူ" and d1 == d2: target_hits.append(cur['AM'])
+                elif rel_name != "တူ" and d1 != d2 and get_group_relation(d1, d2) == rel_name: target_hits.append(cur['AM'])
+            if req_pm and prv['PM'] and cur['PM']:
+                d1, d2 = prv['PM']['draw'][idx], cur['PM']['draw'][idx]
+                if rel_name == "တူ" and d1 == d2: target_hits.append(cur['PM'])
+                elif rel_name != "တူ" and d1 != d2 and get_group_relation(d1, d2) == rel_name: target_hits.append(cur['PM'])
+
+    elif "ထိပ်" in clean_trigger:
+        d_match = "".join(re.findall(r'\d+', clean_trigger))
+        if d_match: 
+            for d in full_draws:
+                if d['draw'].startswith(d_match):
+                    if target_session_trigger == "AM/PM" or "All" in target_session_trigger: target_hits.append(d)
+                    elif "AM" in target_session_trigger and d['time'] == "AM": target_hits.append(d)
+                    elif "PM" in target_session_trigger and d['time'] == "PM": target_hits.append(d)
+                    
+    elif "ပိတ်" in clean_trigger:
+        d_match = "".join(re.findall(r'\d+', clean_trigger))
+        if d_match: 
+            for d in full_draws:
+                if d['draw'].endswith(d_match):
+                    if target_session_trigger == "AM/PM" or "All" in target_session_trigger: target_hits.append(d)
+                    elif "AM" in target_session_trigger and d['time'] == "AM": target_hits.append(d)
+                    elif "PM" in target_session_trigger and d['time'] == "PM": target_hits.append(d)
+
+    elif len(clean_trigger) == 3 and clean_trigger.isdigit():
+        override_session = "AM/PM"
+        req_set = set(clean_trigger)
+        for r, pair in day_pairs.items():
+            if pair['AM'] and pair['PM']:
+                if req_set.issubset(set(pair['AM']['draw'] + pair['PM']['draw'])): target_hits.append(pair['PM'])
+
+    elif clean_trigger in special_groups:
+        for d in full_draws:
+            if d['draw'] in special_groups[clean_trigger]:
+                if target_session_trigger == "AM/PM" or "All" in target_session_trigger: target_hits.append(d)
+                elif "AM" in target_session_trigger and d['time'] == "AM": target_hits.append(d)
+                elif "PM" in target_session_trigger and d['time'] == "PM": target_hits.append(d)
+
+    else:
+        is_r = "R" in clean_trigger.upper()
+        digits = "".join(re.findall(r'\d+', clean_trigger))
+        if digits:
+            for d in full_draws:
+                match = False
+                if is_r:
+                    if d['draw'] == digits or d['draw'] == digits[::-1]: match = True
+                else:
+                    if d['draw'] == digits: match = True
+                if match:
+                    if target_session_trigger == "AM/PM" or "All" in target_session_trigger: target_hits.append(d)
+                    elif "AM" in target_session_trigger and d['time'] == "AM": target_hits.append(d)
+                    elif "PM" in target_session_trigger and d['time'] == "PM": target_hits.append(d)
+
+    return target_hits, override_session
+
+# ==========================================
+# AUTO PATTERN DETECTION (For Tab 1)
+# ==========================================
+def detect_active_patterns(day_pairs):
+    active_patterns = set()
+    sorted_rows = sorted(day_pairs.keys())
+    if len(sorted_rows) < 2: return active_patterns
+    
+    cur, prv = day_pairs[sorted_rows[-1]], day_pairs[sorted_rows[-2]]
+    
+    def check_rel(d1, d2, prefix):
+        rel = get_group_relation(d1, d2)
+        if rel and rel != "Others": active_patterns.add(f"{prefix} {rel}")
+
+    if cur['AM'] and cur['PM'] and len(cur['AM']['draw'])>=2 and len(cur['PM']['draw'])>=2:
+        am_h, am_t = cur['AM']['draw'][0], cur['AM']['draw'][1]
+        pm_h, pm_t = cur['PM']['draw'][0], cur['PM']['draw'][1]
+        check_rel(am_h, pm_h, "မနက်ထိပ်ညနေထိပ်")
+        check_rel(am_t, pm_h, "မနက်ပိတ်ညနေထိပ်")
+
+    if prv['PM'] and cur['AM'] and len(prv['PM']['draw'])>=2 and len(cur['AM']['draw'])>=2:
+        check_rel(prv['PM']['draw'][1], cur['AM']['draw'][0], "ထောင့်ဖြတ်")
+        if prv['AM'] and cur['PM'] and len(prv['AM']['draw'])>=2 and len(cur['PM']['draw'])>=2:
+            check_rel(prv['AM']['draw'][0], cur['PM']['draw'][1], "ထောင့်ဖြတ်")
+
+    if prv['AM'] and cur['AM'] and len(prv['AM']['draw'])>=2 and len(cur['AM']['draw'])>=2:
+        check_rel(prv['AM']['draw'][1], cur['AM']['draw'][0], "ထိပ်ပိတ်ဇောင်း")
+        check_rel(prv['AM']['draw'][0], cur['AM']['draw'][0], "ထိပ်")
+        check_rel(prv['AM']['draw'][1], cur['AM']['draw'][1], "ပိတ်")
+
+    if prv['PM'] and cur['PM'] and len(prv['PM']['draw'])>=2 and len(cur['PM']['draw'])>=2:
+        check_rel(prv['PM']['draw'][1], cur['PM']['draw'][0], "ထိပ်ပိတ်ဇောင်း")
+        check_rel(prv['PM']['draw'][0], cur['PM']['draw'][0], "ထိပ်")
+        check_rel(prv['PM']['draw'][1], cur['PM']['draw'][1], "ပိတ်")
+
+    last_draw = cur['PM'] if cur['PM'] else cur['AM']
+    if last_draw and len(last_draw['draw']) >= 2:
+        brk = get_brk(last_draw)
+        if brk: active_patterns.add(f"{brk} ဘရိတ်")
+        
+    return list(active_patterns)
+
+# ==========================================
+# MASTER ROUTINE: V35.10 INTERSECTION ENGINE
 # ==========================================
 def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=False, search_session="All", custom_trigger="", mode="AI Trend", is_research_mode=False, min_rate_threshold=90.0):
     step_buckets = {step: {} for step in range(1, requested_max_step + 1)}
@@ -234,13 +475,12 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
 
             if rate < min_rate_threshold: continue
 
-            # --- [NEW] ALL-TIME MAX SPAN BACKTESTING ---
             all_time_max_span = max_required_span
             if len(target_hits) > MAX_RECENT_HITS_CAP:
                 for hit in target_hits:
                     h_idx = hit['index']
                     found_step = None
-                    for step_check in range(1, 150): # Safe bound search
+                    for step_check in range(1, 150):
                         t_idx = h_idx + step_check
                         if t_idx >= len(full_draws): break
                         if "သီးသန့်" in search_session:
@@ -348,7 +588,7 @@ if st.session_state.full_draws:
     tab_live, tab_custom = st.tabs(["⚡ VIP Tracker (ယခုပွဲစဉ်)", "🔍 Pair-Engine (Custom သုတေသန)"])
 
     # ------------------------------------------
-    # TAB 1: LIVE AUTO TRACKER 
+    # TAB 1: LIVE AUTO TRACKER (WITH AUTO-PATTERN & RISK PENALTY)
     # ------------------------------------------
     with tab_live:
         st.markdown("#### ⚙️ VIP ရှာဖွေမှု ကန့်သတ်ချက်များ")
@@ -357,11 +597,12 @@ if st.session_state.full_draws:
             with c1: anchor_count = st.number_input("📌 အနှစ်ချုပ်ကြည့်မည့် မူအရေအတွက်:", min_value=1, max_value=50, value=10)
             with c2: live_max_tf = st.number_input("⏳ စစ်ဆေးမည့် ပွဲစဉ်အရေအတွက် [Max Span]:", min_value=1, max_value=50, value=20)
             custom_anchors_str = st.text_input("🎯 စိတ်ကြိုက် အမာခံဂဏန်းများ (ဥပမာ - 48, 60) [မရိုက်ပါက Auto ရှာမည်]:", value="")
+            use_adv_patterns = st.checkbox("🔍 Advanced Auto-Scanner (Tab 2 မူများပါ အလိုအလျောက် ပေါင်းစပ်ရှာဖွေမည်)", value=True)
             live_mode = st.radio("🧠 AI တွက်ချက်မှုစနစ်:", ["AI Trend (ရှေ့သမိုင်း ၅၀ အထိုင်)", "Calendar သီးသန့်မူများ (Fixed Pattern)"], horizontal=True)
             submit_live = st.form_submit_button("VIP ကို ယခုရှာဖွေမည် ⚡")
 
         if submit_live:
-            with st.spinner("⚡ AI အရည်အသွေး အမှတ်ပေးစနစ်ဖြင့် တွက်ချက်နေပါသည်..."):
+            with st.spinner("⚡ AI အရည်အသွေး အမှတ်ပေးစနစ်ဖြင့် တွက်ချက်နေပါသည် (Advanced Engine)..."):
                 selected_anchors = []
                 if custom_anchors_str.strip():
                     raw_nums = [x.strip() for x in custom_anchors_str.split(',') if x.strip().isdigit()]
@@ -375,34 +616,53 @@ if st.session_state.full_draws:
                     st.error("⚠️ အမာခံဂဏန်းများ ရှာမတွေ့ပါ။")
                 else:
                     scoring_pool, global_recovery = {}, {}
+                    condition_pools = []
+                    
+                    # 1. ရိုးရိုးဂဏန်းများ (Exact Hits)
                     for past_obj in selected_anchors:
                         p_val, p_time, p_day = past_obj['draw'], past_obj['time'], past_obj['day']
-                        condition_pools = [
-                            {"hits": [d for d in st.session_state.full_draws if d['draw'] == p_val and d['time'] == p_time], "lbl": f"{p_val} {p_time} စစ်စစ်"},
-                            {"hits": [d for d in st.session_state.full_draws if d['draw'] == p_val], "lbl": f"{p_val} ပေါင်းချုပ်"},
-                            {"hits": [d for d in st.session_state.full_draws if (d['draw'] == p_val or d['draw'] == p_val[::-1]) and d['day'] == p_day], "lbl": f"{p_val}R {p_day} သီးသန့်"}
-                        ]
-                        for p in condition_pools:
-                            if not p['hits']: continue
-                            step_res, rec_pool = execute_analysis(p['hits'], st.session_state.full_draws, live_max_tf, is_custom_tab=True, search_session="AM/PM", custom_trigger=p['lbl'], mode=live_mode, min_rate_threshold=90.0)
-                            
-                            for step_dist, formulas_dict in step_res.items():
-                                for mk, mv in formulas_dict.items():
-                                    f_key = mv['pure']
-                                    if f_key not in scoring_pool:
-                                        cov = max(1, sum(1 for i in range(100) if check_single_draw_against_formula(f"{i:02d}", mv['mu_k'], f_key)))
-                                        scoring_pool[f_key] = {'count': 0, 'details': [], 'mu_k': mv['mu_k'], 'quality_score': 0.0, 'coverage': cov}
-                                    if mv['top'] not in [d['top'] for d in scoring_pool[f_key]['details']]:
-                                        scoring_pool[f_key]['details'].append(mv)
-                                        scoring_pool[f_key]['count'] += 1
-                                        scoring_pool[f_key]['quality_score'] += (mv['rate'] / 100.0) * mv['success_hits']
+                        condition_pools.append({"hits": [d for d in st.session_state.full_draws if d['draw'] == p_val and d['time'] == p_time], "lbl": f"{p_val} {p_time} စစ်စစ်", "session": "AM/PM"})
+                        condition_pools.append({"hits": [d for d in st.session_state.full_draws if d['draw'] == p_val], "lbl": f"{p_val} ပေါင်းချုပ်", "session": "AM/PM"})
+                        condition_pools.append({"hits": [d for d in st.session_state.full_draws if (d['draw'] == p_val or d['draw'] == p_val[::-1]) and d['day'] == p_day], "lbl": f"{p_val}R {p_day} သီးသန့်", "session": "AM/PM"})
+                    
+                    # 2. Advanced Auto-Pattern (Tab 2 မူများ)
+                    if use_adv_patterns:
+                        active_patterns = detect_active_patterns(st.session_state.day_pairs)
+                        for pat in active_patterns:
+                            t_hits, override_ses = get_custom_target_hits(pat, "AM/PM", st.session_state.full_draws, st.session_state.day_pairs)
+                            if t_hits:
+                                sess_to_use = override_ses if override_ses else "AM/PM"
+                                condition_pools.append({"hits": t_hits, "lbl": pat, "session": sess_to_use})
 
-                            for rp in rec_pool:
-                                r_key = rp['key']
-                                if r_key not in global_recovery: global_recovery[r_key] = {'score': 0.0, 'rem_steps': rp['rem_steps'], 'details': []}
-                                if rp['card']['top'] not in [d['top'] for d in global_recovery[r_key]['details']]:
-                                    global_recovery[r_key]['details'].append(rp['card'])
-                                    global_recovery[r_key]['score'] += rp['score']
+                    # Run Execute Analysis on all pools
+                    for p in condition_pools:
+                        if not p['hits']: continue
+                        step_res, rec_pool = execute_analysis(p['hits'], st.session_state.full_draws, live_max_tf, is_custom_tab=True, search_session=p['session'], custom_trigger=p['lbl'], mode=live_mode, min_rate_threshold=90.0)
+                        
+                        for step_dist, formulas_dict in step_res.items():
+                            for mk, mv in formulas_dict.items():
+                                f_key = mv['pure']
+                                if f_key not in scoring_pool:
+                                    cov = max(1, sum(1 for i in range(100) if check_single_draw_against_formula(f"{i:02d}", mv['mu_k'], f_key)))
+                                    scoring_pool[f_key] = {'count': 0, 'details': [], 'mu_k': mv['mu_k'], 'quality_score': 0.0, 'coverage': cov}
+                                
+                                if mv['top'] not in [d['top'] for d in scoring_pool[f_key]['details']]:
+                                    scoring_pool[f_key]['details'].append(mv)
+                                    scoring_pool[f_key]['count'] += 1
+                                    
+                                    # 🔴 [NEW] RISK PENALTY SYSTEM
+                                    is_risk = "⚠️ Risk Note" in mv.get("risk_note", "")
+                                    penalty_multiplier = 0.5 if is_risk else 1.0 
+                                    
+                                    base_score = (mv['rate'] / 100.0) * mv['success_hits']
+                                    scoring_pool[f_key]['quality_score'] += (base_score * penalty_multiplier)
+
+                        for rp in rec_pool:
+                            r_key = rp['key']
+                            if r_key not in global_recovery: global_recovery[r_key] = {'score': 0.0, 'rem_steps': rp['rem_steps'], 'details': []}
+                            if rp['card']['top'] not in [d['top'] for d in global_recovery[r_key]['details']]:
+                                global_recovery[r_key]['details'].append(rp['card'])
+                                global_recovery[r_key]['score'] += rp['score']
 
                     valid_vips = {k: v for k, v in scoring_pool.items() if v['count'] >= 2}
                     deadline_singles = {k: v for k, v in scoring_pool.items() if v['count'] == 1}
@@ -473,242 +733,12 @@ if st.session_state.full_draws:
 
         if submit_custom:
             with st.spinner("🔍 အဆင့်မြင့် Data Mining Engine ဖြင့် သုတေသန ပြုလုပ်နေပါသည်..."):
-                target_hits = []
                 clean_trigger = trigger_num.strip()
-                override_session = None
-
-                # --- 1. MIDDLE GROUPS & MIDDLE PAIRS ---
-                if "အလယ်" in clean_trigger:
-                    override_session = "AM/PM"
-                    grp_name = clean_trigger.replace("အလယ်", "").strip()
-                    if grp_name in special_groups:
-                        for r, pair in st.session_state.day_pairs.items():
-                            if pair['AM'] and pair['PM'] and len(pair['AM']['draw']) >= 2 and len(pair['PM']['draw']) >= 2:
-                                mid_pair = pair['AM']['draw'][1] + pair['PM']['draw'][0]
-                                if mid_pair in special_groups[grp_name] or mid_pair[::-1] in special_groups[grp_name]:
-                                    target_hits.append(pair['PM'])
-                    else:
-                        digits = "".join(re.findall(r'\d+', clean_trigger))
-                        if len(digits) == 2:
-                            for r, pair in st.session_state.day_pairs.items():
-                                if pair['AM'] and pair['PM'] and len(pair['AM']['draw']) >= 2 and len(pair['PM']['draw']) >= 2:
-                                    mid_pair = pair['AM']['draw'][1] + pair['PM']['draw'][0]
-                                    if mid_pair == digits or mid_pair == digits[::-1]:
-                                        target_hits.append(pair['PM'])
-
-                # --- 2. BREAK TRIANGLE ---
-                elif "တြိဂံ" in clean_trigger and "ဘရိတ်" in clean_trigger:
-                    override_session = "AM/PM"
-                    sorted_rows = sorted(st.session_state.day_pairs.keys())
-                    for i in range(1, len(sorted_rows)):
-                        prv = st.session_state.day_pairs[sorted_rows[i-1]]
-                        cur = st.session_state.day_pairs[sorted_rows[i]]
-                        b_list = [get_brk(prv['AM']), get_brk(prv['PM']), get_brk(cur['AM']), get_brk(cur['PM'])]
-                        valid_b = [b for b in b_list if b is not None]
-                        if len(valid_b) >= 3:
-                            counts = Counter(valid_b)
-                            if counts and max(counts.values()) >= 3: target_hits.append(cur['PM'])
-
-                # --- 3. BREAK DIAGONAL (ဇောင်း) ---
-                elif "ဇောင်း" in clean_trigger and "ဘရိတ်" in clean_trigger:
-                    override_session = "AM/PM"
-                    grp_name = clean_trigger.replace("ဘရိတ်", "").replace("ဇောင်း", "").replace("တူ", "").strip()
-                    sorted_rows = sorted(st.session_state.day_pairs.keys())
-                    for i in range(1, len(sorted_rows)):
-                        prv = st.session_state.day_pairs[sorted_rows[i-1]]
-                        cur = st.session_state.day_pairs[sorted_rows[i]]
-                        am1, pm1 = get_brk(prv['AM']), get_brk(prv['PM'])
-                        am2, pm2 = get_brk(cur['AM']), get_brk(cur['PM'])
-                        
-                        hit = False
-                        if am1 and pm2:
-                            if grp_name == "" and am1 == pm2: hit = True
-                            elif grp_name in special_groups and ((am1 + pm2) in special_groups[grp_name] or (pm2 + am1) in special_groups[grp_name]): hit = True
-                        if pm1 and am2:
-                            if grp_name == "" and pm1 == am2: hit = True
-                            elif grp_name in special_groups and ((pm1 + am2) in special_groups[grp_name] or (am2 + pm1) in special_groups[grp_name]): hit = True
-                        if hit: target_hits.append(cur['PM'])
-
-                # --- 4. BREAK VERTICAL (ထက်အောက်) ---
-                elif "ထက်အောက်" in clean_trigger and "ဘရိတ်" in clean_trigger:
-                    grp_name = clean_trigger.replace("ဘရိတ်", "").replace("ထက်အောက်", "").replace("တူ", "").strip()
-                    sorted_rows = sorted(st.session_state.day_pairs.keys())
-                    req_am = target_session_trigger in ["AM သီးသန့်", "AM/PM", "All"]
-                    req_pm = target_session_trigger in ["PM သီးသန့်", "AM/PM", "All"]
-                    
-                    for i in range(1, len(sorted_rows)):
-                        prv = st.session_state.day_pairs[sorted_rows[i-1]]
-                        cur = st.session_state.day_pairs[sorted_rows[i]]
-                        am1, pm1 = get_brk(prv['AM']), get_brk(prv['PM'])
-                        am2, pm2 = get_brk(cur['AM']), get_brk(cur['PM'])
-                        
-                        if req_am and am1 and am2:
-                            if grp_name == "" and am1 == am2: target_hits.append(cur['AM'])
-                            elif grp_name in special_groups and ((am1 + am2) in special_groups[grp_name] or (am2 + am1) in special_groups[grp_name]): target_hits.append(cur['AM'])
-                        if req_pm and pm1 and pm2:
-                            if grp_name == "" and pm1 == pm2: target_hits.append(cur['PM'])
-                            elif grp_name in special_groups and ((pm1 + pm2) in special_groups[grp_name] or (pm2 + pm1) in special_groups[grp_name]): target_hits.append(cur['PM'])
-
-                # --- 5. BREAK GROUPS & SAME BREAK (Auto AM/PM) ---
-                elif clean_trigger.startswith("ဘရိတ်") and not any(char.isdigit() for char in clean_trigger):
-                    override_session = "AM/PM"
-                    grp_name = clean_trigger.replace("ဘရိတ်", "").replace("တူ", "").strip()
-                    for r, pair in st.session_state.day_pairs.items():
-                        am, pm = get_brk(pair['AM']), get_brk(pair['PM'])
-                        if am and pm:
-                            if grp_name == "" and am == pm: target_hits.append(pair['PM'])
-                            elif grp_name in special_groups and ((am + pm) in special_groups[grp_name] or (pm + am) in special_groups[grp_name]): target_hits.append(pair['PM'])
                 
-                # --- 6. STANDARD SINGLE BREAK (Manual Session) ---
-                elif clean_trigger.endswith("ဘရိတ်") and clean_trigger.replace("ဘရိတ်", "").strip().isdigit():
-                    b_val = clean_trigger.replace("ဘရိတ်", "").strip()
-                    for d in st.session_state.full_draws:
-                        if get_brk({'draw': d['draw']}) == b_val:
-                            if target_session_trigger == "AM/PM" or "All" in target_session_trigger: target_hits.append(d)
-                            elif "AM" in target_session_trigger and d['time'] == "AM": target_hits.append(d)
-                            elif "PM" in target_session_trigger and d['time'] == "PM": target_hits.append(d)
+                # REFACTORED: Use shared function
+                target_hits, override_session = get_custom_target_hits(clean_trigger, target_session_trigger, st.session_state.full_draws, st.session_state.day_pairs)
 
-                # ==========================================
-                # NEW V35.10 ADVANCED HEAD/TAIL LINK ENGINE
-                # ==========================================
-                
-                # --- 6.1 SAME-DAY LINK (မနက်ထိပ်ညနေထိပ်, မနက်ထိပ်ညနေပိတ် စသည်) ---
-                elif clean_trigger.startswith("မနက်"):
-                    override_session = "AM/PM"
-                    am_part = 'head' if 'မနက်ထိပ်' in clean_trigger else ('tail' if 'မနက်ပိတ်' in clean_trigger else None)
-                    pm_part = 'head' if 'ညနေထိပ်' in clean_trigger else ('tail' if 'ညနေပိတ်' in clean_trigger else None)
-                    rel_name = clean_trigger.replace("မနက်ထိပ်", "").replace("မနက်ပိတ်", "").replace("ညနေထိပ်", "").replace("ညနေပိတ်", "").strip()
-                    
-                    if am_part and pm_part:
-                        for r, pair in st.session_state.day_pairs.items():
-                            if pair['AM'] and pair['PM'] and len(pair['AM']['draw'])>=2 and len(pair['PM']['draw'])>=2:
-                                d1 = pair['AM']['draw'][0] if am_part == 'head' else pair['AM']['draw'][1]
-                                d2 = pair['PM']['draw'][0] if pm_part == 'head' else pair['PM']['draw'][1]
-                                
-                                rel = get_group_relation(d1, d2)
-                                if rel_name == "တူ" and d1 == d2: target_hits.append(pair['PM'])
-                                elif rel_name != "တူ" and d1 != d2 and (rel == rel_name or f"{d1}{d2}" in special_groups.get(rel_name, set()) or f"{d2}{d1}" in special_groups.get(rel_name, set())):
-                                    target_hits.append(pair['PM'])
-
-                # --- 6.2 CROSS DIAGONAL (ထောင့်ဖြတ်တူ, ထောင့်ဖြတ်ညီကို စသည်) ---
-                elif clean_trigger.startswith("ထောင့်ဖြတ်"):
-                    override_session = "AM/PM"
-                    rel_name = clean_trigger.replace("ထောင့်ဖြတ်", "").strip()
-                    sorted_rows = sorted(st.session_state.day_pairs.keys())
-                    for i in range(1, len(sorted_rows)):
-                        prv = st.session_state.day_pairs[sorted_rows[i-1]]
-                        cur = st.session_state.day_pairs[sorted_rows[i]]
-                        if prv['AM'] and prv['PM'] and cur['AM'] and cur['PM']:
-                            pm1_tail = prv['PM']['draw'][1]
-                            am2_head = cur['AM']['draw'][0]
-                            am1_head = prv['AM']['draw'][0]
-                            pm2_tail = cur['PM']['draw'][1]
-                            
-                            hit = False
-                            if rel_name == "တူ":
-                                if pm1_tail == am2_head or am1_head == pm2_tail: hit = True
-                            else:
-                                if pm1_tail != am2_head and get_group_relation(pm1_tail, am2_head) == rel_name: hit = True
-                                if am1_head != pm2_tail and get_group_relation(am1_head, pm2_tail) == rel_name: hit = True
-                            if hit: target_hits.append(cur['PM'])
-
-                # --- 6.3 DIAGONAL (ထိပ်ပိတ်ဇောင်းတူ, ထိပ်ပိတ်ဇောင်းညီကို စသည်) ---
-                elif clean_trigger.startswith("ထိပ်ပိတ်ဇောင်း"):
-                    rel_name = clean_trigger.replace("ထိပ်ပိတ်ဇောင်း", "").strip()
-                    req_am = target_session_trigger in ["AM သီးသန့်", "AM/PM", "All"]
-                    req_pm = target_session_trigger in ["PM သီးသန့်", "AM/PM", "All"]
-                    sorted_rows = sorted(st.session_state.day_pairs.keys())
-                    for i in range(1, len(sorted_rows)):
-                        prv = st.session_state.day_pairs[sorted_rows[i-1]]
-                        cur = st.session_state.day_pairs[sorted_rows[i]]
-                        
-                        if req_am and prv['AM'] and cur['AM']:
-                            d1, d2 = prv['AM']['draw'][1], cur['AM']['draw'][0]
-                            if rel_name == "တူ" and d1 == d2: target_hits.append(cur['AM'])
-                            elif rel_name != "တူ" and d1 != d2 and get_group_relation(d1, d2) == rel_name: target_hits.append(cur['AM'])
-                        
-                        if req_pm and prv['PM'] and cur['PM']:
-                            d1, d2 = prv['PM']['draw'][1], cur['PM']['draw'][0]
-                            if rel_name == "တူ" and d1 == d2: target_hits.append(cur['PM'])
-                            elif rel_name != "တူ" and d1 != d2 and get_group_relation(d1, d2) == rel_name: target_hits.append(cur['PM'])
-
-                # --- 6.4 VERTICAL LINK (ထိပ်တူ, ထိပ်ပါဝါ, ပိတ်ညီကို စသည်) ---
-                elif ("ထိပ်" in clean_trigger or "ပိတ်" in clean_trigger) and not any(char.isdigit() for char in clean_trigger):
-                    is_head = "ထိပ်" in clean_trigger
-                    rel_name = clean_trigger.replace("ထိပ်", "").replace("ပိတ်", "").strip()
-                    req_am = target_session_trigger in ["AM သီးသန့်", "AM/PM", "All"]
-                    req_pm = target_session_trigger in ["PM သီးသန့်", "AM/PM", "All"]
-                    sorted_rows = sorted(st.session_state.day_pairs.keys())
-                    
-                    for i in range(1, len(sorted_rows)):
-                        prv = st.session_state.day_pairs[sorted_rows[i-1]]
-                        cur = st.session_state.day_pairs[sorted_rows[i]]
-                        idx = 0 if is_head else 1
-                        
-                        if req_am and prv['AM'] and cur['AM']:
-                            d1, d2 = prv['AM']['draw'][idx], cur['AM']['draw'][idx]
-                            if rel_name == "တူ" and d1 == d2: target_hits.append(cur['AM'])
-                            elif rel_name != "တူ" and d1 != d2 and get_group_relation(d1, d2) == rel_name: target_hits.append(cur['AM'])
-                        
-                        if req_pm and prv['PM'] and cur['PM']:
-                            d1, d2 = prv['PM']['draw'][idx], cur['PM']['draw'][idx]
-                            if rel_name == "တူ" and d1 == d2: target_hits.append(cur['PM'])
-                            elif rel_name != "တူ" and d1 != d2 and get_group_relation(d1, d2) == rel_name: target_hits.append(cur['PM'])
-
-                # --- 7. HEAD / TAIL (ရိုးရိုး ဂဏန်းနဲ့ ထိပ်/ပိတ် eg. 6 ထိပ်, 4 ပိတ်) ---
-                elif "ထိပ်" in clean_trigger:
-                    d_match = "".join(re.findall(r'\d+', clean_trigger))
-                    if d_match: 
-                        for d in st.session_state.full_draws:
-                            if d['draw'].startswith(d_match):
-                                if target_session_trigger == "AM/PM" or "All" in target_session_trigger: target_hits.append(d)
-                                elif "AM" in target_session_trigger and d['time'] == "AM": target_hits.append(d)
-                                elif "PM" in target_session_trigger and d['time'] == "PM": target_hits.append(d)
-                                
-                elif "ပိတ်" in clean_trigger:
-                    d_match = "".join(re.findall(r'\d+', clean_trigger))
-                    if d_match: 
-                        for d in st.session_state.full_draws:
-                            if d['draw'].endswith(d_match):
-                                if target_session_trigger == "AM/PM" or "All" in target_session_trigger: target_hits.append(d)
-                                elif "AM" in target_session_trigger and d['time'] == "AM": target_hits.append(d)
-                                elif "PM" in target_session_trigger and d['time'] == "PM": target_hits.append(d)
-
-                # --- 8. 3 DIGITS TODAY (Auto AM/PM) ---
-                elif len(clean_trigger) == 3 and clean_trigger.isdigit():
-                    override_session = "AM/PM"
-                    req_set = set(clean_trigger)
-                    for r, pair in st.session_state.day_pairs.items():
-                        if pair['AM'] and pair['PM']:
-                            if req_set.issubset(set(pair['AM']['draw'] + pair['PM']['draw'])): target_hits.append(pair['PM'])
-
-                # --- 9. GROUPS ---
-                elif clean_trigger in special_groups:
-                    for d in st.session_state.full_draws:
-                        if d['draw'] in special_groups[clean_trigger]:
-                            if target_session_trigger == "AM/PM" or "All" in target_session_trigger: target_hits.append(d)
-                            elif "AM" in target_session_trigger and d['time'] == "AM": target_hits.append(d)
-                            elif "PM" in target_session_trigger and d['time'] == "PM": target_hits.append(d)
-
-                # --- 10. EXACT MATCH (eg. 12 သို့မဟုတ် 12R) ---
-                else:
-                    is_r = "R" in clean_trigger.upper()
-                    digits = "".join(re.findall(r'\d+', clean_trigger))
-                    
-                    if digits:
-                        for d in st.session_state.full_draws:
-                            match = False
-                            if is_r:
-                                if d['draw'] == digits or d['draw'] == digits[::-1]: match = True
-                            else:
-                                if d['draw'] == digits: match = True
-                                
-                            if match:
-                                if target_session_trigger == "AM/PM" or "All" in target_session_trigger: target_hits.append(d)
-                                elif "AM" in target_session_trigger and d['time'] == "AM": target_hits.append(d)
-                                elif "PM" in target_session_trigger and d['time'] == "PM": target_hits.append(d)
-
-                # Post Process Targets
+                # Post Process Targets for trigger_day
                 final_hits = {}
                 for h in target_hits:
                     if trigger_day == "All" or h['day'] == trigger_day:
