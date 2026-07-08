@@ -36,7 +36,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.markdown('<div class="main-title">🤖 THE PERFECT 2D AI MASTER (V35.10)</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Ultimate Risk-Warning Engine | Smart Pattern Classifier</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Dual-Scanner Engine | Strict Pattern Classifier</div>', unsafe_allow_html=True)
 
 # Session State Memory Setup
 if 'full_draws' not in st.session_state: st.session_state.full_draws = None
@@ -643,6 +643,7 @@ if st.session_state.full_draws:
                         lbl_all = f"{p_val} AM/PM"
                         lbl_day = f"{r_label} AM/PM ({p_day})"
                         
+                        # ရိုးရိုးဂဏန်းများအားလုံးသည် strict_100 (Deep Sniper Rule) မှ ကင်းလွတ်ခွင့်ရှိသည်
                         condition_pools.append({"hits": [d for d in st.session_state.full_draws if d['draw'] == p_val and d['time'] == p_time], "lbl": lbl_strict, "session": "AM/PM", "strict_100": False})
                         condition_pools.append({"hits": [d for d in st.session_state.full_draws if d['draw'] == p_val], "lbl": lbl_all, "session": "AM/PM", "strict_100": False})
                         condition_pools.append({"hits": [d for d in st.session_state.full_draws if (d['draw'] == p_val or d['draw'] == p_val[::-1]) and d['day'] == p_day], "lbl": lbl_day, "session": "AM/PM", "strict_100": False})
