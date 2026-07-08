@@ -22,10 +22,9 @@ st.markdown("""
     .card-deadline { border-left: 6px solid #e74c3c; background-color: #31151A; margin-bottom: 10px; }
     .card-recovery { border-left: 6px solid #e67e22; background-color: #2D1A0E; margin-bottom: 10px; }
     .line-trigger { font-size: 16px; font-weight: bold; color: #E0D5FA; margin-bottom: 6px; display: block; }
-    .line-formula { font-size: 20px; font-weight: bold; color: #FFD700; margin-bottom: 6px; display: block; }
+    .line-formula { font-size: 22px; font-weight: bold; color: #FFD700; margin-top: 8px; margin-bottom: 8px; display: inline-block; background: rgba(255, 215, 0, 0.1); padding: 5px 12px; border-radius: 8px; border: 1px solid rgba(255, 215, 0, 0.3); }
     .line-history { font-size: 14px; color: #A294C7; display: block; }
     .line-focus { font-size: 14px; color: #f1c40f; font-weight: bold; display: block; margin-top: 5px; margin-bottom: 5px;}
-    .line-advisor { font-size: 14px; color: #00FFCC; font-style: italic; margin-top: 10px; display: block; border-top: 1px dashed #3D2B5E; padding-top: 8px; margin-bottom: 8px;}
     .badge-inline { padding: 2px 10px; border-radius: 6px; font-size: 14px; font-weight: bold; margin-left: 6px; margin-right: 6px; display: inline-block; vertical-align: middle; }
     .badge-inline-sniper { background-color: #9b59b6; color: white; }
     .badge-inline-hp { background-color: #2ecc71; color: #0D2216; }
@@ -378,47 +377,48 @@ def get_custom_target_hits(clean_trigger, target_session_trigger, full_draws, da
     return target_hits, override_session
 
 # ==========================================
-# AUTO PATTERN DETECTION (Dynamic Lookback)
+# AUTO PATTERN DETECTION (With Display Labels)
 # ==========================================
 def detect_active_patterns(day_pairs, lookback_draws):
     active_patterns = set()
     sorted_rows = sorted(day_pairs.keys())
     if len(sorted_rows) < 2: return list(active_patterns)
     
-    # တွက်ချက်လိုသော ပွဲစဉ်အရ ပျမ်းမျှရက်အရေအတွက် နောက်ဆုတ်ခြင်း
     lookback_days = max(2, (lookback_draws + 1) // 2)
     start_idx = max(1, len(sorted_rows) - lookback_days)
     
-    def check_rel(d1, d2, prefix):
+    # 🔴 [NEW] Search Key နှင့် Display Label ကို ခွဲခြားသတ်မှတ်ခြင်း
+    def check_rel(d1, d2, search_prefix, display_prefix):
         rel = get_group_relation(d1, d2)
-        if rel and rel != "Others": active_patterns.add(f"{prefix} {rel}")
+        if rel and rel != "Others": 
+            active_patterns.add((f"{search_prefix} {rel}", f"{display_prefix} {rel} ({d1}+{d2})"))
 
     for i in range(start_idx, len(sorted_rows)):
         cur, prv = day_pairs[sorted_rows[i]], day_pairs[sorted_rows[i-1]]
         
         if cur['AM'] and cur['PM'] and len(cur['AM']['draw'])>=2 and len(cur['PM']['draw'])>=2:
-            check_rel(cur['AM']['draw'][0], cur['PM']['draw'][0], "မနက်ထိပ်ညနေထိပ်")
-            check_rel(cur['AM']['draw'][1], cur['PM']['draw'][0], "မနက်ပိတ်ညနေထိပ်")
+            check_rel(cur['AM']['draw'][0], cur['PM']['draw'][0], "မနက်ထိပ်ညနေထိပ်", "တစ်နေ့တည်း မနက်ထိပ်-ညနေထိပ်")
+            check_rel(cur['AM']['draw'][1], cur['PM']['draw'][0], "မနက်ပိတ်ညနေထိပ်", "တစ်နေ့တည်း မနက်ပိတ်-ညနေထိပ်")
 
         if prv['PM'] and cur['AM'] and len(prv['PM']['draw'])>=2 and len(cur['AM']['draw'])>=2:
-            check_rel(prv['PM']['draw'][1], cur['AM']['draw'][0], "ထောင့်ဖြတ်")
+            check_rel(prv['PM']['draw'][1], cur['AM']['draw'][0], "ထောင့်ဖြတ်", "ညနေပိတ်-မနက်ထိပ် ထောင့်ဖြတ်")
             if prv['AM'] and cur['PM'] and len(prv['AM']['draw'])>=2 and len(cur['PM']['draw'])>=2:
-                check_rel(prv['AM']['draw'][0], cur['PM']['draw'][1], "ထောင့်ဖြတ်")
+                check_rel(prv['AM']['draw'][0], cur['PM']['draw'][1], "ထောင့်ဖြတ်", "မနက်ထိပ်-ညနေပိတ် ထောင့်ဖြတ်")
 
         if prv['AM'] and cur['AM'] and len(prv['AM']['draw'])>=2 and len(cur['AM']['draw'])>=2:
-            check_rel(prv['AM']['draw'][1], cur['AM']['draw'][0], "ထိပ်ပိတ်ဇောင်း")
-            check_rel(prv['AM']['draw'][0], cur['AM']['draw'][0], "ထိပ်")
-            check_rel(prv['AM']['draw'][1], cur['AM']['draw'][1], "ပိတ်")
+            check_rel(prv['AM']['draw'][1], cur['AM']['draw'][0], "ထိပ်ပိတ်ဇောင်း", "မနက်ပိုင်း ပိတ်-ထိပ် ဇောင်း")
+            check_rel(prv['AM']['draw'][0], cur['AM']['draw'][0], "ထိပ်", "မနက်ပိုင်း ရက်ဆက်ထိပ်")
+            check_rel(prv['AM']['draw'][1], cur['AM']['draw'][1], "ပိတ်", "မနက်ပိုင်း ရက်ဆက်ပိတ်")
 
         if prv['PM'] and cur['PM'] and len(prv['PM']['draw'])>=2 and len(cur['PM']['draw'])>=2:
-            check_rel(prv['PM']['draw'][1], cur['PM']['draw'][0], "ထိပ်ပိတ်ဇောင်း")
-            check_rel(prv['PM']['draw'][0], cur['PM']['draw'][0], "ထိပ်")
-            check_rel(prv['PM']['draw'][1], cur['PM']['draw'][1], "ပိတ်")
+            check_rel(prv['PM']['draw'][1], cur['PM']['draw'][0], "ထိပ်ပိတ်ဇောင်း", "ညနေပိုင်း ပိတ်-ထိပ် ဇောင်း")
+            check_rel(prv['PM']['draw'][0], cur['PM']['draw'][0], "ထိပ်", "ညနေပိုင်း ရက်ဆက်ထိပ်")
+            check_rel(prv['PM']['draw'][1], cur['PM']['draw'][1], "ပိတ်", "ညနေပိုင်း ရက်ဆက်ပိတ်")
 
         last_draw = cur['PM'] if cur['PM'] else cur['AM']
         if last_draw and len(last_draw['draw']) >= 2:
             brk = get_brk(last_draw)
-            if brk: active_patterns.add(f"{brk} ဘရိတ်")
+            if brk: active_patterns.add((f"{brk} ဘရိတ်", f"လတ်တလော {brk} ဘရိတ် ({last_draw['draw']})"))
             
     return list(active_patterns)
 
@@ -516,12 +516,14 @@ def execute_analysis(target_hits, full_draws, requested_max_step, is_custom_tab=
                     if rem_steps < 1: continue 
                     if elapsed_filtered > 0 and is_already_hit(mu_k, last_generated_val, last_hit_global_idx + 1, current_latest_idx, full_draws)[0]: continue
 
-            # 🔴 [FIX] သမိုင်းတစ်လျှောက်ထွက်ခဲ့သော ဂဏန်းများကို 'ယခု' လက်ရှိမူနှင့် ကိုက်ညီမှသာ စစ်ထုတ်ခြင်း
+            # 🔴 [FIX & UI UPDATE] သမိုင်းတစ်လျှောက်ထွက်ခဲ့သော ဂဏန်းများကို စစ်ထုတ်ပြီး Badge ပုံစံဖြင့် လှပစွာပြသခြင်း
             filtered_combinations = [d for d in actual_hit_combinations if check_single_draw_against_formula(d, mu_k, last_generated_val)]
             if filtered_combinations:
-                sniper_note = f"💡 အဖြစ်နိုင်ဆုံး ၃/၄ ကွက်: {', '.join([x[0] for x in Counter(filtered_combinations).most_common(4)])}"
+                top_nums = [x[0] for x in Counter(filtered_combinations).most_common(4)]
+                badges_html = " ".join([f"<span style='background-color:#E67E22; color:#FFFFFF; padding:4px 10px; border-radius:6px; font-size:16px; font-weight:bold; margin-right:5px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);'>{n}</span>" for n in top_nums])
+                sniper_note = f"<div style='margin-top: 12px; padding-top: 10px; border-top: 1px dashed #4A3B69;'><span style='color:#00FFCC; font-size:14px; margin-bottom:8px; display:block;'>💡 အဖြစ်နိုင်ဆုံး (Sniper) ကွက်များ:</span>{badges_html}</div>"
             else:
-                sniper_note = "💡 (ယခုမူအတိအကျဖြင့် ထွက်ထားသော မှတ်တမ်း မရှိသေးပါ။ AI Trend အသစ်ဖြစ်ပါသည်)"
+                sniper_note = "<div style='margin-top: 12px; padding-top: 10px; border-top: 1px dashed #4A3B69; color:#A294C7; font-size:13px; font-style:italic;'>💡 (ယခုမူအတိအကျဖြင့် ထွက်ထားသော မှတ်တမ်း မရှိသေးပါ။ AI Trend အသစ်ဖြစ်ပါသည်)</div>"
             
             risk_note_html = ""
             if all_time_max_span > max_required_span:
@@ -607,7 +609,6 @@ if st.session_state.full_draws:
             with c2: live_max_tf = st.number_input("⏳ အများဆုံး လက်ခံနိုင်သော ရက်ချိန်း (Max Deadline Span):", min_value=1, max_value=50, value=20)
             custom_anchors_str = st.text_input("🎯 စိတ်ကြိုက် အမာခံဂဏန်းများ (ဥပမာ - 48, 60) [မရိုက်ပါက Auto ရှာမည်]:", value="")
             
-            # Dual Engine Checkboxes
             use_adv_patterns = st.checkbox("🔍 1. Standard Auto-Scanner: အထက်ပါ (Anchor) ပွဲစဉ်အတွင်းမှ မူများကို Auto ရှာမည် (>=90%)", value=True)
             use_deep_sniper = st.checkbox("🎯 2. Deep Sniper Scanner: သတ်မှတ်ရက်ချိန်း (Max Span) အထိ နောက်ကြောင်းပြန်၍ 100% အထူးမူများကိုသာ ရှာမည်", value=True)
             
@@ -631,11 +632,9 @@ if st.session_state.full_draws:
                     scoring_pool, global_recovery = {}, {}
                     condition_pools = []
                     
-                    # 1. ရိုးရိုးဂဏန်းများ (Exact Hits)
                     for past_obj in selected_anchors:
                         p_val, p_time, p_day = past_obj['draw'], past_obj['time'], past_obj['day']
                         
-                        # အပူးဖြစ်/မဖြစ် စစ်ဆေးခြင်း
                         is_double = (len(p_val) == 2 and p_val[0] == p_val[1])
                         r_label = p_val if is_double else f"{p_val}R"
                         
@@ -643,30 +642,26 @@ if st.session_state.full_draws:
                         lbl_all = f"{p_val} AM/PM"
                         lbl_day = f"{r_label} AM/PM ({p_day})"
                         
-                        # ရိုးရိုးဂဏန်းများအားလုံးသည် strict_100 (Deep Sniper Rule) မှ ကင်းလွတ်ခွင့်ရှိသည်
                         condition_pools.append({"hits": [d for d in st.session_state.full_draws if d['draw'] == p_val and d['time'] == p_time], "lbl": lbl_strict, "session": "AM/PM", "strict_100": False})
                         condition_pools.append({"hits": [d for d in st.session_state.full_draws if d['draw'] == p_val], "lbl": lbl_all, "session": "AM/PM", "strict_100": False})
                         condition_pools.append({"hits": [d for d in st.session_state.full_draws if (d['draw'] == p_val or d['draw'] == p_val[::-1]) and d['day'] == p_day], "lbl": lbl_day, "session": "AM/PM", "strict_100": False})
                     
-                    # 2. Dual Engine Patterns (Set ဖြင့် အထပ်ပယ်မည်)
+                    # 🔴 [NEW] Tuple ကို ဖြုတ်၍ Search Key နှင့် Display Name ခွဲခြားအသုံးပြုခြင်း
                     std_pats = set(detect_active_patterns(st.session_state.day_pairs, anchor_count)) if use_adv_patterns else set()
                     deep_pats = set(detect_active_patterns(st.session_state.day_pairs, live_max_tf)) if use_deep_sniper else set()
                     
-                    # Engine 1: Standard Scanner (Anchor Count အတွင်း)
-                    for pat in std_pats:
-                        t_hits, override_ses = get_custom_target_hits(pat, "AM/PM", st.session_state.full_draws, st.session_state.day_pairs)
+                    for pat_search, pat_display in std_pats:
+                        t_hits, override_ses = get_custom_target_hits(pat_search, "AM/PM", st.session_state.full_draws, st.session_state.day_pairs)
                         if t_hits:
                             sess_to_use = override_ses if override_ses else "AM/PM"
-                            condition_pools.append({"hits": t_hits, "lbl": pat, "session": sess_to_use, "strict_100": False})
+                            condition_pools.append({"hits": t_hits, "lbl": pat_display, "session": sess_to_use, "strict_100": False})
                     
-                    # Engine 2: Deep Sniper Scanner (Std ထဲ မပါသော အဝေးဆုံး Pattern များကိုသာ 100% စစ်မည်)
-                    for pat in (deep_pats - std_pats):
-                        t_hits, override_ses = get_custom_target_hits(pat, "AM/PM", st.session_state.full_draws, st.session_state.day_pairs)
+                    for pat_search, pat_display in (deep_pats - std_pats):
+                        t_hits, override_ses = get_custom_target_hits(pat_search, "AM/PM", st.session_state.full_draws, st.session_state.day_pairs)
                         if t_hits:
                             sess_to_use = override_ses if override_ses else "AM/PM"
-                            condition_pools.append({"hits": t_hits, "lbl": pat, "session": sess_to_use, "strict_100": True})
+                            condition_pools.append({"hits": t_hits, "lbl": pat_display, "session": sess_to_use, "strict_100": True})
 
-                    # Run Execute Analysis
                     for p in condition_pools:
                         if not p['hits']: continue
                         step_res, rec_pool = execute_analysis(p['hits'], st.session_state.full_draws, live_max_tf, is_custom_tab=True, search_session=p['session'], custom_trigger=p['lbl'], mode=live_mode, min_rate_threshold=90.0)
@@ -674,10 +669,9 @@ if st.session_state.full_draws:
                         for step_dist, formulas_dict in step_res.items():
                             for mk, mv in formulas_dict.items():
                                 
-                                # 🔴 [SNIPER FILTER] Engine 2 မှ လာသော မူများအတွက် တင်းကျပ်သော စစ်ထုတ်ခြင်း
                                 if p.get('strict_100', False):
                                     if mv['rate'] < 100.0 or mv['max_span'] > 10:
-                                        continue # 100% မပြည့်လျှင် သို့မဟုတ် ၁၀ ပွဲကျော်နေလျှင် ပယ်ချမည်
+                                        continue 
                                 
                                 f_key = mv['pure']
                                 if f_key not in scoring_pool:
@@ -688,7 +682,6 @@ if st.session_state.full_draws:
                                     scoring_pool[f_key]['details'].append(mv)
                                     scoring_pool[f_key]['count'] += 1
                                     
-                                    # Risk Penalty System
                                     is_risk = "⚠️ Risk Note" in mv.get("risk_note", "")
                                     penalty_multiplier = 0.5 if is_risk else 1.0 
                                     
@@ -713,7 +706,6 @@ if st.session_state.full_draws:
                             with st.expander(f"⭐ {'Super VIP' if is_super else 'Second VIP'}: {b_val} (Score: {b_data['quality_score']:.1f})", expanded=is_super):
                                 st.markdown(f"<span class='{badge}'>{'Super VIP' if is_super else 'Second VIP'}</span> <span style='float:right;'>ကွက်ရေ: {b_data['coverage']} ကွက်</span>", unsafe_allow_html=True)
                                 for d_detail in b_data['details']:
-                                    # 🔴 Tab 2 Format အတိုင်း တိတိကျကျ ပြသခြင်း
                                     card_border = "card-sniper" if "100%" in d_detail['formula'] else "card-hp"
                                     badge_class = "badge-inline-sniper" if d_detail['rate'] == 100.0 else "badge-inline-hp"
                                     st.markdown(f"""
@@ -722,7 +714,7 @@ if st.session_state.full_draws:
                                         <span class="line-formula">{d_detail["formula"]}</span>
                                         <span class="line-focus">{d_detail["focus_range"]}</span>
                                         <span class="line-history">{d_detail["bottom"]}</span>
-                                        <span class="line-advisor">{d_detail.get("advisor", "")}</span>
+                                        {d_detail.get("advisor", "")}
                                         {d_detail.get("risk_note", "")}
                                     </div>
                                     """, unsafe_allow_html=True)
@@ -741,7 +733,7 @@ if st.session_state.full_draws:
                                 <span class="line-formula">{item["pure"]}</span>
                                 <span class="line-focus">{item["focus_range"]} (ရက်ချိန်းကွက်တိပြည့်)</span>
                                 <span class="line-history">{item["bottom"]}</span>
-                                <span class="line-advisor">{item.get("advisor", "")}</span>
+                                {item.get("advisor", "")}
                                 {item.get("risk_note", "")}
                             </div>
                             """, unsafe_allow_html=True)
@@ -759,7 +751,7 @@ if st.session_state.full_draws:
                                 <span class="line-formula">{item["pure"]}</span>
                                 <span class="line-focus">{item["focus_range"]}</span>
                                 <span class="line-history">{item["bottom"]}</span>
-                                <span class="line-advisor">{item.get("advisor", "")}</span>
+                                {item.get("advisor", "")}
                                 {item.get("risk_note", "")}
                             </div>
                             """, unsafe_allow_html=True)
@@ -853,7 +845,7 @@ if st.session_state.full_draws:
                                             <span class="line-formula">{data["formula"]}</span>
                                             <span class="line-focus">{data["focus_range"]}</span>
                                             <span class="line-history">{data["bottom"]}</span>
-                                            <span class="line-advisor">{data["advisor"]}</span>
+                                            {data.get('advisor', '')}
                                             {data.get('risk_note', '')}
                                         </div>
                                         """, unsafe_allow_html=True)
