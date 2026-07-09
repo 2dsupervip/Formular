@@ -160,6 +160,34 @@ def get_group_relation(d1, d2):
     except: return None
 
 # ==========================================
+# MISSING FUNCTION ADDED: get_hybrid_candidates 
+# ==========================================
+def get_hybrid_candidates(recent_target_hits, full_draws, requested_max_step):
+    """
+    Calendar သီးသန့်မူများ (Fixed Pattern) Mode တွင် AI Trend ကို မမှီခိုဘဲ 
+    Pattern အသေသတ်မှတ်ချက်များကိုသာ တွက်ထုတ်ပေးမည့် Generator ဖြစ်ပါသည်။
+    """
+    candidates = {k: [] for k in mu_keys_list}
+    
+    # ၁။ လုံးဘိုင် - (၀ မှ ၉ ထိ)
+    candidates["လုံးဘိုင်"] = [f"{i} လုံးဘိုင်" for i in range(10)]
+    
+    # ၂။ ဘရိတ် - (0-9 ဘရိတ် တွဲလုံးများ)
+    b_pairs = list(itertools.combinations(range(10), 2))
+    candidates["ဘရိတ်"] = [f"{a}, {b} ဘရိတ်" for a, b in b_pairs]
+    
+    # ၃။ အုပ်စု သီးသန့် 
+    candidates["အုပ်စု သီးသန့်"] = list(special_groups.keys())
+    
+    # ၄။ အုပ်စုတွဲ
+    candidates["အုပ်စုတွဲ"] = [f"{combo[0]}+{combo[1]}" for combo in itertools.combinations(special_groups.keys(), 2)]
+    
+    # ၅။ စုံ/မ ကပ်
+    candidates["စုံ/မ ကပ်"] = [f'[{i}] "စုံ"ကပ်' for i in range(10)] + [f'[{i}] "မ"ကပ်' for i in range(10)]
+    
+    return candidates
+
+# ==========================================
 # REFACTORED: CUSTOM ENGINE (Used by Tab 1, 2, 3)
 # ==========================================
 def get_custom_target_hits(clean_trigger, target_session_trigger, full_draws, day_pairs):
