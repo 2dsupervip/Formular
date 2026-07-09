@@ -140,23 +140,6 @@ def generate_formula_from_pool(analysis_pool):
     }
     return {k: normalize_formula(k, v) for k, v in res.items()}
 
-def get_hybrid_candidates(target_hits, full_draws, max_step):
-    candidates = {k: [] for k in mu_keys_list}
-    for i in range(10): candidates["လုံးဘိုင်"].append(f"{i} လုံးဘိုင်")
-    for b in itertools.combinations([str(x) for x in range(10)], 2): 
-        cand = normalize_formula("ဘရိတ်", f"{b[0]}, {b[1]} ဘရိတ်")
-        if cand not in candidates["ဘရိတ်"]: candidates["ဘရိတ်"].append(cand)
-    for g in special_groups.keys(): candidates["အုပ်စု သီးသန့်"].append(g)
-    for combo in itertools.combinations(special_groups.keys(), 2): 
-        cand = normalize_formula("အုပ်စုတွဲ", f"{combo[0]}+{combo[1]}")
-        if cand not in candidates["အုပ်စုတွဲ"]: candidates["အုပ်စုတွဲ"].append(cand)
-        
-    analysis_pool = [full_draws[h['index'] + s]['draw'] for h in target_hits for s in range(1, max_step + 1) if h['index'] + s < len(full_draws)]
-    complex_formulas = generate_formula_from_pool(analysis_pool)
-    for k in ["One Change", "key", "အပူးပါခွေ", "ထိပ်စီးစနစ်သစ်", "နောက်ပိတ်စနစ်သစ်", "စုံ/မ ကပ်"]:
-        if complex_formulas[k] != "-": candidates[k].append(complex_formulas[k])
-    return candidates
-
 def get_brk(draw_dict):
     if draw_dict and 'draw' in draw_dict and len(draw_dict['draw']) >= 2:
         return str((int(draw_dict['draw'][0]) + int(draw_dict['draw'][1])) % 10)
@@ -177,7 +160,7 @@ def get_group_relation(d1, d2):
     except: return None
 
 # ==========================================
-# REFACTORED: TAB 2 CUSTOM ENGINE (Used by Tab 1 & Tab 2)
+# REFACTORED: CUSTOM ENGINE (Used by Tab 1, 2, 3)
 # ==========================================
 def get_custom_target_hits(clean_trigger, target_session_trigger, full_draws, day_pairs):
     target_hits = []
@@ -377,7 +360,7 @@ def get_custom_target_hits(clean_trigger, target_session_trigger, full_draws, da
     return target_hits, override_session
 
 # ==========================================
-# AUTO PATTERN DETECTION (With Display Labels)
+# AUTO PATTERN DETECTION
 # ==========================================
 def detect_active_patterns(day_pairs, lookback_draws):
     active_patterns = set()
@@ -803,30 +786,55 @@ if st.session_state.full_draws:
                                         """, unsafe_allow_html=True)
 
     # ------------------------------------------
-    # TAB 3: OMNI-CHAIN ENGINE (New Tab)
+    # TAB 3: OMNI-CHAIN ENGINE (Auto/Custom)
     # ------------------------------------------
     with tab_chain:
-        st.markdown("##### 🔗 Auto Omni-Chain Engine (ကွင်းဆက် သုတေသန ဓာတ်ခွဲခန်း)")
+        st.markdown("##### 🔗 Auto Omni-Chain Engine (အလိုအလျောက် ကွင်းဆက် ဓာတ်ခွဲခန်း)")
         with st.form("chain_reaction_form"):
-            default_trig = last_val if st.session_state.full_draws else "12"
+            chain_mode = st.radio("🔍 အစပျိုးစနစ် ရွေးချယ်ရန်:", ["🤖 Auto Mode (Deep Sniper ဖြင့် အလိုအလျောက်ရှာမည်)", "✍️ Custom Mode (မိမိစိတ်ကြိုက် အစပျိုးမည်)"])
             
             c1, c2 = st.columns(2)
-            with c1: chain_trigger = st.text_input("၁။ အစပျိုး မူ (Primary Trigger):", value=f"{default_trig} PM သီးသန့်")
+            with c1: 
+                chain_anchor_count = st.number_input("📌 (Auto အတွက်) နောက်ကြောင်းပြန်မည့် ပွဲစဉ် (Anchor Count):", min_value=1, max_value=50, value=10)
+                chain_trigger_custom = st.text_input("🎯 (Custom အတွက်) အစပျိုး မူ (Primary Trigger):", value=f"{last_val if st.session_state.full_draws else '12'} PM သီးသန့်")
             with c2: chain_span1 = st.number_input("၂။ စောင့်ကြည့်မည့် ပွဲစဉ် (Secondary Window):", min_value=1, max_value=20, value=10)
 
             c3, c4 = st.columns(2)
             with c3: chain_target_step = st.number_input("၃။ တိကျသော နောက်ဆက်တွဲပွဲ (Target Step):", min_value=1, max_value=20, value=3)
             with c4: chain_recent_limit = st.number_input("၄။ ရေစီးကြောင်း အကြိမ်ရေ (Trend Hits):", min_value=3, max_value=20, value=5)
 
-            submit_chain = st.form_submit_button("ကွင်းဆက်ကို Auto ရှာဖွေမည် 🚀")
+            submit_chain = st.form_submit_button("ကွင်းဆက်ကို ရှာဖွေမည် 🚀")
 
         if submit_chain:
-            with st.spinner("Omni-Chain Scanner ဖြင့် ကွင်းဆက်များကို တူးဖော်နေပါသည်..."):
-                t_hits, _ = get_custom_target_hits(chain_trigger, "All", st.session_state.full_draws, st.session_state.day_pairs)
+            with st.spinner("Omni-Chain Scanner ဖြင့် ကွင်းဆက်များကို အလိုအလျောက် တူးဖော်နေပါသည်..."):
+                trigger_list = []
                 
-                if not t_hits:
-                    st.error("⚠️ အစပျိုးမူ (Primary Trigger) သမိုင်းကြောင်းတွင် ရှာမတွေ့ပါ။")
+                # 🔴 [NEW] Auto vs Custom Trigger Generation
+                if "Auto Mode" in chain_mode:
+                    # 1. သမိုင်းကြောင်းမှ အလိုအလျောက် Pattern များ ရှာဖွေခြင်း
+                    active_pats = detect_active_patterns(st.session_state.day_pairs, chain_anchor_count)
+                    for pat_search, pat_display in active_pats:
+                        trigger_list.append((pat_search, pat_display))
+                    
+                    # 2. လတ်တလော ထွက်ခဲ့သော အမာခံ ဂဏန်းများ (Exact Draws) ကိုလည်း ထည့်သွင်းခြင်း
+                    recent_draws = st.session_state.full_draws[-chain_anchor_count:]
+                    for d in recent_draws:
+                        d_val, d_time = d['draw'], d['time']
+                        trigger_list.append((f"{d_val} {d_time} သီးသန့်", f"လတ်တလော အမာခံဂဏန်း ({d_val} {d_time})"))
+                        
+                    # Remove duplicates
+                    trigger_list = list(set(trigger_list))
                 else:
+                    trigger_list = [(chain_trigger_custom.strip(), chain_trigger_custom.strip())]
+
+                found_any_chain = False
+
+                for trig_search, trig_display in trigger_list:
+                    t_hits, _ = get_custom_target_hits(trig_search, "All", st.session_state.full_draws, st.session_state.day_pairs)
+                    
+                    if len(t_hits) < chain_recent_limit:
+                        continue # Trend Hit အကြိမ်ရေ မပြည့်လျှင် ကျော်မည် (Skip)
+
                     # Step 1: Auto Cluster - Collect Top 10 numbers within Span1 across all history
                     cluster_pool = []
                     for h in t_hits:
@@ -834,52 +842,56 @@ if st.session_state.full_draws:
                         window_draws = st.session_state.full_draws[h_idx + 1 : min(h_idx + 1 + chain_span1, len(st.session_state.full_draws))]
                         cluster_pool.extend([d['draw'] for d in window_draws])
 
-                    if not cluster_pool:
-                        st.error("⚠️ နောက်ဆက်တွဲ (Span 1) ဒေတာ မလုံလောက်ပါ။")
-                    else:
-                        top_cluster = [x[0] for x in Counter(cluster_pool).most_common(10)]
+                    if not cluster_pool: continue
 
-                        # Step 2: Track Chains - Find when these top 10 numbers hit within Span1
-                        valid_chains = []
-                        for h in t_hits:
-                            h_idx = h['index']
-                            window_draws = st.session_state.full_draws[h_idx + 1 : min(h_idx + 1 + chain_span1, len(st.session_state.full_draws))]
-                            for d in window_draws:
-                                if d['draw'] in top_cluster:
-                                    valid_chains.append({"trigger_idx": h_idx, "cluster_idx": d['index'], "cluster_val": d['draw']})
-                                    break # Chain is activated on the first cluster hit
+                    top_cluster = [x[0] for x in Counter(cluster_pool).most_common(10)]
 
-                        if not valid_chains:
-                            st.error("⚠️ ကွင်းဆက် တိုက်ဆိုင်မှု မရှိပါ။ (Cluster Hits မတွေ့ပါ)")
+                    # Step 2: Track Chains - Find when these top 10 numbers hit within Span1
+                    valid_chains = []
+                    for h in t_hits:
+                        h_idx = h['index']
+                        window_draws = st.session_state.full_draws[h_idx + 1 : min(h_idx + 1 + chain_span1, len(st.session_state.full_draws))]
+                        for d in window_draws:
+                            if d['draw'] in top_cluster:
+                                valid_chains.append({"trigger_idx": h_idx, "cluster_idx": d['index'], "cluster_val": d['draw']})
+                                break 
+
+                    if len(valid_chains) < chain_recent_limit:
+                        continue # Chain ပတ်ဆက်မှု အကြိမ်ရေ မပြည့်လျှင် ကျော်မည်
+
+                    # Step 3: Analyze Recent Chains for 100% Exact Target Hits
+                    recent_chains = valid_chains[-chain_recent_limit:]
+                    target_draws = []
+                    active_signal = None
+
+                    for ch in recent_chains:
+                        target_idx = ch['cluster_idx'] + chain_target_step
+                        if target_idx < len(st.session_state.full_draws):
+                            target_draws.append(st.session_state.full_draws[target_idx]['draw'])
                         else:
-                            # Step 3: Analyze Recent Chains for 100% Exact Target Hits
-                            recent_chains = valid_chains[-chain_recent_limit:]
-                            target_draws = []
-                            active_signal = None
+                            # Target is in the future (LIVE ALERT!)
+                            rem_steps = target_idx - (len(st.session_state.full_draws) - 1)
+                            active_signal = {"cluster_val": ch['cluster_val'], "rem_steps": rem_steps}
 
-                            for ch in recent_chains:
-                                target_idx = ch['cluster_idx'] + chain_target_step
-                                if target_idx < len(st.session_state.full_draws):
-                                    target_draws.append(st.session_state.full_draws[target_idx]['draw'])
-                                else:
-                                    # Target is in the future (LIVE ALERT!)
-                                    rem_steps = target_idx - (len(st.session_state.full_draws) - 1)
-                                    active_signal = {"cluster_val": ch['cluster_val'], "rem_steps": rem_steps}
+                    final_unique_hits = list(set(target_draws))
+                    
+                    if final_unique_hits:
+                        found_any_chain = True
+                        
+                        # UI Presentation
+                        badges_cluster = " ".join([f"<span class='badge-inline-hp' style='margin-bottom:8px;'>{n}</span>" for n in top_cluster])
+                        badges_final = " ".join([f"<span style='background-color:#E67E22; color:#FFFFFF; padding:4px 10px; border-radius:6px; font-size:16px; font-weight:bold; margin-right:5px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);'>{n}</span>" for n in final_unique_hits])
 
-                            final_unique_hits = list(set(target_draws))
-                            
-                            # UI Presentation
-                            badges_cluster = " ".join([f"<span class='badge-inline-hp' style='margin-bottom:8px;'>{n}</span>" for n in top_cluster])
-                            badges_final = " ".join([f"<span style='background-color:#E67E22; color:#FFFFFF; padding:4px 10px; border-radius:6px; font-size:16px; font-weight:bold; margin-right:5px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);'>{n}</span>" for n in final_unique_hits])
-
-                            st.markdown("#### 🔗 Auto Chain-Reaction ရလဒ် (100% Match)")
+                        card_header_color = "#e74c3c" if active_signal else "#3498db"
+                        
+                        with st.expander(f"⭐ [100% Omni-Chain] {trig_display} မှ အစပြုသော ကွင်းဆက်", expanded=True if active_signal else False):
                             st.markdown(f"""
-                            <div class="card card-sniper" style="border-left-color: #00FFCC;">
+                            <div class="card card-sniper" style="border-left-color: {card_header_color};">
                                 <div style="color:#00FFCC; font-size:16px; font-weight:bold; margin-bottom:10px;">
-                                    📌 ကွင်းဆက် အဆင့် (၁) - Auto Cluster
+                                    📌 ကွင်းဆက် အဆင့် (၁) - Auto Cluster (အလိုအလျောက် ရှာဖွေခြင်း)
                                 </div>
                                 <div style="color:#E0D5FA; margin-bottom:15px; line-height: 1.6;">
-                                    [<b>{chain_trigger}</b>] ထွက်ပြီး <b>({chain_span1})</b> ပွဲအတွင်း သမိုင်းတစ်လျှောက် အများဆုံး ဝင်လာလေ့ရှိသော (Top 10) ဂဏန်းများမှာ-<br>
+                                    [<b>{trig_display}</b>] ထွက်ပြီး <b>({chain_span1})</b> ပွဲအတွင်း သမိုင်းတစ်လျှောက် အများဆုံး ဝင်လာလေ့ရှိသော (Top 10) ဂဏန်းများမှာ-<br>
                                     <div style="margin-top: 8px;">{badges_cluster}</div>
                                 </div>
 
@@ -890,7 +902,7 @@ if st.session_state.full_draws:
                                     အထက်ပါ (Top 10) ကွက်မှ တစ်ခုခု ဝင်လာခဲ့လျှင် ထိုပွဲမှစ၍ ကွက်တိ <b>({chain_target_step})</b> ပွဲမြောက်တွင် ထွက်ခဲ့သော ဂဏန်းများ (လတ်တလော {chain_recent_limit} ကြိမ်ဆက်တိုက် 100% အတိအကျ မှန်ကန်နေသော ဒဲ့ကွက်များ):
                                 </div>
                                 <div>
-                                    {badges_final if final_unique_hits else '<span style="color:#ff4b4b; font-style:italic;">(သမိုင်းကြောင်း အချက်အလက် မလုံလောက်သေးပါ)</span>'}
+                                    {badges_final}
                                 </div>
                             </div>
                             """, unsafe_allow_html=True)
@@ -904,6 +916,9 @@ if st.session_state.full_draws:
                                     </div>
                                 </div>
                                 """, unsafe_allow_html=True)
+
+                if not found_any_chain:
+                    st.info("⚠️ ယခုသတ်မှတ်ချက်များဖြင့် 100% ကိုက်ညီသော (Omni-Chain) ကွင်းဆက်များ မတွေ့ရှိသေးပါ။ အကြိမ်ရေ (Trend Hits) ကို လျှော့ချ၍ ပြန်လည်စမ်းသပ်ကြည့်ပါ။")
 
 else:
     st.info("စတင်ရန်အတွက် Bro ရဲ့ 2D CSV သို့မဟုတ် Excel ဒေတာဖိုင်ကို အပေါ်တွင် တင်ပေးပါ။")
